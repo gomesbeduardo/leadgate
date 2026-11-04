@@ -8,13 +8,26 @@ type No = { name: string; type: string; parameters: { url?: string; jsonBody?: s
 const no = (nome: string): No => wf.nodes.find((n: No) => n.name === nome)
 
 describe('workflow n8n gerado', () => {
-  it('tem id e os 16 nos', () => {
+  it('tem id e os 17 nos', () => {
     expect(wf.id).toBe('filtroLeadsIA0001')
     const nomes = wf.nodes.map((n: No) => n.name)
-    expect(nomes).toHaveLength(16)
-    for (const n of ['Webhook', 'Preparar turno', 'Precisa do modelo?', 'Tentativa', 'Precisa esperar?', 'Esperar', 'Nó de IA (Claude)', 'Validar saída', 'Regenerar?', 'Falha do serviço', 'Rota', 'Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar', 'Responder']) {
+    expect(nomes).toHaveLength(17)
+    for (const n of ['Webhook', 'Preparar turno', 'Precisa do modelo?', 'Tentativa', 'Precisa esperar?', 'Esperar', 'Nó de IA (Claude)', 'Validar saída', 'Regenerar?', 'Falha do serviço', 'Rota', 'Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar', 'Ignorar (silêncio)', 'Responder']) {
       expect(nomes).toContain(n)
     }
+  })
+
+  it('T11: Rota tem 5 saidas; a quinta (ignorar) vai a um noOp que vai a Responder; vendas segue em Vendas (simulado)', () => {
+    const rota = no('Rota') as any
+    expect(rota.parameters.rules.values).toHaveLength(5)
+    expect(JSON.stringify(rota.parameters.rules.values[4])).toContain('ignorar')
+    const saidas = wf.connections['Rota'].main
+    expect(saidas).toHaveLength(5)
+    expect(saidas[1].map((c: any) => c.node)).toEqual(['Vendas (simulado)'])
+    const alvo = saidas[4].map((c: any) => c.node)
+    expect(alvo).toEqual(['Ignorar (silêncio)'])
+    expect(no(alvo[0]).type).toBe('n8n-nodes-base.noOp')
+    expect(wf.connections[alvo[0]].main[0].map((c: any) => c.node)).toEqual(['Responder'])
   })
 
   it('Regenerar? volta para Tentativa (saida 0) e vai para Rota (saida 1)', () => {

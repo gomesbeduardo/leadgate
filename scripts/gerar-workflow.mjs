@@ -35,8 +35,8 @@ const chamada = (id, name, rota, position, jsonBody) =>
   }, { onError: 'continueErrorOutput' })
 
 const Y = 300
-const acoes = ['perguntar', 'encaminhar_vendas', 'encaminhar_humano', 'responder_e_encerrar']
-const simulados = ['Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar']
+const acoes = ['perguntar', 'encaminhar_vendas', 'encaminhar_humano', 'responder_e_encerrar', 'ignorar']
+const simulados = ['Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar', 'Ignorar (silêncio)']
 
 const nodes = [
   no('n-webhook', 'Webhook', 'n8n-nodes-base.webhook', 2, [0, Y],

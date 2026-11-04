@@ -411,3 +411,21 @@ describe('motor de falhas', () => {
     if (!p.fim) expect(p.estado.historico).toHaveLength(3)
   })
 })
+
+describe('silencio deliberado (spec 006 R6)', () => {
+  const cidade = JSON.parse(readFileSync('config/empresa.json', 'utf8')).regiao.cidades[0]
+  it('T2: ignorar com resposta vazia sai com resposta null, acao do modelo e origem modelo', () => {
+    const saida = saidaBase({ proxima_acao: 'ignorar', resposta: '', desvios: 1, dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'] })
+    const { resultado } = rodar(oi, [corpo(saida)])
+    expect(resultado).toMatchObject({ resposta: null, proxima_acao: 'ignorar', origem: 'modelo', erro: false, estado_conversa: null })
+  })
+  it('T2: encaminhar_vendas silencioso (lead qualificado, desvios 3) sai com resposta null', () => {
+    const saida = saidaBase({
+      tipo_servico: 'pmoc', segmento: 'comercial', cidade, nome: 'Ana', telefone: '48999990000', urgencia: 'media',
+      dados_faltantes: [], qualificado: true, confianca: 0.9, desvios: 3, proxima_acao: 'encaminhar_vendas', resposta: '',
+    })
+    const lead: Mensagem[] = [{ role: 'user', content: `Meu nome e Ana, sou de ${cidade}, 48999990000, preciso de pmoc comercial` }]
+    const { resultado } = rodar(lead, [corpo(saida)])
+    expect(resultado).toMatchObject({ resposta: null, proxima_acao: 'encaminhar_vendas', origem: 'modelo', erro: false, estado_conversa: null })
+  })
+})

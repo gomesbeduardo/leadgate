@@ -262,7 +262,8 @@ function decidir(estado: Estado, resposta: unknown, cfg: Config, agora: () => nu
     return {
       fim: true,
       resultado: {
-        resposta: cl.saida.resposta,
+        // Silencio deliberado (spec 006 R6): resposta vazia do modelo vai ao cliente como null.
+        resposta: cl.saida.resposta.trim() === '' ? null : cl.saida.resposta,
         proxima_acao: cl.saida.proxima_acao,
         estado_conversa: null,
         saida: cl.saida,

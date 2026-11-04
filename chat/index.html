@@ -263,6 +263,9 @@ body.com-painel .painel { display: block; }
     }
     atualizarPainel(d || {});
     var acao = d && d.proxima_acao;
+    // Abertura silenciada (ignorar, sem resposta do assistente ate aqui): a mensagem sai do historico enviado,
+    // a bolha fica. No meio da conversa ela fica, para o modelo saber que o fim silencioso ja ocorreu.
+    if (!resposta && acao === 'ignorar' && !historico.slice(0, -1).some(function (m) { return m.role === 'assistant'; })) historico.pop();
     if (resposta && acao !== undefined && acao !== null && acao !== 'perguntar') {
       encerrada = true;
       conversa.appendChild(el('div', 'encerrado', 'Atendimento encerrado'));

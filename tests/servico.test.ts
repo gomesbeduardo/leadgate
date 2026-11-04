@@ -328,6 +328,12 @@ describe('chat', () => {
     expect(html).toMatch(/\.msg\.aviso\s*\{[^}]*white-space:\s*pre-wrap/)
   })
 
+  it('T13: abertura silenciada sai do historico enviado so se ignorar e sem assistant; meio da conversa fica', () => {
+    const html = readFileSync('chat/index.html', 'utf8')
+    expect(html).toMatch(/!resposta && acao === 'ignorar' && !historico\.slice\(0, -1\)\.some\(function \(m\) \{ return m\.role === 'assistant'; \}\)\) historico\.pop\(\)/)
+    expect(html.match(/historico\.pop\(\)/g)).toHaveLength(1)
+  })
+
   it('T5: chat/index.html nao cita WhatsApp e traz aviso_lgpd', () => {
     const html = readFileSync('chat/index.html', 'utf8')
     expect(/whatsapp/i.test(html)).toBe(false)
@@ -535,6 +541,19 @@ describe('falhas e alertas nas rotas', () => {
     await chatar(pub)
     expect(falhas.resumo().turnos_falha).toBe(0)
     expect(alertas.json().eventos).toEqual([])
+  })
+
+  it('T3: tres silencios deliberados seguidos nao abrem alerta de queda', async () => {
+    const { falhas, alertas } = lojas()
+    const wh = await webhook({ resposta: null, origem: 'modelo', proxima_acao: 'ignorar', estado_conversa: null, tipo: null })
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
+    for (let i = 0; i < 3; i++) {
+      const j: any = await (await chatar(pub)).json()
+      expect(j).toMatchObject({ resposta: null, proxima_acao: 'ignorar', origem: 'modelo' })
+      expect(j.estado).not.toBe('aguardando_humano')
+    }
+    expect(alertas.json().eventos).toEqual([])
+    expect(falhas.resumo().turnos_falha).toBe(0)
   })
 
   it('porta publica sem DEMO_PAINEL: /falhas e /alertas dao 404', async () => {
