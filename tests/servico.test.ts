@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net'
 import { createServer as createHttpServer, type Server } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
-import { criarServidor } from '../src/servico/app'
+import { criarServidor, criarServidorInterno } from '../src/servico/app'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
 const prompt = readFileSync('prompts/agente.md', 'utf8')
@@ -11,7 +11,7 @@ let server: Server
 let base = ''
 
 beforeAll(async () => {
-  server = criarServidor(cfg, prompt)
+  server = criarServidorInterno(cfg, prompt)
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 })
@@ -25,7 +25,13 @@ const http = (statusCode: number, texto = 'isto nao e json') => ({
   body: { stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] },
 })
 
-describe('servico HTTP', () => {
+describe('servico HTTP (porta interna)', () => {
+  it('porta interna nao serve o chat', async () => {
+    expect((await post('/api/chat', corpo)).status).toBe(404)
+    expect((await fetch(base + '/')).status).toBe(404)
+    expect((await fetch(base + '/tela.json')).status).toBe(404)
+  })
+
   it('GET /saude', async () => {
     const r = await fetch(base + '/saude')
     expect(r.status).toBe(200)
@@ -191,5 +197,117 @@ describe('chat', () => {
     expect(r.headers.get('content-type')).toContain('text/html')
     expect(await r.text()).toContain('<title>x</title>')
     expect((await fetch(urlSem + '/')).status).toBe(404)
+  })
+})
+
+describe('rotas internas fora da porta publica', () => {
+  it('POST /preparar e /validar na porta publica dao 404 e nao vazam o prompt', async () => {
+    const pub = criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/webhook' })
+    await new Promise<void>((r) => pub.listen(0, '127.0.0.1', r))
+    const url = `http://127.0.0.1:${(pub.address() as AddressInfo).port}`
+    try {
+      for (const rota of ['/preparar', '/validar']) {
+        const r = await fetch(url + rota, { method: 'POST', body: JSON.stringify(corpo) })
+        expect(r.status).toBe(404)
+        expect(await r.text()).not.toContain('CFG-7Q2M')
+      }
+      expect((await fetch(url + '/saude')).status).toBe(200)
+    } finally {
+      await new Promise<void>((r) => pub.close(() => r()))
+    }
+  })
+})
+
+describe('limites publicas em /api/chat', () => {
+  let web: Server
+  let urlWeb = ''
+  let soltar: (() => void)[] = []
+  const subir = async (s: Server) => {
+    await new Promise<void>((r) => s.listen(0, '127.0.0.1', r))
+    return `http://127.0.0.1:${(s.address() as AddressInfo).port}`
+  }
+  const h = { historico: [{ role: 'user', content: 'Oi' }] }
+  const chat = (url: string, c: unknown = h) => fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify(c) })
+
+  beforeAll(async () => {
+    web = createHttpServer((req, res) => {
+      req.resume()
+      const responder = () => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+      }
+      responder()
+    })
+    urlWeb = await subir(web)
+  })
+  afterAll(() => new Promise<void>((r) => web.close(() => r())))
+
+  it('corpo acima de 16 KB da 413', async () => {
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlWeb })
+    const url = await subir(s)
+    try {
+      const r = await chat(url, { historico: [{ role: 'user', content: 'x'.repeat(17_000) }] })
+      expect(r.status).toBe(413)
+      expect((await chat(url)).status).toBe(200)
+    } finally {
+      await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+
+  it('21a requisicao do mesmo IP no minuto da 429 e a janela reabre com o relogio', async () => {
+    let agora = 1_000_000
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlWeb, agora: () => agora })
+    const url = await subir(s)
+    try {
+      for (let i = 0; i < 20; i++) expect((await chat(url)).status).toBe(200)
+      expect((await chat(url)).status).toBe(429)
+      // x-forwarded-for nao muda a conta: a chave e o endereco do socket.
+      const falso = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify(h), headers: { 'x-forwarded-for': '9.9.9.9' } })
+      expect(falso.status).toBe(429)
+      agora += 60_001
+      expect((await chat(url)).status).toBe(200)
+    } finally {
+      await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+
+  it('limite por minuto configuravel', async () => {
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlWeb, limitePorMinuto: 2 })
+    const url = await subir(s)
+    try {
+      expect((await chat(url)).status).toBe(200)
+      expect((await chat(url)).status).toBe(200)
+      expect((await chat(url)).status).toBe(429)
+    } finally {
+      await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+
+  it('5o turno simultaneo da 503 e libera quando um termina', async () => {
+    const lento = createHttpServer((req, res) => {
+      req.resume()
+      soltar.push(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+      })
+    })
+    const urlLento = await subir(lento)
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlLento, limitePorMinuto: 100 })
+    const url = await subir(s)
+    soltar = []
+    try {
+      const em_voo = [1, 2, 3, 4].map(() => chat(url))
+      while (soltar.length < 4) await new Promise((r) => setTimeout(r, 10))
+      expect((await chat(url)).status).toBe(503)
+      soltar.forEach((f) => f())
+      expect((await Promise.all(em_voo)).map((r) => r.status)).toEqual([200, 200, 200, 200])
+      const quinto = chat(url)
+      while (soltar.length < 5) await new Promise((r) => setTimeout(r, 10))
+      soltar[4]?.()
+      expect((await quinto).status).toBe(200)
+    } finally {
+      await new Promise<void>((r) => s.close(() => r()))
+      await new Promise<void>((r) => lento.close(() => r()))
+    }
   })
 })

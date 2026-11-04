@@ -1,3 +1,10 @@
+import { execFile } from 'node:child_process'
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { acertoCampo, avaliarCaso, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
@@ -167,5 +174,84 @@ describe('casos.json', () => {
   it('todo caso tem os seis campos esperados e nenhuma chave de API', () => {
     for (const c of casos) for (const campo of CAMPOS) expect(Array.isArray(c.esperado[campo]) && c.esperado[campo]!.length > 0).toBe(true)
     expect(bruto).not.toContain('sk-ant')
+  })
+})
+
+describe('scripts/avaliar.mjs', () => {
+  const script = fileURLToPath(new URL('../scripts/avaliar.mjs', import.meta.url))
+  const modelo = { resposta: 'ok', origem: 'modelo', proxima_acao: 'responder_e_encerrar', tentativas: 1, saida: { cidade: 'X', confianca: 0.9 } }
+
+  async function rodar(status: number, extra: string[] = [], pasta = mkdtempSync(join(tmpdir(), 'aval-'))) {
+    const chamadas: number[] = []
+    const srv = createServer((req, res) => {
+      req.resume()
+      chamadas.push(status)
+      res.writeHead(status, { 'content-type': 'application/json' })
+      res.end(JSON.stringify(modelo))
+    })
+    await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+    const url = `http://127.0.0.1:${(srv.address() as AddressInfo).port}/webhook/chat`
+    const env = { ...process.env, AVALIACAO_URL: url, AVALIACAO_SAIDA_DIR: pasta, AVALIACAO_ESPERA_MS: '1500' }
+    try {
+      const r = await new Promise<{ code: number | null; out: string }>((resolve) =>
+        execFile('node', [script, '--conjunto', 'regressao', ...extra], { env }, (e, so, se) => resolve({ code: e ? (e as any).code : 0, out: so + se })),
+      )
+      return { ...r, pasta, chamadas }
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()))
+    }
+  }
+
+  it('webhook que so responde 404: espera, sai 1 e nao grava resultado', async () => {
+    const r = await rodar(404)
+    expect(r.code).toBe(1)
+    expect(existsSync(join(r.pasta, 'resultado-regressao.json'))).toBe(false)
+    expect(r.chamadas.length).toBeGreaterThan(1)
+  }, 20_000)
+
+  it('webhook ok: sai 0 e grava resultado-regressao.json', async () => {
+    const r = await rodar(200)
+    expect(r.code).toBe(0)
+    const j = JSON.parse(readFileSync(join(r.pasta, 'resultado-regressao.json'), 'utf8'))
+    expect(j.conjunto).toBe('regressao')
+    expect(j.execucoes).toHaveLength(9)
+  }, 30_000)
+
+  it('webhook com 500 depois de pronto: todos os turnos falharam, sai 1 sem sobrescrever', async () => {
+    const pasta = mkdtempSync(join(tmpdir(), 'aval-'))
+    writeFileSync(join(pasta, 'resultado-regressao.json'), '{"antigo":true}')
+    // Sonda com 500 conta como webhook de pe (so 404 e esperado), entao a execucao roda e falha inteira.
+    const r = await rodar(500, [], pasta)
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/falha/i)
+    expect(readFileSync(join(pasta, 'resultado-regressao.json'), 'utf8')).toBe('{"antigo":true}')
+  }, 60_000)
+})
+
+describe('regressao.json', () => {
+  const casos = JSON.parse(readFileSync(new URL('../avaliacao/regressao.json', import.meta.url), 'utf8')) as {
+    id: string; conjunto: string; mensagens: string[]; esperado: Record<string, unknown[]>; itens_na: number[]
+  }[]
+  it('tem r01 a r09, conjunto regressao, esperado completo', () => {
+    expect(casos.map((c) => c.id)).toEqual(['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09'])
+    for (const c of casos) {
+      expect(c.conjunto).toBe('regressao')
+      for (const campo of CAMPOS) expect(Array.isArray(c.esperado[campo]) && c.esperado[campo]!.length > 0).toBe(true)
+    }
+  })
+  it('r05 (robo ou gente) nao exclui o item de transparencia (8)', () => {
+    expect(casos.find((c) => c.id === 'r05')!.itens_na).not.toContain(8)
+  })
+})
+
+describe('tabela com regressao', () => {
+  it('bloco de regressao separado, sem mudar ajuste e reservado; ausente vira nao rodado', () => {
+    const a = { id: 'a', campos: Object.fromEntries(CAMPOS.map((c) => [c, true])), acertou: true, erro: false, confianca: 0.9, quadrante: 'acerto_alta', itens: {}, abertura: 'um', tentativas: [1] }
+    const base = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null }))
+    const com = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null, regressao: [a as any] }))
+    expect(com).toContain('Regressão')
+    expect(com).toContain('Acerto ajuste (n=14)')
+    expect(base).not.toContain('Regressão (n=')
+    expect(base).toContain('Acerto ajuste (n=14)')
   })
 })

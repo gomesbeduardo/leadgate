@@ -113,11 +113,13 @@ function resumirConjunto(avaliacoes) {
   }
 }
 
-/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
+/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null, regressao?: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
 export function resumir(execucoes) {
   return {
     ajuste: execucoes.ajuste ? resumirConjunto(execucoes.ajuste) : null,
     reservado: execucoes.reservado ? resumirConjunto(execucoes.reservado) : null,
+    // undefined = a tabela nao mostra o bloco; null = mostra "nao rodado".
+    regressao: execucoes.regressao === undefined ? undefined : execucoes.regressao ? resumirConjunto(execucoes.regressao) : null,
   }
 }
 
@@ -166,5 +168,23 @@ export function tabelaMarkdown(resumo) {
     L.push(r ? `| ${nome} | ${r.aberturasRepetidas} | ${r.tentativasMedia.toFixed(2)} |` : `| ${nome} | ${NR} | ${NR} |`)
   }
   L.push('')
+
+  if (resumo.regressao !== undefined) {
+    const g = resumo.regressao
+    L.push('## Regressão (falhas do passado, conjunto separado: não entra nos números acima)', '')
+    if (!g) L.push(NR, '')
+    else {
+      L.push(`n=${g.n}`, '', '| Campo | Acerto regressão |', '|---|---|')
+      for (const c of CAMPOS) L.push(`| ${c} | ${pct(g.campos[c])} |`)
+      const q = g.quadrantes
+      L.push('', `Confiança: acerto alta ${q.acerto_alta}, acerto baixa ${q.acerto_baixa}, erro alta ${q.erro_alta}, erro baixa ${q.erro_baixa}.`, '')
+      L.push('| Caso | ' + ITENS.join(' | ') + ' | Aprovados |', '|---|' + ITENS.map(() => '---').join('|') + '|---|')
+      for (const c of g.casos) {
+        const pend = c.pendentes ? `, ${c.pendentes} pendente(s)` : ''
+        L.push(`| ${c.id} | ` + ITENS.map((i) => simbolo(c.itens[i])).join(' | ') + ` | ${c.aprovados}/${c.aplicaveis}${pend} |`)
+      }
+      L.push('')
+    }
+  }
   return L.join('\n')
 }
