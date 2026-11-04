@@ -56,6 +56,17 @@ const semReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: '' } }
 const oi: Mensagem[] = [{ role: 'user', content: 'Oi, preciso de um orcamento' }]
 
 describe('iniciarTurno', () => {
+  it('guarda o historico bruto: a uniao dos users nao apaga a contagem do fim silencioso', () => {
+    const h: Mensagem[] = [
+      { role: 'user', content: 'a' }, { role: 'assistant', content: 'aviso' },
+      { role: 'user', content: 'b' }, { role: 'user', content: 'c' },
+    ]
+    const p = iniciarTurno({ historico: h }, modelo, cfg)
+    if (p.fim) throw new Error('esperava passo')
+    expect(p.estado.historico).toHaveLength(3)
+    expect(p.estado.historico_bruto).toHaveLength(4)
+  })
+
   it('entrada valida comeca na tentativa 1', () => {
     const p = iniciarTurno({ historico: oi }, modelo, cfg)
     expect(p.fim).toBe(false)

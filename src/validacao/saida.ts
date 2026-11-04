@@ -4,7 +4,7 @@ import { validarResposta } from './resposta'
 
 export function validarSaida(
   textoModelo: string,
-  ctx: { historico: Mensagem[]; cfg: Config; promptMontado: string },
+  ctx: { historico: Mensagem[]; cfg: Config; promptMontado: string; historicoBruto?: Mensagem[] },
 ): ResultadoValidacao {
   const { saida, violacoes } = analisarContrato(textoModelo, ctx)
   const ultimaMsgLead = [...ctx.historico].reverse().find((m) => m.role === 'user')?.content

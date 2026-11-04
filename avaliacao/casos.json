@@ -1216,6 +1216,7 @@
         "baixa"
       ],
       "qualificado": [
+        true,
         false
       ],
       "proxima_acao": [

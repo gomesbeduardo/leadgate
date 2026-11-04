@@ -388,6 +388,27 @@ describe('falas: ignorar, desvios e vagos (spec 006)', () => {
     expect(regras(validar({ ...ign, resposta: 'x' }, [{ role: 'user', content: 'x' }]))).toContain('ignorar_exige_resposta_vazia')
   })
 
+  describe('fim silencioso ja ocorrido (n16)', () => {
+    const q = { desvios: 3, vagos: 0, qualificado: true, proxima_acao: 'ignorar', resposta: '' }
+    const u = (c: string): Mensagem => ({ role: 'user', content: c })
+    const a = (c: string): Mensagem => ({ role: 'assistant', content: c })
+    const depois: Mensagem[] = [FALA_TEL, a('aviso'), u('3o desvio'), u('novo desvio')]
+    const primeiro: Mensagem[] = [FALA_TEL, a('aviso'), u('3o desvio')]
+
+    it('qualificado: ignorar com resposta vazia e valido', () => {
+      expect(regras(validar(q, depois))).toEqual([])
+    })
+    it('qualificado: encaminhar_vendas e rejeitado', () => {
+      expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, depois))).toContain('limite_exige_encerrar')
+    })
+    it('primeiro fim silencioso: encaminhar_vendas continua valido', () => {
+      expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, primeiro))).toEqual([])
+    })
+    it('primeiro fim silencioso: ignorar qualificado continua fora do permitido', () => {
+      expect(regras(validar(q, primeiro))).toContain('ignorar_fora_do_permitido')
+    })
+  })
+
   it('ignorar valido no fim silencioso (desvios=3, telefone, nao qualificado)', () => {
     expect(validar({ ...ign, ...comTel, desvios: 3 }, [FALA_TEL]).ok).toBe(true)
   })

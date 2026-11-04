@@ -117,7 +117,7 @@ export function validarContrato(
 /** Schema + regras cruzadas; `saida` vem preenchida sempre que o JSON passou no schema. */
 export function analisarContrato(
   textoModelo: string,
-  ctx: { historico: Mensagem[]; cfg: Config },
+  ctx: { historico: Mensagem[]; cfg: Config; historicoBruto?: Mensagem[] },
 ): { saida?: Saida; violacoes: Violacao[] } {
   const { cfg, historico } = ctx
 
@@ -170,6 +170,10 @@ export function analisarContrato(
   }
 
   // qualificado = true
+  // Fim silencioso ja ocorrido: depois da ultima fala do agente ha 2+ mensagens do lead (historico sem a uniao).
+  const histCru = ctx.historicoBruto ?? historico
+  const ultimoAgente = histCru.map((m) => m.role).lastIndexOf('assistant')
+  const silencioJaOcorreu = histCru.slice(ultimoAgente + 1).filter((m) => m.role === 'user').length >= 2
   if (s.qualificado) {
     if (!servido) cruz('qualificado_exige_servico', 'qualificado=true exige tipo_servico atendido pela empresa. Marque qualificado=false.')
     if (!aceito) cruz('qualificado_exige_segmento_aceito', 'qualificado=true exige segmento aceito. Marque qualificado=false.')
@@ -177,7 +181,7 @@ export function analisarContrato(
     else if (!cidadeDita) cruz('qualificado_exige_cidade_dita', 'qualificado=true exige que o lead tenha dito a cidade. Pergunte a cidade e marque qualificado=false.')
     if (!temTelefone) cruz('qualificado_exige_telefone', 'qualificado=true exige telefone preenchido. Marque qualificado=false e pergunte o telefone.')
     if (s.dados_faltantes.length > 0) cruz('qualificado_exige_sem_faltantes', 'qualificado=true exige dados_faltantes vazio. Ajuste qualificado ou dados_faltantes.')
-    if (s.proxima_acao !== 'perguntar' && s.proxima_acao !== 'encaminhar_vendas') {
+    if (s.proxima_acao !== 'perguntar' && s.proxima_acao !== 'encaminhar_vendas' && !(s.proxima_acao === 'ignorar' && silencioJaOcorreu)) {
       cruz('qualificado_exige_acao', 'qualificado=true exige proxima_acao perguntar ou encaminhar_vendas.')
     }
   }
@@ -258,9 +262,9 @@ export function analisarContrato(
   if (s.proxima_acao === 'ignorar') {
     if (s.resposta.trim() !== '') cruz('ignorar_exige_resposta_vazia', 'proxima_acao=ignorar exige resposta vazia.')
     const abertura = !historico.some((m) => m.role === 'assistant') && s.desvios >= 1 && !s.qualificado && s.telefone === null
-    const fimSilencioso = s.desvios === 3 && temTelefone && !s.qualificado
+    const fimSilencioso = s.desvios === 3 && temTelefone && (!s.qualificado || silencioJaOcorreu)
     if (!abertura && !fimSilencioso) {
-      cruz('ignorar_fora_do_permitido', 'ignorar so vale na abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone) ou no fim silencioso (desvios=3, com telefone, nao qualificado).')
+      cruz('ignorar_fora_do_permitido', 'ignorar so vale na abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone) ou no fim silencioso (desvios=3, com telefone, nao qualificado ou com o fim silencioso ja ocorrido).')
     }
   } else if ((s.desvios === 1 || s.desvios === 2 || s.vagos === 1 || s.vagos === 2) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
     cruz('desvio_exige_pergunta', 'Com desvios ou vagos em 1 ou 2, a proxima_acao deve ser perguntar (reconduza o lead com uma pergunta).')
@@ -268,11 +272,11 @@ export function analisarContrato(
   if (s.desvios === 3) {
     const esperada = !temTelefone
       ? s.proxima_acao === 'responder_e_encerrar'
-      : s.qualificado
+      : s.qualificado && !silencioJaOcorreu
         ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
         : s.proxima_acao === 'ignorar'
     if (!esperada) {
-      cruz('limite_exige_encerrar', 'desvios=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone e nao qualificado, ignorar; com telefone e qualificado, encaminhar_vendas com resposta vazia.')
+      cruz('limite_exige_encerrar', 'desvios=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone e nao qualificado, ignorar; com telefone e qualificado, encaminhar_vendas com resposta vazia; se o fim silencioso ja ocorreu, ignorar com resposta vazia.')
     }
   }
   if (s.vagos === 3 && s.proxima_acao !== (temTelefone ? 'encaminhar_humano' : 'responder_e_encerrar')) {

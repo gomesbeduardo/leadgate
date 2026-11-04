@@ -58,7 +58,7 @@ describe('servico HTTP (porta interna)', () => {
     expect(j.timeout_ms).toBe(cfg.ia.timeout_ms)
     expect(j.esperar_ms).toBe(0)
     expect(Object.keys(j.estado).sort()).toEqual(
-      ['chamadas', 'correcao', 'historico', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
+      ['chamadas', 'correcao', 'historico', 'historico_bruto', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
     )
   })
 

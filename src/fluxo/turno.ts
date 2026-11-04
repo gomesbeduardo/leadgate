@@ -10,6 +10,8 @@ export type Registro = { ts: string; tipo: Tipo; modelo: ModeloAtual; tentativa:
 
 export type Estado = {
   historico: Mensagem[]
+  /** Historico como veio, sem a uniao de mensagens do lead; o validador conta o fim silencioso nele. */
+  historico_bruto?: Mensagem[]
   promptMontado: string
   /** Chamadas logicas do turno (sobe a cada regeneracao e na troca para a reserva). */
   tentativa: number
@@ -60,6 +62,7 @@ const EntradaSchema = z.object({ historico: HistoricoSchema })
 /** O estado volta do cliente de uma rota interna: forma validada e contadores limitados. */
 export const EstadoSchema = z.object({
   historico: HistoricoSchema,
+  historico_bruto: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(4000) })).max(1000).optional(),
   promptMontado: z.string().min(1).max(200_000),
   tentativa: clamp(100),
   correcao: z.string().max(4000).nullable(),
@@ -128,13 +131,15 @@ export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config, agor
     return { fim: true, resultado: silencio([], 0, null, [], [], false) }
   }
   const historico = parsed.data.historico as Mensagem[]
+  const brutoH = (entrada as { historico?: unknown } | null)?.historico
+  const bruto = Array.isArray(brutoH) ? (brutoH as Mensagem[]) : historico
   try {
     const promptMontado = montarPrompt(modelo, cfg)
     return {
       fim: false,
       esperar_ms: 0,
       estado: {
-        historico, promptMontado, tentativa: 1, correcao: null, modelo_atual: 'primario',
+        historico, historico_bruto: bruto, promptMontado, tentativa: 1, correcao: null, modelo_atual: 'primario',
         tentativa_modelo: 1, tentativa_http: 1, chamadas: 0, registros: [], inicio_ms: agora(),
       },
     }
@@ -234,7 +239,7 @@ export function classificar(estado: Estado, resposta: unknown, cfg: Config): Cla
   const blocos = Array.isArray(c?.content) ? (c!.content as { type?: unknown; text?: unknown }[]) : []
   const bloco = blocos.find((b) => b?.type === 'text' && typeof b.text === 'string')
   if (!bloco) return { tipo: 'schema', violacoes: viol('A resposta anterior veio sem texto. Responda somente com o JSON do contrato.', 'sem_texto') }
-  const v = validarSaida(bloco.text as string, { historico: estado.historico, cfg, promptMontado: estado.promptMontado })
+  const v = validarSaida(bloco.text as string, { historico: estado.historico, cfg, promptMontado: estado.promptMontado, historicoBruto: estado.historico_bruto })
   if (v.ok) return { tipo: null, saida: v.saida }
   return { tipo: 'schema', violacoes: v.violacoes }
 }
