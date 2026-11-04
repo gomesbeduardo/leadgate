@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { Config } from '../config/schema'
 import { falhaDeApi, iniciarTurno, montarRequisicao, processarResposta, type Estado, type Passo } from '../fluxo/turno'
 
-const LIMITE = 1024 * 1024
+const LIMITE_INTERNO = 1024 * 1024
 
 class ErroHttp extends Error {
   constructor(readonly status: number, mensagem: string) {
@@ -10,7 +10,7 @@ class ErroHttp extends Error {
   }
 }
 
-function lerCorpo(req: IncomingMessage): Promise<unknown> {
+function lerCorpo(req: IncomingMessage, limite: number, statusExcesso: number): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const partes: Buffer[] = []
     let total = 0
@@ -18,9 +18,9 @@ function lerCorpo(req: IncomingMessage): Promise<unknown> {
     req.on('data', (c: Buffer) => {
       if (estourou) return
       total += c.length
-      if (total > LIMITE) {
+      if (total > limite) {
         estourou = true
-        reject(new ErroHttp(400, 'corpo acima de 1 MB'))
+        reject(new ErroHttp(statusExcesso, `corpo acima de ${limite} bytes`))
         return
       }
       partes.push(c)
@@ -44,11 +44,47 @@ function responder(res: ServerResponse, status: number, corpo: unknown) {
 
 const ehObjeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
-export type OpcoesChat = { chatHtml?: string; webhookUrl?: string; painel?: boolean }
+export type OpcoesChat = {
+  chatHtml?: string
+  webhookUrl?: string
+  painel?: boolean
+  /** Limite do corpo de /api/chat, em bytes (padrao 16 KB). */
+  limiteCorpo?: number
+  /** Requisicoes por minuto por endereco de socket em /api/chat (padrao 20). */
+  limitePorMinuto?: number
+  /** Turnos simultaneos em /api/chat (padrao 4). */
+  maxConcorrentes?: number
+  /** Relogio injetavel, em ms. */
+  agora?: () => number
+}
+
+type Perfil = 'publico' | 'interno'
+const JANELA_MS = 60_000
 
 const TIMEOUT_WEBHOOK_MS = 60_000
 
-export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = {}): Server {
+function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat): Server {
+  const agora = opcoes.agora ?? Date.now
+  const limiteCorpo = opcoes.limiteCorpo ?? 16 * 1024
+  const limitePorMinuto = opcoes.limitePorMinuto ?? 20
+  const maxConcorrentes = opcoes.maxConcorrentes ?? 4
+  const acessos = new Map<string, number[]>()
+  let emVoo = 0
+
+  // Janela deslizante por endereco do socket; x-forwarded-for e forjavel e nao entra.
+  const excedeuTaxa = (ip: string) => {
+    const t = agora()
+    if (acessos.size > 10_000) for (const [k, v] of acessos) if (v.every((x) => t - x >= JANELA_MS)) acessos.delete(k)
+    const recentes = (acessos.get(ip) ?? []).filter((x) => t - x < JANELA_MS)
+    if (recentes.length >= limitePorMinuto) {
+      acessos.set(ip, recentes)
+      return true
+    }
+    recentes.push(t)
+    acessos.set(ip, recentes)
+    return false
+  }
+
   const falhaChat = { resposta: cfg.textos.falha_tecnica, origem: 'falha' }
 
   // O navegador so recebe o necessario; violacoes e conversa nunca saem daqui.
@@ -96,25 +132,41 @@ export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = 
     try {
       const rota = (req.url ?? '').split('?')[0]
       if (req.method === 'GET' && rota === '/saude') return responder(res, 200, { ok: true })
-      if (req.method === 'GET' && rota === '/' && opcoes.chatHtml !== undefined) {
-        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-        return res.end(opcoes.chatHtml)
-      }
-      if (req.method === 'GET' && rota === '/tela.json') {
-        const { titulo, cor_primaria, cor_destaque } = cfg.tela
-        return responder(res, 200, { titulo, aviso_lgpd: cfg.textos.aviso_lgpd, cor_primaria, cor_destaque })
-      }
-      if (req.method === 'POST' && rota === '/api/chat') {
-        let corpo: unknown
-        try {
-          corpo = await lerCorpo(req)
-        } catch {
-          return responder(res, 200, falhaChat)
+      if (perfil === 'publico') {
+        if (req.method === 'GET' && rota === '/' && opcoes.chatHtml !== undefined) {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+          return res.end(opcoes.chatHtml)
         }
-        return responder(res, 200, await chat(corpo))
-      }
-      if (req.method === 'POST' && (rota === '/preparar' || rota === '/validar')) {
-        const corpo = await lerCorpo(req)
+        if (req.method === 'GET' && rota === '/tela.json') {
+          const { titulo, cor_primaria, cor_destaque } = cfg.tela
+          return responder(res, 200, { titulo, aviso_lgpd: cfg.textos.aviso_lgpd, cor_primaria, cor_destaque })
+        }
+        if (req.method === 'POST' && rota === '/api/chat') {
+          if (excedeuTaxa(req.socket.remoteAddress ?? 'desconhecido')) {
+            req.resume()
+            return responder(res, 429, { erro: 'muitas requisicoes' })
+          }
+          if (emVoo >= maxConcorrentes) {
+            req.resume()
+            return responder(res, 503, { erro: 'servico ocupado' })
+          }
+          emVoo++
+          try {
+            let corpo: unknown
+            try {
+              corpo = await lerCorpo(req, limiteCorpo, 413)
+            } catch (e) {
+              req.resume()
+              if (e instanceof ErroHttp && e.status === 413) return responder(res, 413, { erro: e.message })
+              return responder(res, 200, falhaChat)
+            }
+            return responder(res, 200, await chat(corpo))
+          } finally {
+            emVoo--
+          }
+        }
+      } else if (req.method === 'POST' && (rota === '/preparar' || rota === '/validar')) {
+        const corpo = await lerCorpo(req, LIMITE_INTERNO, 400)
         return responder(res, 200, rota === '/preparar' ? preparar(corpo) : validar(corpo))
       }
       req.resume()
@@ -126,3 +178,9 @@ export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = 
     }
   })
 }
+
+/** Porta publica (PORT): tela, /tela.json, /saude e /api/chat. */
+export const criarServidor = (cfg: Config, modelo: string, opcoes: OpcoesChat = {}): Server => criar('publico', cfg, modelo, opcoes)
+
+/** Porta interna (PORT_INTERNA, so na rede do compose): /preparar, /validar e /saude. */
+export const criarServidorInterno = (cfg: Config, modelo: string): Server => criar('interno', cfg, modelo, {})

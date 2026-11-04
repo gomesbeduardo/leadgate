@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { carregarConfig } from '../config/schema'
-import { criarServidor } from './app'
+import { criarServidor, criarServidorInterno } from './app'
 
 function falhar(msg: string): never {
   console.error(`servico: ${msg}`)
@@ -10,6 +10,8 @@ function falhar(msg: string): never {
 const caminhoConfig = process.env.CONFIG_PATH ?? falhar('CONFIG_PATH nao definido')
 const caminhoPrompt = process.env.PROMPT_PATH ?? falhar('PROMPT_PATH nao definido')
 const porta = Number(process.env.PORT ?? 3000)
+const portaInterna = Number(process.env.PORT_INTERNA ?? 3001)
+const numero = (v: string | undefined) => (v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : undefined)
 
 let cfg
 let prompt: string
@@ -22,4 +24,13 @@ try {
   falhar(`config ou prompt invalido (${caminhoConfig}, ${caminhoPrompt}): ${e instanceof Error ? e.message : String(e)}`)
 }
 
-criarServidor(cfg, prompt, { chatHtml, webhookUrl: process.env.N8N_WEBHOOK_URL, painel: process.env.DEMO_PAINEL === '1' }).listen(porta, () => console.log(`servico ouvindo na porta ${porta}`))
+criarServidor(cfg, prompt, {
+  chatHtml,
+  webhookUrl: process.env.N8N_WEBHOOK_URL,
+  painel: process.env.DEMO_PAINEL === '1',
+  limiteCorpo: numero(process.env.LIMITE_CORPO_BYTES),
+  limitePorMinuto: numero(process.env.LIMITE_POR_MINUTO),
+  maxConcorrentes: numero(process.env.MAX_CONCORRENTES),
+}).listen(porta, () => console.log(`servico publico ouvindo na porta ${porta}`))
+
+criarServidorInterno(cfg, prompt).listen(portaInterna, () => console.log(`servico interno ouvindo na porta ${portaInterna}`))
