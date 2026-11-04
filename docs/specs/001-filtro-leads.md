@@ -94,7 +94,7 @@ Camada 2, validação determinística da `resposta` (no mesmo nó de validação
 - não contém frase da lista de "frases de bot" (R7);
 - não contém marcação de menu (linha começando por número ou por `-`/`*`).
 
-Emenda de 04/11/2026, aguardando a aprovação do responsável. Os testes de ataque mostraram que a lista acima deixava passar respostas erradas, e a camada 2 passou a exigir também:
+Emenda de 04/11/2026, aprovada pelo responsável no mesmo dia. Os testes de ataque mostraram que a lista acima deixava passar respostas erradas, e a camada 2 passou a exigir também:
 - nenhuma negação de ser IA e, na pergunta sincera, um dos termos de `resposta.marcadores_ia`;
 - nenhuma experiência humana inventada;
 - valor monetário em mais formas além de `R$` e "reais";

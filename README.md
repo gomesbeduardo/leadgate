@@ -208,7 +208,7 @@ Lacuna honesta: a base legal do tratamento e a transferência internacional (as 
 - O histórico vem do cliente (ver Segurança), então o teto de perguntas pode ser forjado.
 - A amostra é pequena: 14 casos de ajuste, 6 reservados e 9 de regressão, todos escritos por nós.
 - Não há cliente em produção. Tudo roda em teste.
-- O checklist de leitura humana (itens 5 a 10) está pendente.
+- O checklist de leitura humana (itens 5 a 10) foi feito uma vez: 120 de 124 marcações aprovadas, e os casos a01, a03, a04 e a14 têm um item reprovado.
 - Não há autenticação.
 - Roda só em Docker local; nada está hospedado e o encaminhamento para vendas é simulado.
 - O aviso ao vendedor é simulado por padrão; o canal de e-mail está pronto, mas só funciona com uma conta no provedor.
