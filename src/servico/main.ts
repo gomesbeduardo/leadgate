@@ -27,7 +27,7 @@ try {
 }
 
 const dir = process.env.DADOS_DIR || 'dados'
-const falhas = new FalhasStore({ dir, retencaoDias: cfg.lgpd.retencao_dias, modeloPrimario: cfg.ia.modelo })
+const falhas = new FalhasStore({ dir, retencaoDias: cfg.lgpd.retencao_dias })
 const alertas = new AlertasStore({ dir, retencaoDias: cfg.lgpd.retencao_dias })
 
 criarServidor(cfg, prompt, {

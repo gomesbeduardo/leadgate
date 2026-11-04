@@ -6,10 +6,10 @@ import { FalhasStore } from '../src/servico/falhas'
 
 const PRIMARIO = 'claude-opus-5-5'
 const reg = (tipo: string, tentativa = 1, camada = 1) => ({ ts: '2026-11-04T10:00:00Z', tipo, modelo: PRIMARIO, tentativa, camada })
-const ok = (registros: unknown[] = [], camada = 1, modelo = PRIMARIO) => ({ origem: 'modelo', tipo: 'nenhum', modelo_respondeu: modelo, camada, registros })
+const ok = (registros: unknown[] = [], camada = 1, modelo: string | null = 'primario') => ({ origem: 'modelo', tipo: 'nenhum', modelo_respondeu: modelo, camada, registros })
 const falha = (tipo: string, registros: unknown[] = []) => ({ origem: 'falha', tipo, resposta: null, registros })
 const novo = (dir?: string, agora = () => Date.parse('2026-11-04T10:00:00Z')) =>
-  new FalhasStore({ dir, agora, retencaoDias: 30, modeloPrimario: PRIMARIO })
+  new FalhasStore({ dir, agora, retencaoDias: 30 })
 
 describe('FalhasStore', () => {
   it('R17: 20 turnos, 3 com 429 recuperados e 1 esgotado = 5,0 %', () => {
@@ -29,12 +29,19 @@ describe('FalhasStore', () => {
 
   it('turno recuperado na camada 2 conta por camada e pelo modelo reserva, e marca recuperado', () => {
     const s = novo()
-    s.registrarTurno(ok([reg('5xx'), reg('5xx', 2)], 2, 'claude-haiku-5-5'))
+    s.registrarTurno(ok([reg('5xx'), reg('5xx', 2)], 2, 'reserva'))
     const r = s.resumo()
     expect(r.recuperados_por_camada).toEqual({ '1': 0, '2': 1 })
     expect(r.modelo_respondeu).toEqual({ primario: 0, reserva: 1 })
     expect(r.taxa_falha).toBe('0,0 %')
     expect(s.tentativas().every((t) => t.recuperado === true)).toBe(true)
+  })
+
+  it('turno falho (modelo_respondeu null) nao conta em primario nem em reserva', () => {
+    const s = novo()
+    s.registrarTurno({ ...falha('429', [reg('429')]), modelo_respondeu: null })
+    s.registrarTurno(ok())
+    expect(s.resumo().modelo_respondeu).toEqual({ primario: 1, reserva: 0 })
   })
 
   it('1/60 = 1,7 %', () => {

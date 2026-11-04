@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
+import type { ModeloAtual } from '../fluxo/turno'
 
 const MAX_REGISTROS = 5000
 const DIA_MS = 86_400_000
@@ -22,7 +23,7 @@ export type TurnoRegistro = {
   origem: 'modelo' | 'falha'
   tipo: string | null
   camada: number | null
-  modelo_respondeu: string | null
+  modelo_respondeu: ModeloAtual | null
 }
 type Arquivo = { tentativas: Tentativa[]; turnos: TurnoRegistro[]; entradas_invalidas: number }
 
@@ -51,7 +52,7 @@ export class FalhasStore {
   private dados: Arquivo = { tentativas: [], turnos: [], entradas_invalidas: 0 }
   private readonly arquivo?: string
 
-  constructor(private readonly o: { dir?: string; agora?: () => number; retencaoDias: number; modeloPrimario: string }) {
+  constructor(private readonly o: { dir?: string; agora?: () => number; retencaoDias: number }) {
     if (o.dir) this.arquivo = join(o.dir, 'falhas.json')
     this.carregar()
   }
@@ -109,7 +110,7 @@ export class FalhasStore {
     }
     this.dados.tentativas.push(...novas)
     this.dados.turnos.push({
-      ts, turno_id, origem: classe, tipo: tipoTurno, camada: inteiro(r.camada), modelo_respondeu: texto(r.modelo_respondeu),
+      ts, turno_id, origem: classe, tipo: tipoTurno, camada: inteiro(r.camada), modelo_respondeu: r.modelo_respondeu === 'primario' || r.modelo_respondeu === 'reserva' ? r.modelo_respondeu : null,
     })
     this.dados.tentativas = this.dados.tentativas.slice(-MAX_REGISTROS)
     this.dados.turnos = this.dados.turnos.slice(-MAX_REGISTROS)
@@ -131,8 +132,8 @@ export class FalhasStore {
     let reserva = 0
     for (const t of turnos) {
       if (t.origem !== 'modelo') continue
-      if (t.modelo_respondeu === this.o.modeloPrimario) primario++
-      else reserva++
+      if (t.modelo_respondeu === 'primario') primario++
+      else if (t.modelo_respondeu === 'reserva') reserva++
       if (comFalha.has(t.turno_id) && (t.camada === 1 || t.camada === 2)) rec[String(t.camada) as '1' | '2']++
     }
     const pct = turnos.length === 0 ? 0 : (falhos / turnos.length) * 100

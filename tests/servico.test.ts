@@ -389,7 +389,7 @@ describe('falhas e alertas nas rotas', () => {
     }
   })
   const lojas = () => {
-    const falhas = new FalhasStore({ retencaoDias: 30, modeloPrimario: cfg.ia.modelo })
+    const falhas = new FalhasStore({ retencaoDias: 30 })
     const alertas = new AlertasStore({ retencaoDias: 30 })
     return { falhas, alertas }
   }
@@ -401,7 +401,7 @@ describe('falhas e alertas nas rotas', () => {
     const { falhas, alertas } = lojas()
     const wh = await webhook({
       resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado_conversa: 'em_andamento', tipo: 'nenhum',
-      modelo_respondeu: cfg.ia.modelo, camada: 1, registros: [{ ts: '2026-11-04T10:00:00Z', tipo: '429', modelo: cfg.ia.modelo, tentativa: 1, camada: 1 }],
+      modelo_respondeu: 'primario', camada: 1, registros: [{ ts: '2026-11-04T10:00:00Z', tipo: '429', modelo: cfg.ia.modelo, tentativa: 1, camada: 1 }],
     })
     const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
     const int = await subir(criarServidorInterno(cfg, prompt, { falhas, alertas }))
@@ -411,6 +411,7 @@ describe('falhas e alertas nas rotas', () => {
     expect(j.taxa_falha).toBe('0,0 %')
     expect(j.tentativas_falhas_por_tipo['429']).toBe(1)
     expect(j.recuperados_por_camada['1']).toBe(1)
+    expect(j.modelo_respondeu).toEqual({ primario: 1, reserva: 0 })
     expect(JSON.stringify(falhas.tentativas())).not.toContain('99999')
     expect((await fetch(int + '/falhas', { method: 'DELETE' })).status).toBe(200)
     expect(((await (await fetch(int + '/falhas')).json()) as any).turnos_totais).toBe(0)

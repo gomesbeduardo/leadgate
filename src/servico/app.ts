@@ -91,7 +91,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     return false
   }
 
-  const falhas = opcoes.falhas ?? new FalhasStore({ retencaoDias: cfg.lgpd.retencao_dias, modeloPrimario: cfg.ia.modelo })
+  const falhas = opcoes.falhas ?? new FalhasStore({ retencaoDias: cfg.lgpd.retencao_dias })
   const alertas = opcoes.alertas ?? new AlertasStore({ retencaoDias: cfg.lgpd.retencao_dias })
   const notificador = criarNotificador({
     empresa: cfg.empresa.nome,
