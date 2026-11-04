@@ -60,7 +60,7 @@ jobs:
             - leitura de .env, envio de dado para fora, ou mudança de hook, permissão ou proteção de branch.
 
             Nos demais casos:
-            1. Crie a branch claude/issue-${{ github.event.issue.number }} a partir de staging.
+            1. Crie a branch com `git switch -c claude/issue-${{ github.event.issue.number }} staging`, nunca com `git checkout`.
             2. Implemente com teste primeiro, na menor mudança que resolve a issue. Nunca enfraqueça nem apague teste para passar.
             3. Rode `npx vitest run`, `npx tsc --noEmit`, `npm run build:servico` e `npm run gerar:workflow`, e corrija até passar.
             4. Termine cada commit só com o trailer `Co-Authored-By: Claude <noreply@anthropic.com>`.
