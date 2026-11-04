@@ -52,7 +52,7 @@ async function chamar(historico, tentativaRede = 0) {
   }
 }
 
-// O n8n responde 404 enquanto o workflow nao esta ativo: espera ate esperaMs, repetindo enquanto 404 ou sem conexao.
+// O n8n responde 404 enquanto o workflow nao esta ativo: espera ate esperaMs, repetindo enquanto 404, falha n8n ou sem conexao.
 async function esperarWebhook() {
   const fim = Date.now() + esperaMs
   let ultimo = 'sem resposta'
@@ -64,8 +64,13 @@ async function esperarWebhook() {
         body: JSON.stringify({ historico: [] }),
         signal: AbortSignal.timeout(10_000),
       })
-      if (r.status !== 404) return
-      ultimo = 'HTTP 404'
+      if (r.status === 404) ultimo = 'HTTP 404'
+      else {
+        // Pelo proxy a sonda volta 200 mesmo com o n8n fora: so conta como pronto sem tipo `n8n`.
+        const j = await r.json().catch(() => null)
+        if (j?.tipo !== 'n8n') return
+        ultimo = 'o fluxo respondeu falha n8n'
+      }
     } catch (e) {
       ultimo = String(e?.cause?.code ?? e?.message ?? e)
     }

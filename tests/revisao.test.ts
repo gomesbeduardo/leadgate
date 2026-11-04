@@ -294,3 +294,42 @@ describe('itens menores', () => {
     expect(readme).toMatch(/docker compose down -v[^\n]*(contador|apaga)/)
   })
 })
+
+describe('avaliar.mjs: espera o fluxo responder antes da rodada', () => {
+  const script = fileURLToPath(new URL('../scripts/avaliar.mjs', import.meta.url))
+  const falhaN8n = { resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' }
+  const valido = { resposta: 'ok', origem: 'modelo', proxima_acao: 'responder_e_encerrar', tentativas: 1, saida: { cidade: 'X', confianca: 0.9 } }
+
+  async function rodar(prontoApos: number) {
+    const saida = mkdtempSync(join(tmpdir(), 'aval-p-'))
+    let sondas = 0
+    const srv = createHttpServer((req, res) => {
+      let b = ''
+      req.on('data', (d) => (b += d))
+      req.on('end', () => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        const h = b ? JSON.parse(b).historico : []
+        if (Array.isArray(h) && h.length === 0 && sondas++ < prontoApos) return res.end(JSON.stringify(falhaN8n))
+        res.end(JSON.stringify(valido))
+      })
+    })
+    const base = await subir(srv)
+    const env = { ...process.env, AVALIACAO_URL: base + '/api/chat', AVALIACAO_SAIDA_DIR: saida, AVALIACAO_ESPERA_MS: '3000' }
+    const code = await new Promise<number>((resolve) =>
+      execFile('node', [script, '--conjunto', 'regressao'], { env }, (e) => resolve(e ? ((e as any).code ?? 1) : 0)))
+    return { code, saida, sondas }
+  }
+
+  it('resposta 200 com tipo n8n duas vezes e depois valida: espera e roda', async () => {
+    const r = await rodar(2)
+    expect(r.code).toBe(0)
+    expect(r.sondas).toBeGreaterThanOrEqual(3)
+    expect(existsSync(join(r.saida, 'resultado-regressao.json'))).toBe(true)
+  }, 30_000)
+
+  it('nunca se recupera: sai 1 e nao grava resultado', async () => {
+    const r = await rodar(Infinity)
+    expect(r.code).toBe(1)
+    expect(existsSync(join(r.saida, 'resultado-regressao.json'))).toBe(false)
+  }, 30_000)
+})
