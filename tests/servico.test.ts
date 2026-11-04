@@ -1,0 +1,98 @@
+import { readFileSync } from 'node:fs'
+import type { AddressInfo } from 'node:net'
+import type { Server } from 'node:http'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { carregarConfig } from '../src/config/schema'
+import { criarServidor } from '../src/servico/app'
+
+const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
+const prompt = readFileSync('prompts/agente.md', 'utf8')
+let server: Server
+let base = ''
+
+beforeAll(async () => {
+  server = criarServidor(cfg, prompt)
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+})
+afterAll(() => new Promise<void>((r) => server.close(() => r())))
+
+const post = (rota: string, corpo: unknown) =>
+  fetch(base + rota, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
+const corpo = { historico: [{ role: 'user', content: 'Preciso de um PMOC para um prédio comercial em Florianópolis' }] }
+const http = (statusCode: number, texto = 'isto nao e json') => ({
+  statusCode,
+  body: { stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] },
+})
+
+describe('servico HTTP', () => {
+  it('GET /saude', async () => {
+    const r = await fetch(base + '/saude')
+    expect(r.status).toBe(200)
+    expect(await r.json()).toEqual({ ok: true })
+  })
+
+  it('/preparar monta a requisicao com o modelo da config', async () => {
+    const r = await post('/preparar', corpo)
+    expect(r.status).toBe(200)
+    const j: any = await r.json()
+    expect(j.fim).toBe(false)
+    expect(j.requisicao.model).toBe(cfg.ia.modelo)
+    expect(j.estado.tentativa).toBe(1)
+  })
+
+  it('/preparar com corpo invalido encerra em falha', async () => {
+    const j: any = await (await post('/preparar', { x: 1 })).json()
+    expect(j.fim).toBe(true)
+    expect(j.resultado.origem).toBe('falha')
+  })
+
+  it('T11: 3 saidas invalidas seguidas terminam em falha com 3 tentativas', async () => {
+    let atual: any = await (await post('/preparar', corpo)).json()
+    for (let i = 0; i < 2; i++) {
+      atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
+      expect(atual.fim).toBe(false)
+    }
+    atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
+    expect(atual.fim).toBe(true)
+    expect(atual.resultado.origem).toBe('falha')
+    expect(atual.resultado.tentativas).toBe(3)
+    expect(atual.resultado.resposta).toBe(cfg.textos.falha_tecnica)
+  })
+
+  it('status 500 falha na primeira tentativa', async () => {
+    const t = await (await post('/preparar', corpo)).json()
+    const r: any = await (await post('/validar', { tentativa: t, http: http(500) })).json()
+    expect(r.fim).toBe(true)
+    expect(r.resultado.origem).toBe('falha')
+    expect(r.resultado.tentativas).toBe(1)
+  })
+
+  it('saida valida do modelo encerra com origem modelo', async () => {
+    const t = await (await post('/preparar', corpo)).json()
+    const saida = {
+      tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, urgencia: null,
+      dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
+      qualificado: false, confianca: 0.5, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
+    }
+    const r: any = await (await post('/validar', { tentativa: t, http: http(200, JSON.stringify(saida)) })).json()
+    expect(r.fim).toBe(true)
+    expect(r.resultado.origem).toBe('modelo')
+  })
+
+  it('JSON invalido da 400, rota desconhecida 404, e o servidor segue de pe', async () => {
+    const ruim = await fetch(base + '/preparar', { method: 'POST', body: '{nao json' })
+    expect(ruim.status).toBe(400)
+    expect(((await ruim.json()) as any).erro).toBeTruthy()
+    expect((await fetch(base + '/nada')).status).toBe(404)
+    expect((await post('/validar', { tentativa: 'lixo', http: http(200) })).status).toBe(400)
+    expect((await post('/validar', {})).status).toBe(400)
+    expect((await fetch(base + '/saude')).status).toBe(200)
+  })
+
+  it('corpo acima de 1 MB da 400', async () => {
+    const r = await fetch(base + '/preparar', { method: 'POST', body: JSON.stringify({ a: 'x'.repeat(1_100_000) }) })
+    expect(r.status).toBe(400)
+    expect((await fetch(base + '/saude')).status).toBe(200)
+  })
+})
