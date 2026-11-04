@@ -35,6 +35,11 @@ export const ConfigSchema = z
       ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
+    dataset: z.object({
+      volume: z.number().int().positive(),
+      max_chamadas: z.number().int().positive(),
+      amostra_revisao: z.number().int().positive(),
+    }),
     textos: z.object({ aviso_lgpd: z.string().min(1), falha_tecnica: z.string().min(1) }),
     lgpd: z.object({ retencao_dias: z.number().int().positive() }),
     tela: z.object({ titulo: z.string().min(1), cor_primaria: z.string().min(1), cor_destaque: z.string().min(1) }),

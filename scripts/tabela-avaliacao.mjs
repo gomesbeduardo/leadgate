@@ -1,6 +1,7 @@
 // Le os resultados + avaliacao/leitura.json e escreve avaliacao/tabela.md.
 // Uso: node scripts/tabela-avaliacao.mjs
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { converterValidacao } from '../src/dataset/dataset.mjs'
 import { avaliarCaso, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
 
 const raiz = new URL('../', import.meta.url)
@@ -22,6 +23,18 @@ function avaliar(conjunto) {
     })
 }
 
-const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao') }))
+// Validacao sintetica: so entra se o dataset existir; o bloco some da tabela caso contrario.
+function avaliarValidacao() {
+  const dsRel = 'avaliacao/dataset/validacao.json'
+  if (!existsSync(new URL(dsRel, raiz))) return undefined
+  const rel = 'avaliacao/resultado-validacao.json'
+  if (!existsSync(new URL(rel, raiz))) return null
+  const res = ler(rel)
+  return converterValidacao(ler(dsRel))
+    .filter((c) => res.execucoes.some((e) => e.id === c.id))
+    .map((c) => avaliarCaso(c, res.execucoes.find((e) => e.id === c.id), res.limiar, {}))
+}
+
+const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao'), validacao: avaliarValidacao() }))
 writeFileSync(new URL('avaliacao/tabela.md', raiz), md)
 console.log(md)

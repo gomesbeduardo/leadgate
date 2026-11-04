@@ -255,3 +255,50 @@ describe('tabela com regressao', () => {
     expect(base).toContain('Acerto ajuste (n=14)')
   })
 })
+
+describe('validacao sintetica na tabela', () => {
+  const a = { id: 'sint-0002', campos: Object.fromEntries(CAMPOS.map((c) => [c, true])), acertou: true, erro: false, confianca: 0.9, quadrante: 'acerto_alta', itens: {}, abertura: 'um', tentativas: [1] }
+  it('bloco proprio de validacao; sem ele a tabela nao muda; ausente vira nao rodado', () => {
+    const base = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null }))
+    const com = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null, validacao: [a as any, { ...a, id: 'sint-0004', campos: { ...a.campos, cidade: false } } as any] }))
+    expect(base).not.toContain('Validação')
+    expect(com).toContain('Validação sintética (n=2)')
+    expect(com).toContain('| cidade | 1/2 (50%) |')
+    expect(com).toContain('Acerto ajuste (n=14)')
+    expect(tabelaMarkdown(resumir({ ajuste: null, reservado: null, validacao: null }))).toMatch(/Validação sintética[\s\S]*não rodado/)
+  })
+})
+
+describe('scripts/avaliar.mjs --conjunto validacao', () => {
+  const script = fileURLToPath(new URL('../scripts/avaliar.mjs', import.meta.url))
+  it('le validacao.json, converte conversa/gabarito e grava resultado-validacao.json', async () => {
+    const dsDir = mkdtempSync(join(tmpdir(), 'val-'))
+    const saida = mkdtempSync(join(tmpdir(), 'val-out-'))
+    const gabarito = { tipo_servico: 'pmoc', segmento: 'comercial', cidade: 'Tijucas', urgencia: null, qualificado: true, proxima_acao: 'encaminhar_vendas' }
+    writeFileSync(join(dsDir, 'validacao.json'), JSON.stringify([
+      { id: 'sint-0002', categoria: 'claro', conjunto: 'validacao', origem: 'sintetico', conversa: [{ role: 'user', content: 'Quero PMOC em Tijucas' }, { role: 'assistant', content: 'ok' }], gabarito, revisado: false, revisor_ok: null },
+    ]))
+    const corpos: any[] = []
+    const srv = createServer((req, res) => {
+      let b = ''
+      req.on('data', (d) => (b += d))
+      req.on('end', () => {
+        corpos.push(JSON.parse(b))
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ok', origem: 'modelo', proxima_acao: 'encaminhar_vendas', tentativas: 1, saida: { ...gabarito, confianca: 0.9 } }))
+      })
+    })
+    await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+    const env = { ...process.env, AVALIACAO_URL: `http://127.0.0.1:${(srv.address() as AddressInfo).port}/webhook/chat`, AVALIACAO_SAIDA_DIR: saida, AVALIACAO_DATASET_DIR: dsDir, AVALIACAO_ESPERA_MS: '1500' }
+    try {
+      const code = await new Promise<number>((resolve) => execFile('node', [script, '--conjunto', 'validacao'], { env }, (e) => resolve(e ? ((e as any).code ?? 1) : 0)))
+      expect(code).toBe(0)
+      const j = JSON.parse(readFileSync(join(saida, 'resultado-validacao.json'), 'utf8'))
+      expect(j.conjunto).toBe('validacao')
+      expect(j.execucoes.map((e: any) => e.id)).toEqual(['sint-0002'])
+      expect(corpos.some((c) => c.historico?.[0]?.content === 'Quero PMOC em Tijucas')).toBe(true)
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()))
+    }
+  }, 30_000)
+})
