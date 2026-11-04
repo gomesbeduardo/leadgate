@@ -63,6 +63,25 @@ const DINHEIRO = [
   /\bpix\b|\bboleto\b|\bparcel\w*|\buns\s+\d{3,}/,
 ]
 const DIA = '(?:segunda|terca|quarta|quinta|sexta|sabado|domingo)'
+const DIA_FEIRA = `${DIA}(?:[- ]feira)?`
+const VERBO_AGENDA = '(?:passamos|passo|passa|passar|vamos|vou|vai|iremos|visitamos|visito|ligamos|ligo|retornamos|retorno|instalamos|instalo|chegamos|chego|mandamos|enviamos|fazemos)'
+// Dia da semana como prazo. "segunda"/"quarta" tambem sao ordinais e entram em listas de dias de atendimento.
+const PRAZO_DIA = [
+  // "proxima sexta", "sexta que vem".
+  new RegExp(`\\bproxima\\s+${DIA_FEIRA}\\b|\\b${DIA_FEIRA}\\s+que\\s+vem\\b`),
+  // "sexta-feira" / "segunda feira", exceto na faixa de horario ("de segunda-feira a sexta-feira").
+  new RegExp(`(?<!\\b(?:de|a|e|ou)\\s)\\b${DIA}[- ]feira\\b(?!\\s+a\\s+${DIA})`),
+  // Dia seguido de turno: "na sexta pela manha", "na terca sem falta".
+  new RegExp(`\\b(?:na|no|nesta|neste|para|pra)\\s+${DIA}\\s*,?\\s*(?:de manha|a tarde|a noite|cedo|mesmo|pela\\s+(?:manha|tarde|noite)|sem falta|as\\s|por volta|depois)`),
+  // Dia solto no fim da frase ou numa lista: so e prazo se ha verbo de agenda antes.
+  new RegExp(`\\b${VERBO_AGENDA}\\b[^.!?;]{0,40}?\\b(?:na|no|nesta|neste|para|pra)\\s+${DIA}\\s*(?:$|[.,!?;:]|\\se\\s|\\sou\\s)`),
+]
+// Data: dia 12/11, 12/11/2026, e dd/mm depois de "para/pra/dia". "3/4 do galpao" e fracao.
+const DDMM = '(?:0?[1-9]|[12]\\d|3[01])\\/(?:0?[1-9]|1[0-2])'
+const PRAZO_DATA = [
+  new RegExp(`\\b(?:para|pra|dia)\\s+${DDMM}(?:\\/\\d{2,4})?(?![\\d/])(?!\\s*(?:do|da|de|dos|das)\\b)`),
+  /(?<![\d/])\d{1,2}\/\d{1,2}\/\d{2,4}(?![\d/])/,
+]
 const PRAZO = [
   /\bate\s+(?:o\s+|a\s+)?(?:segunda|terca|quarta|quinta|sexta|sabado|domingo|amanha|hoje|fim d[aeo]|final d[aeo]|dia\s+\d|\d+\s*(?:dias?|horas?|h|semanas?|meses))/,
   new RegExp(`\\bem\\s+(?:ate\\s+)?(?:\\d+|${NUM})\\s*(?:dias?|horas?|h|semanas?|meses|mes|minutos)\\b`),
@@ -70,10 +89,8 @@ const PRAZO = [
   /\bprazo\s+de\s+\d/,
   /\b(?:vamos|vou|iremos|podemos|conseguimos|consigo)\s+(?:te\s+|lhe\s+)?(?:atender|visitar|ir|instalar|mandar|enviar|passar|retornar|ligar|resolver)\b[^.!?]{0,30}\b(?:hoje|amanha|agora)/,
   /\bainda hoje\b|\bhoje mesmo\b|\bamanha (?:mesmo|cedo|de manha|a tarde)\b/,
-  // Dia da semana como prazo; "segunda"/"quarta" tambem sao ordinais, entao sem "-feira" so vale no fim da frase ou antes de turno/conjuncao.
-  new RegExp(`\\b(?:na|no|nesta|neste|para|pra)\\s+${DIA}(?:-feira\\b|\\s*(?:$|[.,!?;:])|\\s+(?:de manha|a tarde|a noite|cedo|mesmo|que vem|as\\s|por volta|e\\s|ou\\s))`),
-  // Data solta: dia 12/11 ou 12/11/2026. "3/4" sozinho e fracao.
-  /\bdia\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?(?![\d/])|(?<![\d/])\d{1,2}\/\d{1,2}\/\d{2,4}(?![\d/])/,
+  ...PRAZO_DIA,
+  ...PRAZO_DATA,
 ]
 // Experiencia ou historia pessoal humana.
 const EXPERIENCIA = [

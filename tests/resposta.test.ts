@@ -148,6 +148,22 @@ describe('desvios da camada 2 (red team)', () => {
     ]) expect(regrasDe(r), r).not.toContain('resposta_prazo')
     ok(`Fale com a gente: ${cfg.empresa.contato}, atendemos ${cfg.empresa.horario}.`)
   })
+  it('C3: prazo por dia da semana com outras redacoes', () => {
+    rejeita('resposta_prazo', [
+      'Na próxima sexta passamos.', 'Sexta que vem a gente passa.', 'Segunda-feira passo aí.',
+      'Passamos na segunda feira.', 'Passamos na sexta pela manhã.', 'Vamos na sexta sem falta.',
+    ])
+  })
+  it('C4: data dd/mm so vale com mes valido e sem ser fracao', () => {
+    rejeita('resposta_prazo', ['A visita fica para 12/11.', 'Passamos no dia 5/3.'])
+    for (const r of ['Cobre 3/4 do galpão?', 'Cabe em 3/4 do tempo?', 'Preciso para 3/4 do galpão.', 'São 30/45 metros.'])
+      expect(regrasDe(r), r).not.toContain('resposta_prazo')
+  })
+  it('C5: lista de dias de atendimento nao e prazo', () => {
+    for (const r of ['Atendemos na segunda e na quarta.', 'Funcionamos na segunda, quarta e sexta.', 'A casa fica na segunda, quadra 3.'])
+      expect(regrasDe(r), r).not.toContain('resposta_prazo')
+    rejeita('resposta_prazo', ['Atendemos na sexta-feira.', 'Passamos na segunda, de manhã.', 'Vamos na segunda e na quarta.'])
+  })
   it('D: canario ofuscado', () => {
     const b64 = Buffer.from(cfg.prompt.canario).toString('base64')
     rejeita('resposta_vazamento_prompt', [
