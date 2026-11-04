@@ -61,3 +61,27 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 **Evidência:** "fora da região que atendemos hoje" contava como citar prazo no checklist, e o README descrevia isso como defeito das respostas. A trava da conversa já exigia "ainda hoje" ou "hoje mesmo".
 **Causa:** duas definições de prazo, uma na conversa e outra na avaliação.
 **Regra:** avaliação e trava usam a mesma definição. README com número só depois de abrir o caso que gerou o número.
+
+## 04/11/2026 — Fixture escrita à mão escondeu o contrato real
+
+**Evidência:** 273 testes verdes, e o primeiro turno no n8n real contou o modelo principal como reserva. O fluxo devolve `primario` ou `reserva`, e a fixture usava o nome do modelo.
+**Causa:** a fixture foi escrita a partir do brief, não copiada da saída real do fluxo.
+**Regra:** fixture de integração vem de uma resposta real gravada. Fatia que lê dado de outro componente roda na pilha antes de fechar.
+
+## 04/11/2026 — Medição que media zero
+
+**Evidência:** a rodada de validação gravou `taxa_falha = 0/0 = 0,0 %`, porque a avaliação chamava o webhook e só o proxy conta os turnos. A revisão apontou pelo código, e a rodada real confirmou.
+**Causa:** o contador foi ligado num caminho, e a avaliação usava outro.
+**Regra:** denominador zero se escreve "não medida", nunca `0,0 %`. É a segunda vez que um número falso de sucesso aparece (ver "Avaliação que falhou em silêncio"), por isso virou teste.
+
+## 04/11/2026 — Gabarito gerado contra o contrato
+
+**Evidência:** 24 de 82 conversas sintéticas tinham `qualificado = true` sem telefone do lead, o que o contrato proíbe. 212 testes do gerador passavam.
+**Causa:** o prompt do gerador reescreveu a regra de memória, sem ligação com o validador.
+**Regra:** dado gerado passa pelas mesmas regras do produto antes de entrar no dataset, com um teste que compara as duas definições.
+
+## 04/11/2026 — Achado de revisor também precisa de prova
+
+**Evidência:** a revisão final disse que `role: 'system'` no meio da conversa daria erro 400. As rodadas reais tinham turnos com 2 tentativas terminando sem erro, e a afirmação caiu.
+**Causa:** o revisor afirmou um fato de API de memória, sem chamar a API.
+**Regra:** todo achado é conferido contra o código e contra execução real antes de virar correção.
