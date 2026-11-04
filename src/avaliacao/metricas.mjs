@@ -195,7 +195,7 @@ export function tabelaMarkdown(resumo) {
     L.push('## Validação sintética (conjunto à parte: não entra nos números acima)', '')
     if (!v) L.push(NR, '')
     else {
-      L.push(`Validação sintética (n=${v.n}); gabarito gerado, amostra revisada por humano só em parte.`, '', '| Campo | Acerto validação |', '|---|---|')
+      L.push(`Validação sintética (n=${v.n}); gabarito gerado por modelo, ainda sem revisão humana.`, '', '| Campo | Acerto validação |', '|---|---|')
       for (const c of CAMPOS) L.push(`| ${c} | ${pct(v.campos[c])} |`)
       L.push('')
     }

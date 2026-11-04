@@ -157,9 +157,24 @@ O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os 
 
 ## Dataset sintético
 
-Para ter mais conversas do que as escritas à mão, o repositório traz um dataset de **82 conversas fictícias**, geradas pelo `claude-opus-5-5` e separadas em **39 exemplos** (`avaliacao/dataset/exemplos.json`) e **43 de validação** (`avaliacao/dataset/validacao.json`). O registro da rodada está em `avaliacao/dataset/rodada.json` e a amostra para leitura humana em `avaliacao/dataset/revisao.md`. Todos os telefones seguem o padrão fictício com `99999`.
+Para ter mais conversas do que as escritas à mão, o repositório traz um dataset de **80 conversas fictícias**, geradas pelo `claude-opus-5-5` e separadas em **38 exemplos** (`avaliacao/dataset/exemplos.json`) e **42 de validação** (`avaliacao/dataset/validacao.json`). O registro da rodada está em `avaliacao/dataset/rodada.json` e a amostra para leitura humana em `avaliacao/dataset/revisao.md`. Todos os telefones seguem o padrão fictício com `99999`.
 
-O dataset **ainda não passou pela revisão humana**, e por isso `prompt_liberado` continua `false`: o prompt (`prompts/agente.md`) mantém os 3 exemplos atuais e não foi alterado a partir dele. Também não treina nem ajusta o modelo: ele alimenta exemplos para o prompt e serve de validação. O bloco "Validação sintética" de `avaliacao/tabela.md` só aparece quando existe resultado de validação, e nenhum número de acerto da validação é divulgado ainda.
+O dataset **ainda não passou pela revisão humana**, e por isso `prompt_liberado` continua `false`: o prompt (`prompts/agente.md`) mantém os 3 exemplos atuais e não foi alterado a partir dele. Também não treina nem ajusta o modelo: ele alimenta exemplos para o prompt e serve de validação.
+
+A primeira rodada de validação, no modelo principal, deu estes acertos contra o gabarito gerado:
+
+| Campo | Acerto |
+|---|---|
+| `tipo_servico` | 37/42 |
+| `segmento` | 41/42 |
+| `cidade` | 32/42 |
+| `urgencia` | 28/42 |
+| `qualificado` | 40/42 |
+| `proxima_acao` | 35/42 |
+
+Esses números não se comparam com os da avaliação escrita à mão, porque o gabarito também foi gerado por modelo e ninguém o revisou. Parte das divergências é do gabarito: urgência é julgamento, e pedido de spam pode ter `tipo_servico` nulo ou `fora_escopo`. Parte é do agente: em áudio mal transcrito, ele repete a cidade errada ("blume nau") em vez de confirmar. Na mesma rodada, 1 de 90 turnos terminou em falha, um caso de injeção em que a trava de vazamento barrou todas as tentativas; 14 turnos se recuperaram sozinhos, 1 deles pelo modelo reserva.
+
+O modelo reserva, `claude-haiku-5-5`, foi medido nos 14 casos de ajuste com o mesmo prompt: de 12 a 13 acertos por campo, e 1 caso barrado pela trava de vazamento. É suficiente para manter a conversa de pé durante uma falha, não para substituir o modelo principal.
 
 ## Segurança e travas
 

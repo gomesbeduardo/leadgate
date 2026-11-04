@@ -1,31 +1,47 @@
 {
-  "data": "2026-11-04T03:02:51.126Z",
+  "data": "2026-11-04T03:52:20.656Z",
   "modelo": "claude-opus-5-5",
   "volume_pedido": 80,
-  "geradas": 82,
+  "geradas": 80,
   "rejeitadas": {
-    "duplicata": 39,
+    "duplicata": 10,
     "telefone": 0,
     "schema": 0,
+    "contrato": 0,
     "api": 0
   },
-  "rejeitadas_por_categoria": null,
-  "categorias": {
-    "claro": 11,
+  "rejeitadas_por_categoria": {
+    "claro": 0,
     "ambiguo": 8,
-    "emergencia": 10,
+    "emergencia": 0,
+    "fora_escopo": 1,
+    "spam": 1,
+    "audio_mal_transcrito": 0,
+    "injecao": 0,
+    "pergunta_ia": 0,
+    "multiturno": 0
+  },
+  "categorias": {
+    "claro": 10,
+    "ambiguo": 7,
+    "emergencia": 9,
     "fora_escopo": 9,
-    "spam": 10,
-    "audio_mal_transcrito": 10,
-    "injecao": 10,
+    "spam": 9,
+    "audio_mal_transcrito": 9,
+    "injecao": 9,
     "pergunta_ia": 9,
-    "multiturno": 5
+    "multiturno": 9
+  },
+  "segmentos": {
+    "comercial": 24,
+    "residencial": 24,
+    "industrial": 23
   },
   "tokens": {
-    "entrada": 203540,
-    "saida": 61377
+    "entrada": 167789,
+    "saida": 42260
   },
-  "chamadas": 121,
+  "chamadas": 90,
   "status": "completa",
   "prompt_liberado": false
 }

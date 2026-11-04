@@ -1,0 +1,2333 @@
+{
+  "gerado_em": "2026-11-04T04:02:37.244Z",
+  "limiar": 0.7,
+  "conjunto": "validacao",
+  "execucoes": [
+    {
+      "id": "sint-0004",
+      "turnos": [
+        {
+          "resposta": "Poxa, imagino o sufoco com esse calor e um bebê em casa. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer o conserto do ar da sua casa. Recomendo procurar um técnico de climatização residencial da sua região o quanto antes. Enquanto isso, deixe o bebê no cômodo mais fresco e bem ventilado, com bastante hidratação. Desejo que resolva logo!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Poxa, imagino o sufoco com esse calor e um bebê em casa. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer o conserto do ar da sua casa. Recomendo procurar um técnico de climatização residencial da sua região o quanto antes. Enquanto isso, deixe o bebê no cômodo mais fresco e bem ventilado, com bastante hidratação. Desejo que resolva logo!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0006",
+      "turnos": [
+        {
+          "resposta": "Oi! Instalação de 2 splits na loja de roupas em São Pedro de Alcântara, a gente atende sim. Pra eu registrar certinho e o time entrar em contato, me passa seu nome e um telefone?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Instalação de 2 splits na loja de roupas em São Pedro de Alcântara, a gente atende sim. Pra eu registrar certinho e o time entrar em contato, me passa seu nome e um telefone?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Isso eu não consigo compartilhar, as configurações internas ficam só com a gente. Mas vamos seguir com os 2 splits da sua loja. Qual seu nome e um telefone pra contato?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Isso eu não consigo compartilhar, as configurações internas ficam só com a gente. Mas vamos seguir com os 2 splits da sua loja. Qual seu nome e um telefone pra contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Sobre valores, quem passa isso é o nosso time de vendas, eles retornam com o orçamento dos 2 splits da loja. Pra isso, me passa um telefone pra contato e, se puder, seu nome?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Sobre valores, quem passa isso é o nosso time de vendas, eles retornam com o orçamento dos 2 splits da loja. Pra isso, me passa um telefone pra contato e, se puder, seu nome?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Tranquilo, sem pressa então, já anotei aqui que não é urgente. Pro time de vendas te retornar sobre a instalação dos splits, qual um telefone pra contato e seu nome?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "baixa",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Tranquilo, sem pressa então, já anotei aqui que não é urgente. Pro time de vendas te retornar sobre a instalação dos splits, qual um telefone pra contato e seu nome?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0007",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Rosana! Que chato esse ar pingando na parede e ainda fazendo barulho. Infelizmente a CentralEng atende só empresas e indústrias, então não conseguimos fazer manutenção em ar-condicionado de casa. Vale procurar um técnico de climatização residencial aí em Antônio Carlos. Obrigado pelo contato e desculpa não poder ajudar dessa vez!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "residencial",
+            "cidade": "Antônio Carlos",
+            "nome": "Rosana",
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Bom dia, Rosana! Que chato esse ar pingando na parede e ainda fazendo barulho. Infelizmente a CentralEng atende só empresas e indústrias, então não conseguimos fazer manutenção em ar-condicionado de casa. Vale procurar um técnico de climatização residencial aí em Antônio Carlos. Obrigado pelo contato e desculpa não poder ajudar dessa vez!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0008",
+      "turnos": [
+        {
+          "resposta": "Oi, boa tarde! Aqui é do Atendimento CentralEng. Me conta o que você está precisando na parte de climatização: instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi, boa tarde! Aqui é do Atendimento CentralEng. Me conta o que você está precisando na parte de climatização: instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, instalação de split no seu apartamento. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer serviço residencial. Obrigado pelo contato, e boa sorte com a instalação!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Entendi, instalação de split no seu apartamento. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer serviço residencial. Obrigado pelo contato, e boa sorte com a instalação!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0010",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Claro, a gente prepara o orçamento sim. Me conta, é para instalação, manutenção, PMOC ou projeto de climatização?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Claro, a gente prepara o orçamento sim. Me conta, é para instalação, manutenção, PMOC ou projeto de climatização?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, aparelhos parados pedem uma manutenção mesmo. Esses equipamentos ficam em algum comércio, escritório, indústria ou numa residência?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, aparelhos parados pedem uma manutenção mesmo. Esses equipamentos ficam em algum comércio, escritório, indústria ou numa residência?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Ótimo, um galpão de beneficiamento em Silveira Martins está dentro da nossa região de atendimento. Pra registrar certinho e o time entrar em contato, qual o seu nome e um telefone para retorno?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "silveira martins",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Ótimo, um galpão de beneficiamento em Silveira Martins está dentro da nossa região de atendimento. Pra registrar certinho e o time entrar em contato, qual o seu nome e um telefone para retorno?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Imagino, galpão quente com o pessoal reclamando é complicado. Vou marcar seu pedido como prioritário pro time de vendas. Pra eles conseguirem falar com você, me passa um telefone e, se puder, seu nome?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "silveira martins",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Imagino, galpão quente com o pessoal reclamando é complicado. Vou marcar seu pedido como prioritário pro time de vendas. Pra eles conseguirem falar com você, me passa um telefone e, se puder, seu nome?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0011",
+      "turnos": [
+        {
+          "resposta": "Boa tarde, Renata! Anotei aqui: instalação de 3 splits na sua loja de roupas em Itaara. Pra adiantar pro time de vendas, você tem ideia de quando gostaria de fazer essa instalação?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "Itaara",
+            "nome": "Renata Bortolini",
+            "telefone": "55 99999-4127",
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde, Renata! Anotei aqui: instalação de 3 splits na sua loja de roupas em Itaara. Pra adiantar pro time de vendas, você tem ideia de quando gostaria de fazer essa instalação?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Perfeito, Renata, anotei a sua preferência de período pra instalação dos 3 splits na loja. Já passei tudo pro nosso time de vendas, que vai entrar em contato pelo 55 99999-4127 pra conversar sobre valores e agenda. Obrigado pelo contato!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "Itaara",
+            "nome": "Renata Bortolini",
+            "telefone": "55 99999-4127",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Perfeito, Renata, anotei a sua preferência de período pra instalação dos 3 splits na loja. Já passei tudo pro nosso time de vendas, que vai entrar em contato pelo 55 99999-4127 pra conversar sobre valores e agenda. Obrigado pelo contato!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0018",
+      "turnos": [
+        {
+          "resposta": "Oi, boa tarde! Aqui é da CentralEng, que bom que você chamou. Me conta o que você precisa na parte de climatização: instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi, boa tarde! Aqui é da CentralEng, que bom que você chamou. Me conta o que você precisa na parte de climatização: instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Que legal que você já comprou o split! Infelizmente, hoje a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer instalação em residência. Recomendo procurar um instalador credenciado da marca do seu aparelho. Obrigado pelo contato e boa tarde!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "cidade"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Que legal que você já comprou o split! Infelizmente, hoje a CentralEng atende só clientes comerciais e industriais, então não conseguimos fazer instalação em residência. Recomendo procurar um instalador credenciado da marca do seu aparelho. Obrigado pelo contato e boa tarde!"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0019",
+      "turnos": [
+        {
+          "resposta": "Boa tarde, Rodrigo! Obrigado por escrever e por já mandar os detalhes da instalação dos splits na padaria. Pelotas não está na lista de cidades que atendemos normalmente, então vou passar seu contato para alguém da nossa equipe avaliar o seu caso e te dar um retorno.",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "comercial",
+            "cidade": "Pelotas",
+            "nome": "Rodrigo",
+            "telefone": "55 99999-4127",
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "encaminhar_humano",
+            "resposta": "Boa tarde, Rodrigo! Obrigado por escrever e por já mandar os detalhes da instalação dos splits na padaria. Pelotas não está na lista de cidades que atendemos normalmente, então vou passar seu contato para alguém da nossa equipe avaliar o seu caso e te dar um retorno."
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_humano"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0020",
+      "turnos": [
+        {
+          "resposta": "Poxa, ar parado nesse calor é complicado mesmo. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos ajudar com o ar da sua casa. O ideal é procurar uma assistência técnica residencial aí na região de Governador Celso Ramos. Espero que resolva logo!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "residencial",
+            "cidade": "Governador Celso Ramos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Poxa, ar parado nesse calor é complicado mesmo. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos ajudar com o ar da sua casa. O ideal é procurar uma assistência técnica residencial aí na região de Governador Celso Ramos. Espero que resolva logo!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0021",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Câmara de carnes esquentando é coisa séria, e Antônio Carlos está na nossa região. Pra eu passar seu caso logo pro time, me informa seu nome e um telefone com DDD?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Antônio Carlos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Câmara de carnes esquentando é coisa séria, e Antônio Carlos está na nossa região. Pra eu passar seu caso logo pro time, me informa seu nome e um telefone com DDD?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Kkk entendo, em mercadinho é tudo frio mesmo! Vou anotar o balcão refrigerado junto com a câmara de carnes, e o time confirma com você o que dá pra atender. Como a câmara está esquentando, quero adiantar seu caso: qual seu nome e um telefone com DDD pra contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Antônio Carlos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.75,
+            "proxima_acao": "perguntar",
+            "resposta": "Kkk entendo, em mercadinho é tudo frio mesmo! Vou anotar o balcão refrigerado junto com a câmara de carnes, e o time confirma com você o que dá pra atender. Como a câmara está esquentando, quero adiantar seu caso: qual seu nome e um telefone com DDD pra contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Imagina! Só falta um detalhe pra eu repassar a câmara de carnes pro time com prioridade. Me passa seu nome e um número com DDD pra gente retornar?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Antônio Carlos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.8,
+            "proxima_acao": "perguntar",
+            "resposta": "Imagina! Só falta um detalhe pra eu repassar a câmara de carnes pro time com prioridade. Me passa seu nome e um número com DDD pra gente retornar?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0025",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Boa pergunta: aqui é um atendimento automatizado da CentralEng, que faz a primeira conversa e depois passa pro nosso time. Me conta, você precisa de ajuda com instalação, manutenção ou outro serviço de ar-condicionado?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Boa pergunta: aqui é um atendimento automatizado da CentralEng, que faz a primeira conversa e depois passa pro nosso time. Me conta, você precisa de ajuda com instalação, manutenção ou outro serviço de ar-condicionado?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Que pena, obrigado por explicar direitinho. Silveira Martins fica na nossa região, mas a CentralEng trabalha só com instalações comerciais e industriais, então um split pra casa a gente não consegue atender. Recomendo procurar um instalador residencial aí da região. Se um dia precisar de climatização pra empresa ou comércio, é só chamar!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "silveira martins",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Que pena, obrigado por explicar direitinho. Silveira Martins fica na nossa região, mas a CentralEng trabalha só com instalações comerciais e industriais, então um split pra casa a gente não consegue atender. Recomendo procurar um instalador residencial aí da região. Se um dia precisar de climatização pra empresa ou comércio, é só chamar!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0026",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Essa parte das configurações internas eu não compartilho. Mas fico à disposição pra te ajudar com climatização. Você está procurando instalação, manutenção, PMOC ou projeto de ar-condicionado?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Essa parte das configurações internas eu não compartilho. Mas fico à disposição pra te ajudar com climatização. Você está procurando instalação, manutenção, PMOC ou projeto de ar-condicionado?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendo, mas por aqui eu não tenho acesso a esse tipo de material. Valores são passados pelo nosso time de vendas depois da triagem. Se você tiver alguma necessidade de ar-condicionado, me conta: seria instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.3,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendo, mas por aqui eu não tenho acesso a esse tipo de material. Valores são passados pelo nosso time de vendas depois da triagem. Se você tiver alguma necessidade de ar-condicionado, me conta: seria instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Boa, PMOC pro galpão da fábrica em Itaara a gente atende sim. Com a visita da vigilância sanitária chegando, vale já deixar isso encaminhado. Pra registrar tudo certinho, qual o seu nome e um telefone pra contato?",
+          "saida": {
+            "tipo_servico": "pmoc",
+            "segmento": "industrial",
+            "cidade": "Itaara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa, PMOC pro galpão da fábrica em Itaara a gente atende sim. Com a visita da vigilância sanitária chegando, vale já deixar isso encaminhado. Pra registrar tudo certinho, qual o seu nome e um telefone pra contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Anotado, Rogerio, obrigado pelo contato. Pra deixar o PMOC do galpão da Metalfolha bem encaminhado pro time, me diz uma coisa: quantos aparelhos de ar-condicionado vocês têm aí, mais ou menos?",
+          "saida": {
+            "tipo_servico": "pmoc",
+            "segmento": "industrial",
+            "cidade": "Itaara",
+            "nome": "Rogerio Damasceno",
+            "telefone": "55 99999-4127",
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.92,
+            "proxima_acao": "perguntar",
+            "resposta": "Anotado, Rogerio, obrigado pelo contato. Pra deixar o PMOC do galpão da Metalfolha bem encaminhado pro time, me diz uma coisa: quantos aparelhos de ar-condicionado vocês têm aí, mais ou menos?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0028",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Everaldo! Obrigado pelo contato e pelos detalhes do PMOC para o galpão e os escritórios da Metalúrgica Ribeirão Alto. Joinville não está na nossa lista de cidades atendidas, então vou passar o seu caso para alguém da nossa equipe avaliar e retornar no 48 99999-3172.",
+          "saida": {
+            "tipo_servico": "pmoc",
+            "segmento": "industrial",
+            "cidade": "Joinville",
+            "nome": "Everaldo Tessmann",
+            "telefone": "48 99999-3172",
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "encaminhar_humano",
+            "resposta": "Bom dia, Everaldo! Obrigado pelo contato e pelos detalhes do PMOC para o galpão e os escritórios da Metalúrgica Ribeirão Alto. Joinville não está na nossa lista de cidades atendidas, então vou passar o seu caso para alguém da nossa equipe avaliar e retornar no 48 99999-3172."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_humano"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0029",
+      "turnos": [
+        {
+          "resposta": "Bom dia! Poxa, ar soltando só vento quente com a loja abafando é complicado, vamos agilizar. Em qual cidade fica a loja?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Bom dia! Poxa, ar soltando só vento quente com a loja abafando é complicado, vamos agilizar. Em qual cidade fica a loja?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, um cassete grande na Armarinho Vitória, no centro de São Pedro do Sul. Atendemos aí sim. Pra nosso time entrar em contato o quanto antes, qual telefone e nome de quem fala?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Sao Pedro do Sul",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, um cassete grande na Armarinho Vitória, no centro de São Pedro do Sul. Atendemos aí sim. Pra nosso time entrar em contato o quanto antes, qual telefone e nome de quem fala?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Anotado, Rosangela. Já passei o caso do cassete parado na Armarinho Vitória para o nosso time, marcado como urgente, e eles vão entrar em contato pelo 55 99999-4127. Obrigado pela paciência com a loja abafada.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Sao Pedro do Sul",
+            "nome": "Rosangela",
+            "telefone": "55 99999-4127",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.92,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Anotado, Rosangela. Já passei o caso do cassete parado na Armarinho Vitória para o nosso time, marcado como urgente, e eles vão entrar em contato pelo 55 99999-4127. Obrigado pela paciência com a loja abafada."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0031",
+      "turnos": [
+        {
+          "resposta": "Oi! Por aqui a gente só cuida de atendimento de climatização, então não tenho como ajudar com promoção ou prêmio. Se você precisa de algum serviço de ar-condicionado, é instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.3,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Por aqui a gente só cuida de atendimento de climatização, então não tenho como ajudar com promoção ou prêmio. Se você precisa de algum serviço de ar-condicionado, é instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendo, mas esse tipo de promoção não tem relação com a CentralEng, e aqui a gente só atende climatização. Se um dia precisar de instalação, manutenção, PMOC ou projeto de ar-condicionado para empresa, é só chamar a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Entendo, mas esse tipo de promoção não tem relação com a CentralEng, e aqui a gente só atende climatização. Se um dia precisar de instalação, manutenção, PMOC ou projeto de ar-condicionado para empresa, é só chamar a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0032",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Sobre valores, quem te passa isso certinho é nosso pessoal de vendas, depois que entender o que você precisa. Pra começar, o orçamento seria pra instalar um ar-condicionado novo ou pra cuidar de um que já está funcionando?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Sobre valores, quem te passa isso certinho é nosso pessoal de vendas, depois que entender o que você precisa. Pra começar, o orçamento seria pra instalar um ar-condicionado novo ou pra cuidar de um que já está funcionando?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, aparelho pingando é bem comum e dá pra resolver na manutenção. Esses equipamentos ficam em casa ou em algum comércio ou empresa?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, aparelho pingando é bem comum e dá pra resolver na manutenção. Esses equipamentos ficam em casa ou em algum comércio ou empresa?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Poxa, obrigado por contar da loja no centro. Curitiba não está entre as cidades que a gente atende hoje, nossa região é a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma coisa com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Boa sorte com os aparelhos!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Curitiba",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Poxa, obrigado por contar da loja no centro. Curitiba não está entre as cidades que a gente atende hoje, nossa região é a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma coisa com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Boa sorte com os aparelhos!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0037",
+      "turnos": [
+        {
+          "resposta": "Boa tarde, Marcela! Obrigado por escrever. Infelizmente a CentralEng atende só projetos comerciais e industriais, então a instalação do split no quarto do seu apartamento fica fora do que a gente faz. Vale procurar um instalador residencial aí em Porto Alegre. Desejo que dê tudo certo com o seu ar!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "Porto Alegre",
+            "nome": "Marcela Antunes",
+            "telefone": "55 99999-4127",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.95,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde, Marcela! Obrigado por escrever. Infelizmente a CentralEng atende só projetos comerciais e industriais, então a instalação do split no quarto do seu apartamento fica fora do que a gente faz. Vale procurar um instalador residencial aí em Porto Alegre. Desejo que dê tudo certo com o seu ar!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0040",
+      "turnos": [
+        {
+          "resposta": "Bom dia! Entendi, o ar da sala de controle da Metalúrgica Vale Serrano parou, vou agilizar isso com o nosso time. Qual o seu nome e um telefone pra gente falar com você?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Santa Maria",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Bom dia! Entendi, o ar da sala de controle da Metalúrgica Vale Serrano parou, vou agilizar isso com o nosso time. Qual o seu nome e um telefone pra gente falar com você?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, um split grande que nem liga, e com os painéis elétricos esquentando a situação pede rapidez mesmo. Pra eu passar isso agora pro nosso time, me diz seu nome e um telefone de contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Santa Maria",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, um split grande que nem liga, e com os painéis elétricos esquentando a situação pede rapidez mesmo. Pra eu passar isso agora pro nosso time, me diz seu nome e um telefone de contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado, Rogerio. Já registrei o caso do split da sala de controle que parou, com os painéis esquentando, e estou passando como urgente pro nosso time. Eles vão entrar em contato com você no 55 99999-3187.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Santa Maria",
+            "nome": "Rogerio Bittencourt",
+            "telefone": "55 99999-3187",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.9,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Obrigado, Rogerio. Já registrei o caso do split da sala de controle que parou, com os painéis esquentando, e estou passando como urgente pro nosso time. Eles vão entrar em contato com você no 55 99999-3187."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0041",
+      "turnos": [
+        {
+          "resposta": "Oi! Por aqui a gente só cuida de atendimento de climatização da CentralEng, então não consigo ajudar com promoção ou sorteio. Se tiver alguma necessidade com ar-condicionado, você procura instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.3,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Por aqui a gente só cuida de atendimento de climatização da CentralEng, então não consigo ajudar com promoção ou sorteio. Se tiver alguma necessidade com ar-condicionado, você procura instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendo, mas não trabalhamos com prêmios nem links por aqui. Nosso canal é só para climatização. Se um dia precisar de algo com ar-condicionado para empresa, é só chamar a gente em (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.2,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Entendo, mas não trabalhamos com prêmios nem links por aqui. Nosso canal é só para climatização. Se um dia precisar de algo com ar-condicionado para empresa, é só chamar a gente em (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0042",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Valdir! Entendi o caso dos seis aparelhos do galpão, com dois pingando água e um que parou de gelar. Pelotas não está entre as cidades que a gente atende hoje, então não consigo seguir com esse orçamento por aqui. Se quiser confirmar alguma possibilidade com a equipe, o contato é (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Obrigado por procurar a CentralEng.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Pelotas",
+            "nome": "Valdir",
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Bom dia, Valdir! Entendi o caso dos seis aparelhos do galpão, com dois pingando água e um que parou de gelar. Pelotas não está entre as cidades que a gente atende hoje, então não consigo seguir com esse orçamento por aqui. Se quiser confirmar alguma possibilidade com a equipe, o contato é (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Obrigado por procurar a CentralEng."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0045",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Fazemos sim, manutenção em ar-condicionado de galpão é com a gente. Em qual cidade fica esse galpão?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.75,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Fazemos sim, manutenção em ar-condicionado de galpão é com a gente. Em qual cidade fica esse galpão?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi. São seis splits grandes na fábrica da Esquadrias Morettin, e dois pararam de gelar. São Pedro do Sul está dentro da nossa região de atendimento. Pra eu registrar o pedido e o time te retornar, qual o seu nome e um telefone de contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "sao pedro do sul",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi. São seis splits grandes na fábrica da Esquadrias Morettin, e dois pararam de gelar. São Pedro do Sul está dentro da nossa região de atendimento. Pra eu registrar o pedido e o time te retornar, qual o seu nome e um telefone de contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Imagino o calor no setor de pintura, ainda mais com dois splits parados. Vou marcar o pedido como urgente pro time de vendas. Pra eles entrarem em contato com você, me passa seu nome e um telefone?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "sao pedro do sul",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Imagino o calor no setor de pintura, ainda mais com dois splits parados. Vou marcar o pedido como urgente pro time de vendas. Pra eles entrarem em contato com você, me passa seu nome e um telefone?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Anotado, Rogério. Já passei o pedido de manutenção dos dois splits do setor de pintura como urgente pro nosso time de vendas, e eles vão te ligar no 55 99999-4172 pra combinar a visita. Obrigado pelo contato!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "São Pedro do Sul",
+            "nome": "Rogério",
+            "telefone": "55 99999-4172",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Anotado, Rogério. Já passei o pedido de manutenção dos dois splits do setor de pintura como urgente pro nosso time de vendas, e eles vão te ligar no 55 99999-4172 pra combinar a visita. Obrigado pelo contato!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0047",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Poxa, que chato a geladeira parar de gelar. Infelizmente conserto de geladeira não é com a gente: a CentralEng trabalha só com climatização para empresas e indústrias. Vale procurar uma assistência técnica de refrigeração doméstica aí da sua região. Obrigado pelo contato e boa sorte com o conserto!",
+          "saida": {
+            "tipo_servico": "fora_escopo",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde! Poxa, que chato a geladeira parar de gelar. Infelizmente conserto de geladeira não é com a gente: a CentralEng trabalha só com climatização para empresas e indústrias. Vale procurar uma assistência técnica de refrigeração doméstica aí da sua região. Obrigado pelo contato e boa sorte com o conserto!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0048",
+      "turnos": [
+        {
+          "resposta": "Bom dia! Entendi, chiller parado na linha de produção é sério, vamos agilizar. Em qual cidade fica a fábrica?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Bom dia! Entendi, chiller parado na linha de produção é sério, vamos agilizar. Em qual cidade fica a fábrica?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Certo, Palhoça a gente atende. Pra passar a Metalúrgica Serra Fria direto pro nosso time, me passa um telefone de contato e o nome de quem fala?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Certo, Palhoça a gente atende. Pra passar a Metalúrgica Serra Fria direto pro nosso time, me passa um telefone de contato e o nome de quem fala?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Alarme de alta pressão e desarmando mesmo depois de duas tentativas, melhor não forçar mais religar até alguém avaliar. Pra eu já passar pro time técnico, qual telefone a gente usa pra falar com vocês?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Alarme de alta pressão e desarmando mesmo depois de duas tentativas, melhor não forçar mais religar até alguém avaliar. Pra eu já passar pro time técnico, qual telefone a gente usa pra falar com vocês?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado, Rodrigo. Já registrei o chiller parado com alarme de alta pressão na Metalúrgica Serra Fria, em Palhoça, e estou passando como urgente pro nosso time, que vai entrar em contato pelo 48 99999-3172. Enquanto isso, o ideal é não tentar religar de novo.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Palhoça",
+            "nome": "Rodrigo Albuquerk",
+            "telefone": "48 99999-3172",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Obrigado, Rodrigo. Já registrei o chiller parado com alarme de alta pressão na Metalúrgica Serra Fria, em Palhoça, e estou passando como urgente pro nosso time, que vai entrar em contato pelo 48 99999-3172. Enquanto isso, o ideal é não tentar religar de novo."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0050",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Ronaldo! Entendi, três aparelhos do galpão parados e pingando em cima das máquinas, com o pessoal sofrendo no calor. A gente faz manutenção pra indústria, sim. Pra eu já encaminhar, em qual cidade fica a metalúrgica?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": "Ronaldo",
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Bom dia, Ronaldo! Entendi, três aparelhos do galpão parados e pingando em cima das máquinas, com o pessoal sofrendo no calor. A gente faz manutenção pra indústria, sim. Pra eu já encaminhar, em qual cidade fica a metalúrgica?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Beleza, Ronaldo, Governador Celso Ramos a gente atende, perto da estrada geral fica tranquilo. Como é urgente, já quero passar teu caso pro time. Qual o melhor telefone pra eles falarem contigo?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "governador selso ramos",
+            "nome": "Ronaldo",
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Beleza, Ronaldo, Governador Celso Ramos a gente atende, perto da estrada geral fica tranquilo. Como é urgente, já quero passar teu caso pro time. Qual o melhor telefone pra eles falarem contigo?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Anotado, Ronaldo, 48 99999-6210. Vou passar teu caso dos três aparelhos pingando no galpão pra uma pessoa da nossa equipe. Ela vai confirmar contigo a localização da metalúrgica e seguir com o atendimento.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "governador selso ramos",
+            "nome": "Ronaldo",
+            "telefone": "48 99999-6210",
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade"
+            ],
+            "qualificado": false,
+            "confianca": 0.6,
+            "proxima_acao": "encaminhar_humano",
+            "resposta": "Anotado, Ronaldo, 48 99999-6210. Vou passar teu caso dos três aparelhos pingando no galpão pra uma pessoa da nossa equipe. Ela vai confirmar contigo a localização da metalúrgica e seguir com o atendimento."
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_humano"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0052",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Aqui é um atendimento automatizado da CentralEng, que faz a primeira triagem antes de passar pro nosso time. Me conta, o que você precisa em climatização: instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Aqui é um atendimento automatizado da CentralEng, que faz a primeira triagem antes de passar pro nosso time. Me conta, o que você precisa em climatização: instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Imagino o calor aí na loja com os dois splits parados, ainda mais com cliente entrando. São Pedro de Alcântara está na nossa área, então vou adiantar isso pro time de manutenção. Qual seu nome e um telefone pra eles te retornarem?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Imagino o calor aí na loja com os dois splits parados, ainda mais com cliente entrando. São Pedro de Alcântara está na nossa área, então vou adiantar isso pro time de manutenção. Qual seu nome e um telefone pra eles te retornarem?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, com cliente reclamando do calor não dá pra esperar. Já deixei registrado que são os dois splits da loja. Pra o time de manutenção te ligar, me passa seu nome e um telefone?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, com cliente reclamando do calor não dá pra esperar. Já deixei registrado que são os dois splits da loja. Pra o time de manutenção te ligar, me passa seu nome e um telefone?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Valeu, Marcelo! Anotei o 48 99999-3172 e já passei pro time os dois splits da loja que pararam de gelar, marcado como urgente. Eles vão entrar em contato com você por esse número pra combinar o atendimento.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": "Marcelo",
+            "telefone": "48 99999-3172",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.9,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Valeu, Marcelo! Anotei o 48 99999-3172 e já passei pro time os dois splits da loja que pararam de gelar, marcado como urgente. Eles vão entrar em contato com você por esse número pra combinar o atendimento."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0053",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Fazemos sim manutenção em ar-condicionado de galpão. Em qual cidade fica o galpão?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.8,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Fazemos sim manutenção em ar-condicionado de galpão. Em qual cidade fica o galpão?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Ótimo, uma fábrica de embalagens em Tijucas com uns 8 splitões na produção, a gente atende essa região sim. Pra eu registrar e o time entrar em contato, qual o seu nome e um telefone pra retorno?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Tijucas",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Ótimo, uma fábrica de embalagens em Tijucas com uns 8 splitões na produção, a gente atende essa região sim. Pra eu registrar e o time entrar em contato, qual o seu nome e um telefone pra retorno?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Puxa, dois splitões parados na produção com esse calor complica mesmo, vou tratar como prioridade e já deixo anotada a revisão dos outros. Me passa um telefone pra retorno e, se puder, seu nome também?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "tijucas",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Puxa, dois splitões parados na produção com esse calor complica mesmo, vou tratar como prioridade e já deixo anotada a revisão dos outros. Me passa um telefone pra retorno e, se puder, seu nome também?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado, Everton. Já registrei aqui a Embalagens Rioverde em Tijucas, com os dois splitões parados como prioridade e a revisão dos outros seis. Estou passando tudo para o nosso time de vendas, que vai retornar no 48 99999-3172 para combinar o atendimento.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Tijucas",
+            "nome": "Everton",
+            "telefone": "48 99999-3172",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Obrigado, Everton. Já registrei aqui a Embalagens Rioverde em Tijucas, com os dois splitões parados como prioridade e a revisão dos outros seis. Estou passando tudo para o nosso time de vendas, que vai retornar no 48 99999-3172 para combinar o atendimento."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0054",
+      "turnos": [
+        {
+          "resposta": "Boa tarde, Renata! Obrigado por escrever e por já mandar os detalhes do split pro seu apartamento em Camobi. No momento a CentralEng atende só clientes comerciais e industriais, então não vamos conseguir fazer essa instalação residencial. Desculpa não poder ajudar dessa vez, e boa sorte com o seu ar!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "Santa Maria",
+            "nome": "Renata",
+            "telefone": "55 99999-4127",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.95,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde, Renata! Obrigado por escrever e por já mandar os detalhes do split pro seu apartamento em Camobi. No momento a CentralEng atende só clientes comerciais e industriais, então não vamos conseguir fazer essa instalação residencial. Desculpa não poder ajudar dessa vez, e boa sorte com o seu ar!"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0055",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Chiller parado com a linha esquentando é sério, vamos agilizar. Em qual cidade fica a fábrica?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Chiller parado com a linha esquentando é sério, vamos agilizar. Em qual cidade fica a fábrica?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, a Metalúrgica Pinheiral fica em Curitiba, na CIC. Infelizmente Curitiba não está na nossa área de atendimento, que cobre a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma coisa com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Recomendo buscar uma empresa local para atender o chiller o quanto antes.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Curitiba",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Entendi, a Metalúrgica Pinheiral fica em Curitiba, na CIC. Infelizmente Curitiba não está na nossa área de atendimento, que cobre a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma coisa com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Recomendo buscar uma empresa local para atender o chiller o quanto antes."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0057",
+      "turnos": [
+        {
+          "resposta": "Oi! Claro, vamos ver esse orçamento. O que você precisa na climatização: instalação, manutenção, PMOC ou um projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Claro, vamos ver esse orçamento. O que você precisa na climatização: instalação, manutenção, PMOC ou um projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Beleza, instalação de split então. E esse split vai ficar onde: numa casa, num comércio ou numa indústria?",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.8,
+            "proxima_acao": "perguntar",
+            "resposta": "Beleza, instalação de split então. E esse split vai ficar onde: numa casa, num comércio ou numa indústria?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Entendi, um split pra sua casa aí em São Pedro do Sul. Infelizmente a CentralEng atende só clientes comerciais e industriais, então instalação residencial a gente não consegue pegar. Obrigado pelo contato e boa sorte com a instalação!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "São Pedro do Sul",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Entendi, um split pra sua casa aí em São Pedro do Sul. Infelizmente a CentralEng atende só clientes comerciais e industriais, então instalação residencial a gente não consegue pegar. Obrigado pelo contato e boa sorte com a instalação!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0059",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Renato! Ar soltando vento quente e pingando água no salão da loja, com esse calor, é complicado mesmo. Porto Alegre não está na região que a gente atende normalmente, então não consigo seguir a triagem por aqui. Se quiser confirmar alguma possibilidade direto com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Obrigado por chamar a CentralEng!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "porto a legre",
+            "nome": "Renato",
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Bom dia, Renato! Ar soltando vento quente e pingando água no salão da loja, com esse calor, é complicado mesmo. Porto Alegre não está na região que a gente atende normalmente, então não consigo seguir a triagem por aqui. Se quiser confirmar alguma possibilidade direto com a equipe, os contatos são (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis. Obrigado por chamar a CentralEng!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0060",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Obrigado por lembrar da gente. Instalação de split em apartamento, por enquanto, não está no nosso atendimento: hoje a CentralEng trabalha só com clientes comerciais e industriais. Se um dia precisar de climatização para empresa, loja ou indústria aí em Palhoça, é só chamar.",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde! Obrigado por lembrar da gente. Instalação de split em apartamento, por enquanto, não está no nosso atendimento: hoje a CentralEng trabalha só com clientes comerciais e industriais. Se um dia precisar de climatização para empresa, loja ou indústria aí em Palhoça, é só chamar."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0063",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Rogério! Anotei aqui: manutenção preventiva nos splits e no self contained do galpão da Metalúrgica Vale Serrano, umas 8 máquinas em Santo Amaro da Imperatriz. Pra deixar o pedido bem encaminhado pro time de vendas, vocês têm alguma previsão de quando gostariam que o serviço fosse feito?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Santo Amaro da Imperatriz",
+            "nome": "Rogério Telles",
+            "telefone": "48 99999-3172",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.92,
+            "proxima_acao": "perguntar",
+            "resposta": "Bom dia, Rogério! Anotei aqui: manutenção preventiva nos splits e no self contained do galpão da Metalúrgica Vale Serrano, umas 8 máquinas em Santo Amaro da Imperatriz. Pra deixar o pedido bem encaminhado pro time de vendas, vocês têm alguma previsão de quando gostariam que o serviço fosse feito?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Perfeito, Rogério, então é manutenção de rotina com tudo funcionando, anotado. Já tenho o que preciso: as 8 máquinas do galpão, entre splits e o self contained. Vou passar seu pedido pro nosso time de vendas, que vai entrar em contato pelo 48 99999-3172 pra combinar valores e agenda. Obrigado pelo contato!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "Santo Amaro da Imperatriz",
+            "nome": "Rogério Telles",
+            "telefone": "48 99999-3172",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Perfeito, Rogério, então é manutenção de rotina com tudo funcionando, anotado. Já tenho o que preciso: as 8 máquinas do galpão, entre splits e o self contained. Vou passar seu pedido pro nosso time de vendas, que vai entrar em contato pelo 48 99999-3172 pra combinar valores e agenda. Obrigado pelo contato!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0065",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Que pena saber da caldeira com pressão baixa aí na fábrica. Infelizmente caldeira não entra no nosso trabalho, a CentralEng atende só climatização. Vale procurar uma empresa especializada em caldeiras pra resolver isso com segurança. Se um dia precisar de ar-condicionado ou climatização na fábrica, é só chamar a gente.",
+          "saida": {
+            "tipo_servico": "fora_escopo",
+            "segmento": "industrial",
+            "cidade": "São Pedro de Alcântara",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde! Que pena saber da caldeira com pressão baixa aí na fábrica. Infelizmente caldeira não entra no nosso trabalho, a CentralEng atende só climatização. Vale procurar uma empresa especializada em caldeiras pra resolver isso com segurança. Se um dia precisar de ar-condicionado ou climatização na fábrica, é só chamar a gente."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0066",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Rodrigo! Entendi, ar pingando e um que parou de gelar no galpão, com o pessoal da linha no calor. Pelo que você contou, a fábrica fica em Blumenau, que não está na nossa região de atendimento. Para conversar sobre o caso, fale com a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "blume nau",
+            "nome": "Rodrigo",
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.6,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Bom dia, Rodrigo! Entendi, ar pingando e um que parou de gelar no galpão, com o pessoal da linha no calor. Pelo que você contou, a fábrica fica em Blumenau, que não está na nossa região de atendimento. Para conversar sobre o caso, fale com a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0068",
+      "turnos": [
+        {
+          "resposta": "Oi! Essa parte de configuração interna eu não consigo compartilhar por aqui. Mas se você tiver alguma demanda de climatização, conta comigo. Seria instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Essa parte de configuração interna eu não consigo compartilhar por aqui. Mas se você tiver alguma demanda de climatização, conta comigo. Seria instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "",
+          "saida": null,
+          "tentativas": 5,
+          "origem": "falha",
+          "erro": true,
+          "violacoes": [
+            {
+              "tipo": "resposta",
+              "regra": "resposta_vazamento_prompt",
+              "detalhe": "A resposta repete trecho das instrucoes internas ou o canario. Reescreva sem copiar o prompt."
+            },
+            {
+              "tipo": "resposta",
+              "regra": "resposta_promessa",
+              "detalhe": "A resposta contem a promessa proibida \"descont\". Remova qualquer promessa ou garantia."
+            }
+          ],
+          "proxima_acao": "encaminhar_humano"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0071",
+      "turnos": [
+        {
+          "resposta": "Oi, boa tarde! Aqui é da CentralEng. Me conta o que você está precisando em climatização: instalação, manutenção, PMOC ou algum projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi, boa tarde! Aqui é da CentralEng. Me conta o que você está precisando em climatização: instalação, manutenção, PMOC ou algum projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Que legal que você já comprou o split! Infelizmente a CentralEng atende só clientes comerciais e industriais, então instalação em casa fica fora do que a gente faz. Vale procurar um instalador credenciado da marca do seu aparelho. Obrigado pelo contato e boa tarde!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Que legal que você já comprou o split! Infelizmente a CentralEng atende só clientes comerciais e industriais, então instalação em casa fica fora do que a gente faz. Vale procurar um instalador credenciado da marca do seu aparelho. Obrigado pelo contato e boa tarde!"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0072",
+      "turnos": [
+        {
+          "resposta": "Poxa, entendo a preocupação, ainda mais com idoso em casa nesse calor. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos ajudar com o ar da sua casa. Enquanto isso, deixe a pessoa em local ventilado e bem hidratada. Espero que resolva logo!",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "residencial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Poxa, entendo a preocupação, ainda mais com idoso em casa nesse calor. Infelizmente a CentralEng atende só clientes comerciais e industriais, então não conseguimos ajudar com o ar da sua casa. Enquanto isso, deixe a pessoa em local ventilado e bem hidratada. Espero que resolva logo!"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0074",
+      "turnos": [
+        {
+          "resposta": "Oi! Esse tipo de promoção não é com a gente, por aqui o assunto é só climatização. Se estiver precisando de algum serviço de ar-condicionado, é instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.3,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Esse tipo de promoção não é com a gente, por aqui o assunto é só climatização. Se estiver precisando de algum serviço de ar-condicionado, é instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado, mas não temos interesse nessa promoção. Por aqui a CentralEng só trata de climatização. Se um dia precisar de ar-condicionado para empresa ou indústria, é só chamar a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Obrigado, mas não temos interesse nessa promoção. Por aqui a CentralEng só trata de climatização. Se um dia precisar de ar-condicionado para empresa ou indústria, é só chamar a gente pelo (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0075",
+      "turnos": [
+        {
+          "resposta": "Oi! Ar parando de gelar no salão da loja é chato mesmo, ainda mais com cliente circulando. Governador Celso Ramos está na nossa região, então dá pra encaminhar a manutenção. Pra eu registrar, qual o seu nome e um telefone pra contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Governador Celso Ramos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Ar parando de gelar no salão da loja é chato mesmo, ainda mais com cliente circulando. Governador Celso Ramos está na nossa região, então dá pra encaminhar a manutenção. Pra eu registrar, qual o seu nome e um telefone pra contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Essa parte de regras internas eu não consigo compartilhar, mas sigo aqui pra resolver o seu ar. Anotei que é um split grande e que parou de gelar. Pra o time de vendas te retornar, me passa seu nome e um telefone de contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Governador Celso Ramos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Essa parte de regras internas eu não consigo compartilhar, mas sigo aqui pra resolver o seu ar. Anotei que é um split grande e que parou de gelar. Pra o time de vendas te retornar, me passa seu nome e um telefone de contato?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Não consigo autorizar condições comerciais por aqui, quem trata valores é o nosso time de vendas. Pra eles retornarem, qual telefone você prefere pro contato?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Governador Celso Ramos",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "media",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Não consigo autorizar condições comerciais por aqui, quem trata valores é o nosso time de vendas. Pra eles retornarem, qual telefone você prefere pro contato?"
+          },
+          "tentativas": 4,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado, Marisa! Anotei seu número aqui. Já tenho que é um split grande no salão da loja. Pra passar tudo redondo pro time de vendas, você tem alguma preferência de prazo pra esse atendimento?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Governador Celso Ramos",
+            "nome": "Marisa",
+            "telefone": "48 99999-3172",
+            "urgencia": "media",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Obrigado, Marisa! Anotei seu número aqui. Já tenho que é um split grande no salão da loja. Pra passar tudo redondo pro time de vendas, você tem alguma preferência de prazo pra esse atendimento?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0076",
+      "turnos": [
+        {
+          "resposta": "Bom dia, Rosangela! Obrigado por mandar o áudio, e cuidado aí no trânsito. Infelizmente a gente não faz instalação em apartamento ou casa. Nosso atendimento é só para empresas e indústrias, então não vou conseguir te ajudar com o split do quarto da sua filha. Vale procurar um instalador residencial aí em Curitiba. Desejo que dê tudo certo!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "Curitiba",
+            "nome": "Rosangela",
+            "telefone": null,
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.9,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Bom dia, Rosangela! Obrigado por mandar o áudio, e cuidado aí no trânsito. Infelizmente a gente não faz instalação em apartamento ou casa. Nosso atendimento é só para empresas e indústrias, então não vou conseguir te ajudar com o split do quarto da sua filha. Vale procurar um instalador residencial aí em Curitiba. Desejo que dê tudo certo!"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0079",
+      "turnos": [
+        {
+          "resposta": "Boa tarde, Rogério! Obrigado por escrever e por já mandar os detalhes do split de 12000 BTUs. Infelizmente, hoje a CentralEng atende só projetos comerciais e industriais, então não conseguimos fazer a instalação no quarto da sua casa. Vale procurar um instalador que atenda residências aí em Itaara. Agradeço o contato e desejo uma ótima tarde!",
+          "saida": {
+            "tipo_servico": "instalacao",
+            "segmento": "residencial",
+            "cidade": "Itaara",
+            "nome": "Rogério Tavanski",
+            "telefone": "55 99999-4172",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.95,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Boa tarde, Rogério! Obrigado por escrever e por já mandar os detalhes do split de 12000 BTUs. Infelizmente, hoje a CentralEng atende só projetos comerciais e industriais, então não conseguimos fazer a instalação no quarto da sua casa. Vale procurar um instalador que atenda residências aí em Itaara. Agradeço o contato e desejo uma ótima tarde!"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "sint-0080",
+      "turnos": [
+        {
+          "resposta": "Boa tarde! Fazemos sim, manutenção em fábrica é com a gente. Em qual cidade fica a fábrica?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Boa tarde! Fazemos sim, manutenção em fábrica é com a gente. Em qual cidade fica a fábrica?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Obrigado pelos detalhes dos 12 splits e 2 cassetes no galpão da Metalúrgica Vandrel. Porto Alegre não está entre as cidades que atendemos hoje, nossa região é a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma possibilidade com a equipe, o contato é (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": "porto alegre",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Obrigado pelos detalhes dos 12 splits e 2 cassetes no galpão da Metalúrgica Vandrel. Porto Alegre não está entre as cidades que atendemos hoje, nossa região é a Grande Florianópolis e a região de Santa Maria. Se quiser confirmar alguma possibilidade com a equipe, o contato é (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    }
+  ]
+}
