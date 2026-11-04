@@ -27,7 +27,29 @@ describe('merge do agente pelo app', () => {
     expect(token).toMatch(/create-github-app-token@[0-9a-f]{40}\b/)
     expect(token).toContain("if: steps.decide.outputs.armar == 'true'")
     expect(liga).toContain("if: steps.decide.outputs.armar == 'true'")
-    expect(decide.indexOf("!= 'claude[bot]'")).toBeGreaterThan(-1)
+    expect(decide).toMatch(/if \[ "\$AUTOR" != 'claude\[bot\]' \]; then\s+exit 0\s+fi/)
     expect(decide.indexOf("!= 'claude[bot]'")).toBeLessThan(decide.indexOf('armar=true'))
+  })
+
+  it('não deixa o token passar da execução nem chegar a código do repositório', () => {
+    expect(token).not.toContain('skip-token-revoke')
+    expect(liga.trim().endsWith('run: gh pr merge "$PR" --auto --squash --match-head-commit "$COMMIT"')).toBe(true)
+    const checkout = passos.find((p) => p.includes('actions/checkout@')) ?? ''
+    expect(checkout).toContain('persist-credentials: false')
+    expect(checkout).not.toContain('ref:')
+  })
+
+  it('fixa por SHA toda action do job que recebe o token', () => {
+    const usos = passos.flatMap((p) => p.match(/uses: \S+/g) ?? [])
+    expect(usos.length).toBeGreaterThanOrEqual(3)
+    for (const uso of usos) expect(uso).toMatch(/@[0-9a-f]{40}$/)
+  })
+})
+
+describe('guia para ligar a esteira', () => {
+  it('cita o app e os dois segredos do merge', () => {
+    const guia = readFileSync('docs/esteira/autonomia.md', 'utf8')
+    expect(guia).toContain('ESTEIRA_APP_CLIENT_ID')
+    expect(guia).toContain('ESTEIRA_APP_KEY')
   })
 })

@@ -28,7 +28,8 @@ Para ligar em outro projeto:
 2. Instale o app do Claude e grave o segredo `CLAUDE_CODE_OAUTH_TOKEN`, gerado com `claude setup-token`.
 3. Integre os workflows antes do ruleset. Sem isso, o check `alcance` não existe na base e o PR que o traz fica preso.
 4. Crie o rótulo `claude-fix` e ligue "Allow auto-merge".
-5. Crie em `staging` um ruleset sem bypass, com PR obrigatório, os três checks e bloqueio de force push. O passo de merge confere isso e não liga o auto-merge sem os três.
+5. Crie um GitHub App privado, instalado só neste repositório, com `Contents`, `Pull requests` e `Issues` em escrita e sem `Workflows`. Grave o Client ID em `ESTEIRA_APP_CLIENT_ID` e a chave privada em `ESTEIRA_APP_KEY`. Sem os dois, o check `alcance` fica vermelho em todo PR do agente.
+6. Crie em `staging` um ruleset sem bypass, com PR obrigatório, os três checks e bloqueio de force push. O passo de merge confere isso e não liga o auto-merge sem os três.
 
 ## O que a primeira rodada ensinou
 
