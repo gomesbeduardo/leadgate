@@ -127,3 +127,21 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 **Evidência:** depois do merge do PR #26, duas execuções do revisor no PR #25 ainda rodaram a versão velha, e uma foi pulada pela action por diferir da branch padrão.
 **Causa:** o `pull_request` usa o merge calculado do PR, que só foi atualizado depois de fechar e reabrir.
 **Regra:** ao mudar workflow com PR aberto, feche e reabra o PR, gere outro evento e confira no log qual versão rodou antes de tirar conclusão.
+
+## 04/11/2026 — Telemetria desligada ainda chama para fora
+
+**Evidência:** com `PROMPTFOO_DISABLE_TELEMETRY=1`, o promptfoo 0.124.1 tentou um POST a `r.promptfoo.app`, e o sandbox registrou a saída. Um proxy de captura mostrou esse destino, e nenhum outro, em 326 conexões. A 0.125.1 traz o mesmo código.
+**Causa:** `recordTelemetryDisabled()` chama `sendEvent`, que envia o evento "telemetry disabled" com `user_id` e o e-mail local, se houver um.
+**Regra:** opção de privacidade só vale depois de conferida no pacote e na execução, não só na documentação. O comando `comparar:prompt` roda com proxy inalcançável, e um teste falha se aparecer outro destino.
+
+## 04/11/2026 — Sonda de prontidão que não chega ao modelo
+
+**Evidência:** a pilha respondeu 200 a `{"historico":[]}` enquanto o n8n dizia `The requested webhook "POST chat" is not registered`. As falhas contadas nessa hora vieram da própria espera.
+**Causa:** histórico vazio é recusado como entrada inválida antes de chegar ao n8n, então a resposta não prova que o workflow está ativo.
+**Regra:** pilha pronta é pilha que fez um turno real com `origem: modelo`. Depois da sonda, zere `/falhas` antes de medir.
+
+## 04/11/2026 — Comparação que aprovava zero contra zero
+
+**Evidência:** a revisão final mostrou 42 linhas zeradas em cada lado saindo como aprovadas, com `DEMO_PAINEL` desligado. Uma falha de DNS também derrubava a soma de um lado como se fosse resposta errada.
+**Causa:** a regra `branch < base` só compara somas e não pergunta se a medição aconteceu.
+**Regra:** é a terceira vez que um número falso de sucesso aparece (ver "Avaliação que falhou em silêncio" e "Medição que media zero"), e agora há teste. Falha técnica em qualquer lado invalida a comparação, por decisão do responsável, e lado sem nenhum acerto é "não medida".
