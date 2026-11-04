@@ -12,3 +12,5 @@ Atualizado em 04/11/2026.
 - Spec 003 (prazo solto) integrada no PR #9.
 - Leitura humana feita uma vez: 120 de 124 marcações aprovadas, em `avaliacao/leitura.json`.
 - Emendas das specs 001 e 002 aprovadas pelo responsável em 04/11/2026.
+- Spec 004 integrada no PR #14: landing page em `/` e conversa em `/conversa`.
+- Workflow de CI pronto na branch local `ci/portoes`, esperando o token ter o escopo `workflow`.
