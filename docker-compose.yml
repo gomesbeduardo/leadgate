@@ -1,0 +1,47 @@
+services:
+  servico:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.servico
+    environment:
+      PORT: "3000"
+      CONFIG_PATH: /dados/config/empresa.json
+      PROMPT_PATH: /dados/prompts/agente.md
+    volumes:
+      - ./config:/dados/config:ro
+      - ./prompts:/dados/prompts:ro
+    mem_limit: 128m
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.46.4
+    entrypoint: ["/bin/sh", "/docker/n8n-entrypoint.sh"]
+    depends_on:
+      - servico
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?preencha a chave no arquivo .env}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      SERVICO_URL: http://servico:3000
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false"
+      # Retenção da spec 001 (30 dias). Sem volume, derrubar o Compose apaga tudo.
+      EXECUTIONS_DATA_MAX_AGE: "720"
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - ./n8n:/workflow:ro
+      - ./docker/n8n-entrypoint.sh:/docker/n8n-entrypoint.sh:ro
+    # DNS explícito: o resolvedor do Docker pode falhar quando o host usa o systemd-resolved.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    mem_limit: 768m
+
+  # Modelo simulado para o teste T11: ANTHROPIC_BASE_URL=http://stub:8787 docker compose --profile teste up
+  stub:
+    image: node:24-alpine
+    profiles: ["teste"]
+    command: ["node", "/stub/stub-api.mjs"]
+    volumes:
+      - ./scripts/stub-api.mjs:/stub/stub-api.mjs:ro
+    mem_limit: 64m
