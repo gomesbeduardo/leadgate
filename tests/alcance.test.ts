@@ -84,6 +84,12 @@ describe('portao de alcance', () => {
     expect(r.out).toContain('remo')
   })
 
+  it('remover arquivo fora de tests/ e aprovado', async () => {
+    const r = await rodar([{ nome: 'src/antigo.ts', estado: 'removed' }])
+    expect(r.code).toBe(0)
+    expect(r.out.trim()).toBe('alcance: aprovado')
+  })
+
   it('T24: modificar arquivo de tests/ e aprovado', async () => {
     const r = await rodar([mod('tests/chat.test.ts')])
     expect(r.code).toBe(0)

@@ -50,7 +50,7 @@ for (const a of arquivos) {
     const alvo = area(n)
     if (alvo) motivos.push(`${n}: area protegida ${alvo}`)
   }
-  const saiuDeTests = a.estado === 'removed' ? a.nome : a.estado === 'renamed' && a.anterior?.startsWith('tests/') && !a.nome.startsWith('tests/') ? a.anterior : null
+  const saiuDeTests = a.estado === 'removed' && a.nome.startsWith('tests/') ? a.nome : a.estado === 'renamed' && a.anterior?.startsWith('tests/') && !a.nome.startsWith('tests/') ? a.anterior : null
   if (saiuDeTests) motivos.push(`${saiuDeTests}: remocao de arquivo de tests/`)
 }
 
