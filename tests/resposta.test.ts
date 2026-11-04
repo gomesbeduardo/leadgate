@@ -136,6 +136,18 @@ describe('desvios da camada 2 (red team)', () => {
     ok('Preço e prazo o time de vendas retorna.')
     ok(`Ligue ${cfg.empresa.contato}, atendemos ${cfg.empresa.horario}.`)
   })
+  it('C2: prazo por dia da semana, amanha mesmo e data solta', () => {
+    rejeita('resposta_prazo', [
+      'Atendemos na sexta-feira.', 'Fazemos amanhã mesmo.', 'dia 12/11', 'Passamos no sábado.', 'Vamos na terça.',
+      'A visita fica para 12/11/2026.', 'Passamos na segunda, de manhã.', 'Vai ser dia 3/4.',
+    ])
+    for (const r of [
+      'Atendemos de segunda a sexta, das 8h às 18h.', 'Isso fica fora da região que atendemos hoje.',
+      'Estou passando agora mesmo para o nosso time.', 'É a segunda unidade do prédio?', 'Na segunda unidade também?',
+      'Cobre 3/4 do galpão?', 'Prefere a segunda opção?', 'Cabe em 3/4 do tempo?',
+    ]) expect(regrasDe(r), r).not.toContain('resposta_prazo')
+    ok(`Fale com a gente: ${cfg.empresa.contato}, atendemos ${cfg.empresa.horario}.`)
+  })
   it('D: canario ofuscado', () => {
     const b64 = Buffer.from(cfg.prompt.canario).toString('base64')
     rejeita('resposta_vazamento_prompt', [

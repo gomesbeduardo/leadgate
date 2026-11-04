@@ -62,13 +62,18 @@ const DINHEIRO = [
   new RegExp(`\\b(?:${NUM})\\s+mil\\b`),
   /\bpix\b|\bboleto\b|\bparcel\w*|\buns\s+\d{3,}/,
 ]
+const DIA = '(?:segunda|terca|quarta|quinta|sexta|sabado|domingo)'
 const PRAZO = [
   /\bate\s+(?:o\s+|a\s+)?(?:segunda|terca|quarta|quinta|sexta|sabado|domingo|amanha|hoje|fim d[aeo]|final d[aeo]|dia\s+\d|\d+\s*(?:dias?|horas?|h|semanas?|meses))/,
   new RegExp(`\\bem\\s+(?:ate\\s+)?(?:\\d+|${NUM})\\s*(?:dias?|horas?|h|semanas?|meses|mes|minutos)\\b`),
   /\bdias?\s+uteis\b/,
   /\bprazo\s+de\s+\d/,
   /\b(?:vamos|vou|iremos|podemos|conseguimos|consigo)\s+(?:te\s+|lhe\s+)?(?:atender|visitar|ir|instalar|mandar|enviar|passar|retornar|ligar|resolver)\b[^.!?]{0,30}\b(?:hoje|amanha|agora)/,
-  /\bainda hoje\b|\bhoje mesmo\b|\bamanha (?:cedo|de manha|a tarde)\b/,
+  /\bainda hoje\b|\bhoje mesmo\b|\bamanha (?:mesmo|cedo|de manha|a tarde)\b/,
+  // Dia da semana como prazo; "segunda"/"quarta" tambem sao ordinais, entao sem "-feira" so vale no fim da frase ou antes de turno/conjuncao.
+  new RegExp(`\\b(?:na|no|nesta|neste|para|pra)\\s+${DIA}(?:-feira\\b|\\s*(?:$|[.,!?;:])|\\s+(?:de manha|a tarde|a noite|cedo|mesmo|que vem|as\\s|por volta|e\\s|ou\\s))`),
+  // Data solta: dia 12/11 ou 12/11/2026. "3/4" sozinho e fracao.
+  /\bdia\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?(?![\d/])|(?<![\d/])\d{1,2}\/\d{1,2}\/\d{2,4}(?![\d/])/,
 ]
 // Experiencia ou historia pessoal humana.
 const EXPERIENCIA = [
