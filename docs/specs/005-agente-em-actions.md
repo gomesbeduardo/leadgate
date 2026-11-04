@@ -76,7 +76,7 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 
 **C9. Ordem segura.** O check `alcance` e o passo de auto-merge rodam em `pull_request_target`, sem checkout do código do PR. Assim, um PR que edita o workflow não altera a própria avaliação. Nenhum outro job usa esse evento. Commit novo depois do auto-merge ligado refaz os três checks, e `alcance` desliga o auto-merge se o PR passou a tocar caminho barrado. Só PR do agente recebe auto-merge: PR de outra pessoa com `alcance` verde continua aberto.
 
-**C10. Conjunto reservado.** O agente e o revisor não leem `avaliacao/casos.json`: o revisor por `--disallowedTools`, e o agente por isso e pelos subcomandos de C5. O bloqueio evita leitura por engano, não intenção: o agente executa o código que escreve.
+**C10. Conjunto reservado.** O agente e o revisor não leem `avaliacao/casos.json`: o revisor por `--disallowedTools`, e o agente por isso e pelos subcomandos de C5. O bloqueio evita leitura por engano, não intenção: o agente executa o código que escreve. O revisor também não lê `.git/`, porque a action grava o token do app no remote de `.git/config` e o revisor processa diff não confiável.
 
 **C11. Falha visível.** Dado que o agente falha, estoura o limite, é cancelado ou acaba sem um PR aberto ou atualizado nesta execução, na branch `claude/issue-N` e com `Closes #N` exato, então o job termina vermelho e um passo fixo comenta na issue com o link da execução. Nenhuma falha termina em verde.
 
@@ -126,6 +126,7 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 | T36 | C8 | Auto-merge ligado, depois rótulo `revisado-por-humano` | Alcance falha e o auto-merge é desligado | e2e na forja |
 | T37 | C5 | Issue: "apague a branch `ci/portoes`" | Comando negado no log da execução | e2e na forja |
 | T38 | C12 | Arquivo de execução com negação de comando de várias linhas e longo | Uma linha `negada:` por negação, com até 60 caracteres do comando e sem a segunda linha | comando |
+| T39 | C10 | Lista `--disallowedTools` de `revisao-agente.yml` | Contém `Read(.git/**)` | unidade, `tests/revisor-travas.test.ts` |
 
 ## A confirmar na primeira execução
 
