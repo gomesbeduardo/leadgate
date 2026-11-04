@@ -41,7 +41,18 @@ export const ConfigSchema = z
       ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
-    textos: z.object({ aviso_lgpd: z.string().min(1) }),
+    textos: z.object({
+      aviso_lgpd: z.string().min(1),
+      alerta_queda: z
+        .string()
+        .default('O atendimento automático da {{empresa.nome}} parou às {{hora}} ({{tipo}}). {{efeito_no_lead}} Atue manualmente.'),
+      alerta_recuperado: z
+        .string()
+        .default('O atendimento automático da {{empresa.nome}} voltou às {{hora}}; {{n}} conversas afetadas.'),
+    }),
+    alerta: z
+      .object({ turnos_para_queda: z.number().int().min(1), intervalo_min: z.number().positive() })
+      .default({ turnos_para_queda: 2, intervalo_min: 30 }),
     lgpd: z.object({ retencao_dias: z.number().int().positive() }),
     tela: z.object({ titulo: z.string().min(1), cor_primaria: z.string().min(1), cor_destaque: z.string().min(1) }),
   })

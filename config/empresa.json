@@ -39,8 +39,11 @@
   },
   "prompt": { "canario": "CFG-7Q2M" },
   "textos": {
-    "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros."
+    "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros.",
+    "alerta_queda": "O atendimento automático da {{empresa.nome}} parou às {{hora}} ({{tipo}}). {{efeito_no_lead}} Atue manualmente.",
+    "alerta_recuperado": "O atendimento automático da {{empresa.nome}} voltou às {{hora}}; {{n}} conversas afetadas."
   },
+  "alerta": { "turnos_para_queda": 2, "intervalo_min": 30 },
   "lgpd": { "retencao_dias": 30 },
   "tela": { "titulo": "Fale com a CentralEng", "cor_primaria": "#254777", "cor_destaque": "#0f6fac" }
 }

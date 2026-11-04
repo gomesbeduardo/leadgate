@@ -22,6 +22,11 @@ function avaliar(conjunto) {
     })
 }
 
-const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao') }))
+// Bloco de taxa de falha (C13): a conta fica em avaliacao/falhas.md, gravado por avaliar.mjs.
+const falhasMd = new URL('avaliacao/falhas.md', raiz)
+const blocoFalhas = existsSync(falhasMd)
+  ? `\n## Taxa de falha\n\n${readFileSync(falhasMd, 'utf8').split('\n').filter((l) => l.startsWith('- taxa_falha')).join('\n')}\n\nDetalhe por tipo, camada e modelo em [falhas.md](falhas.md).\n`
+  : '\n## Taxa de falha\n\nnao medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver falhas.md).\n'
+const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao') })) + blocoFalhas
 writeFileSync(new URL('avaliacao/tabela.md', raiz), md)
 console.log(md)

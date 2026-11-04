@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { createServer as createHttpServer, type Server } from 'node:http'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
+import { AlertasStore } from '../src/servico/alertas'
 import { criarServidor, criarServidorInterno } from '../src/servico/app'
+import { FalhasStore } from '../src/servico/falhas'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
 const prompt = readFileSync('prompts/agente.md', 'utf8')
@@ -369,6 +371,112 @@ describe('limites publicas em /api/chat', () => {
     } finally {
       await new Promise<void>((r) => s.close(() => r()))
       await new Promise<void>((r) => lento.close(() => r()))
+    }
+  })
+})
+
+describe('falhas e alertas nas rotas', () => {
+  const abertos: Server[] = []
+  const subir = async (s: Server) => {
+    abertos.push(s)
+    await new Promise<void>((r) => s.listen(0, '127.0.0.1', r))
+    return `http://127.0.0.1:${(s.address() as AddressInfo).port}`
+  }
+  afterAll(async () => {
+    for (const s of abertos) {
+      s.closeAllConnections?.()
+      await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+  const lojas = () => {
+    const falhas = new FalhasStore({ retencaoDias: 30, modeloPrimario: cfg.ia.modelo })
+    const alertas = new AlertasStore({ retencaoDias: 30 })
+    return { falhas, alertas }
+  }
+  const webhook = async (corpo: unknown) =>
+    subir(createHttpServer((req, res) => { req.resume(); req.on('end', () => res.writeHead(200).end(JSON.stringify(corpo))) }))
+  const chatar = (url: string) => fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [{ role: 'user', content: 'Oi 99999' }] }) })
+
+  it('o proxy registra o resultado do workflow e /falhas (interno) devolve o resumo', async () => {
+    const { falhas, alertas } = lojas()
+    const wh = await webhook({
+      resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado_conversa: 'em_andamento', tipo: 'nenhum',
+      modelo_respondeu: cfg.ia.modelo, camada: 1, registros: [{ ts: '2026-11-04T10:00:00Z', tipo: '429', modelo: cfg.ia.modelo, tentativa: 1, camada: 1 }],
+    })
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
+    const int = await subir(criarServidorInterno(cfg, prompt, { falhas, alertas }))
+    await chatar(pub)
+    const j: any = await (await fetch(int + '/falhas')).json()
+    expect(j.turnos_totais).toBe(1)
+    expect(j.taxa_falha).toBe('0,0 %')
+    expect(j.tentativas_falhas_por_tipo['429']).toBe(1)
+    expect(j.recuperados_por_camada['1']).toBe(1)
+    expect(JSON.stringify(falhas.tentativas())).not.toContain('99999')
+    expect((await fetch(int + '/falhas', { method: 'DELETE' })).status).toBe(200)
+    expect(((await (await fetch(int + '/falhas')).json()) as any).turnos_totais).toBe(0)
+    expect(((await (await fetch(int + '/alertas')).json()) as any)).toEqual({ eventos: [], alerta_nao_entregue: 0 })
+  })
+
+  it('n8n fora do ar registra tipo n8n e abre a queda em /alertas', async () => {
+    const { falhas, alertas } = lojas()
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/w', falhas, alertas }))
+    await chatar(pub)
+    expect(falhas.resumo().tentativas_falhas_por_tipo).toEqual({ n8n: 1 })
+    expect(alertas.json().eventos[0]).toMatchObject({ tipo_evento: 'queda', tipo_falha: 'n8n', turnos_afetados: 1 })
+  })
+
+  it('entrada invalida (falha sem tipo) nao conta como falha nem queda', async () => {
+    const { falhas, alertas } = lojas()
+    const wh = await webhook({ resposta: null, origem: 'falha', tipo: null, estado_conversa: 'aguardando_humano', proxima_acao: 'encaminhar_humano' })
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
+    await chatar(pub)
+    await chatar(pub)
+    expect(falhas.resumo().turnos_falha).toBe(0)
+    expect(alertas.json().eventos).toEqual([])
+  })
+
+  it('porta publica sem DEMO_PAINEL: /falhas e /alertas dao 404', async () => {
+    const { falhas, alertas } = lojas()
+    const pub = await subir(criarServidor(cfg, prompt, { falhas, alertas }))
+    expect((await fetch(pub + '/falhas')).status).toBe(404)
+    expect((await fetch(pub + '/alertas')).status).toBe(404)
+    expect((await fetch(pub + '/falhas', { method: 'DELETE' })).status).toBe(404)
+  })
+
+  it('porta publica com DEMO_PAINEL=1: GET /falhas, GET /alertas e DELETE /falhas', async () => {
+    const { falhas, alertas } = lojas()
+    falhas.registrarTurno({ origem: 'falha', tipo: 'n8n' })
+    const pub = await subir(criarServidor(cfg, prompt, { falhas, alertas, painel: true }))
+    expect(((await (await fetch(pub + '/falhas')).json()) as any).turnos_falha).toBe(1)
+    expect((await fetch(pub + '/alertas')).status).toBe(200)
+    expect((await fetch(pub + '/falhas', { method: 'DELETE' })).status).toBe(200)
+    expect(falhas.resumo().turnos_totais).toBe(0)
+  })
+
+  it('porta interna nao aceita POST em /falhas', async () => {
+    const int = await subir(criarServidorInterno(cfg, prompt, lojas()))
+    expect((await fetch(int + '/falhas', { method: 'POST', body: '{}' })).status).toBe(404)
+  })
+
+  it('T20/T21: resend recebe o POST na queda; receptor 500 vira alerta_nao_entregue e o turno e igual', async () => {
+    for (const status of [200, 500]) {
+      const recebidos: any[] = []
+      const rec = await subir(createHttpServer((req, res) => {
+        const p: Buffer[] = []
+        req.on('data', (c) => p.push(c))
+        req.on('end', () => { recebidos.push({ url: req.url, auth: req.headers.authorization, corpo: JSON.parse(Buffer.concat(p).toString()) }); res.writeHead(status).end('{}') })
+      }))
+      const { falhas, alertas } = lojas()
+      const env = { ALERTA_CANAL: 'resend', RESEND_API_KEY: 'k', RESEND_BASE_URL: rec, ALERTA_EMAIL_DE: 'a@x.com', ALERTA_EMAIL_PARA: 'b@x.com' }
+      const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/w', falhas, alertas, env, log: () => {} }))
+      const r = await chatar(pub)
+      expect(await r.json()).toEqual({ resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' })
+      await vi.waitFor(() => expect(recebidos).toHaveLength(1))
+      expect(recebidos[0].url).toBe('/emails')
+      expect(recebidos[0].corpo.text).toContain('CentralEng')
+      expect(recebidos[0].corpo.text).toContain('Os leads estão sem resposta.')
+      if (status === 500) await vi.waitFor(() => expect(alertas.json().alerta_nao_entregue).toBe(1))
+      else expect(alertas.json().alerta_nao_entregue).toBe(0)
     }
   })
 })

@@ -1,5 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { Config } from '../config/schema'
+import { AlertasStore, criarCanais, criarNotificador } from './alertas'
+import { FalhasStore } from './falhas'
 import { EstadoSchema, iniciarTurno, montarRequisicao, processarResposta, type Passo } from '../fluxo/turno'
 
 const LIMITE_INTERNO = 1024 * 1024
@@ -56,6 +58,12 @@ export type OpcoesChat = {
   maxConcorrentes?: number
   /** Relogio injetavel, em ms. */
   agora?: () => number
+  /** Contagem de falhas (R17) e historico de alertas (R18); sem eles, ficam so em memoria. */
+  falhas?: FalhasStore
+  alertas?: AlertasStore
+  /** Variaveis de ambiente dos canais de alerta (ALERTA_CANAL, RESEND_*). */
+  env?: Record<string, string | undefined>
+  log?: (linha: string) => void
 }
 
 type Perfil = 'publico' | 'interno'
@@ -83,6 +91,27 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     return false
   }
 
+  const falhas = opcoes.falhas ?? new FalhasStore({ retencaoDias: cfg.lgpd.retencao_dias, modeloPrimario: cfg.ia.modelo })
+  const alertas = opcoes.alertas ?? new AlertasStore({ retencaoDias: cfg.lgpd.retencao_dias })
+  const notificador = criarNotificador({
+    empresa: cfg.empresa.nome,
+    turnosParaQueda: cfg.alerta.turnos_para_queda,
+    intervaloMin: cfg.alerta.intervalo_min,
+    agora,
+    store: alertas,
+    canais: criarCanais(opcoes.env ?? {}, opcoes.log ?? console.log),
+    textos: cfg.textos,
+  })
+  // Registra so campos de controle (R19): nunca resposta, conversa nem telefone.
+  const registrar = (turno: Record<string, unknown>) => {
+    try {
+      falhas.registrarTurno(turno)
+      notificador.tratar(turno)
+    } catch (e) {
+      console.error('falha ao registrar turno', e)
+    }
+  }
+
   const falhaChat = { resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' }
 
   // O navegador so recebe o necessario; violacoes e conversa nunca saem daqui.
@@ -96,7 +125,11 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
   })
 
   const chat = async (corpo: unknown): Promise<unknown> => {
-    if (!opcoes.webhookUrl || !ehObjeto(corpo) || !Array.isArray(corpo.historico)) return falhaChat
+    if (!ehObjeto(corpo) || !Array.isArray(corpo.historico)) return falhaChat
+    if (!opcoes.webhookUrl) {
+      registrar(falhaChat)
+      return falhaChat
+    }
     try {
       const r = await fetch(opcoes.webhookUrl, {
         method: 'POST',
@@ -104,10 +137,19 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
         body: JSON.stringify({ historico: corpo.historico }),
         signal: AbortSignal.timeout(cfg.ia.timeout_turno_ms),
       })
-      if (!r.ok) return falhaChat
+      if (!r.ok) {
+        registrar(falhaChat)
+        return falhaChat
+      }
       const j: unknown = await r.json()
-      return ehObjeto(j) ? publico(j) : falhaChat
+      if (!ehObjeto(j)) {
+        registrar(falhaChat)
+        return falhaChat
+      }
+      registrar(j)
+      return publico(j)
     } catch {
+      registrar(falhaChat)
       return falhaChat
     }
   }
@@ -130,6 +172,15 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     try {
       const rota = (req.url ?? '').split('?')[0]
       if (req.method === 'GET' && rota === '/saude') return responder(res, 200, { ok: true })
+      const painelFalhas = perfil === 'interno' || opcoes.painel
+      if (painelFalhas) {
+        if (req.method === 'GET' && rota === '/falhas') return responder(res, 200, falhas.resumo())
+        if (req.method === 'DELETE' && rota === '/falhas') {
+          falhas.reset()
+          return responder(res, 200, { ok: true })
+        }
+        if (req.method === 'GET' && rota === '/alertas') return responder(res, 200, alertas.json())
+      }
       if (perfil === 'publico') {
         if (req.method === 'GET' && rota === '/' && opcoes.chatHtml !== undefined) {
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
@@ -180,5 +231,6 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
 /** Porta publica (PORT): tela, /tela.json, /saude e /api/chat. */
 export const criarServidor = (cfg: Config, modelo: string, opcoes: OpcoesChat = {}): Server => criar('publico', cfg, modelo, opcoes)
 
-/** Porta interna (PORT_INTERNA, so na rede do compose): /preparar, /validar e /saude. */
-export const criarServidorInterno = (cfg: Config, modelo: string): Server => criar('interno', cfg, modelo, {})
+/** Porta interna (PORT_INTERNA, so na rede do compose): /preparar, /validar, /falhas, /alertas e /saude. */
+export const criarServidorInterno = (cfg: Config, modelo: string, opcoes: Pick<OpcoesChat, 'falhas' | 'alertas'> = {}): Server =>
+  criar('interno', cfg, modelo, opcoes)

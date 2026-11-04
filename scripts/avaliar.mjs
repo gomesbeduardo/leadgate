@@ -67,6 +67,26 @@ async function esperarWebhook() {
 }
 await esperarWebhook()
 
+// Contagem de falhas (R17): le /falhas na porta publica, que so responde com DEMO_PAINEL=1.
+// AVALIACAO_FALHAS_URL e o endereco de /falhas; o reset (DELETE) so ocorre com DEMO_PAINEL=1.
+const falhasUrl = process.env.AVALIACAO_FALHAS_URL ?? 'http://127.0.0.1:8080/falhas'
+const painel = process.env.DEMO_PAINEL === '1'
+const lerFalhas = async () => {
+  try {
+    const r = await fetch(falhasUrl, { signal: AbortSignal.timeout(5000) })
+    return r.ok ? await r.json() : null
+  } catch {
+    return null
+  }
+}
+let falhasAtivas = false
+if (painel) {
+  try {
+    falhasAtivas = (await fetch(falhasUrl, { method: 'DELETE', signal: AbortSignal.timeout(5000) })).ok
+  } catch {}
+}
+if (!falhasAtivas) console.warn(`aviso: contagem de falhas desligada (${falhasUrl} inacessivel ou DEMO_PAINEL != 1); avaliacao/falhas.md nao sera gerado.`)
+
 const execucoes = []
 for (const caso of casos) {
   const turnos = []
@@ -107,6 +127,29 @@ if (turnosTotal === 0 || turnosFalhos === turnosTotal) {
 mkdirSync(new URL('.', saidaArq), { recursive: true })
 writeFileSync(saidaArq, JSON.stringify({ gerado_em: new Date().toISOString(), limiar, conjunto, execucoes }, null, 2) + '\n')
 console.log(`gravado em ${saidaArq.pathname}`)
+if (falhasAtivas) {
+  const f = await lerFalhas()
+  if (f) {
+    const tipos = Object.entries(f.tentativas_falhas_por_tipo ?? {}).map(([t, n]) => `- ${t}: ${n}`).join('\n') || '- nenhuma'
+    const md = `# Taxa de falha (conjunto ${conjunto})
+
+- turnos = ${f.turnos_totais}
+- falhas = ${f.turnos_falha}
+- taxa_falha = ${f.turnos_falha}/${f.turnos_totais} = ${f.taxa_falha}
+- recuperados na camada 1 = ${f.recuperados_por_camada?.['1']}; na camada 2 = ${f.recuperados_por_camada?.['2']}
+- respondeu o modelo primario = ${f.modelo_respondeu?.primario}; o reserva = ${f.modelo_respondeu?.reserva}
+- entradas invalidas (fora da conta) = ${f.entradas_invalidas ?? 0}
+
+Tentativas falhas por tipo:
+
+${tipos}
+
+Conta: taxa_falha = turnos com origem falha / turnos totais; turno recuperado na camada 1 ou 2 nao entra.
+`
+    writeFileSync(new URL('falhas.md', new URL('.', saidaArq)), md)
+    console.log(`gravado em ${new URL('falhas.md', new URL('.', saidaArq)).pathname}`)
+  }
+}
 if (falhas.length) {
   console.error(`${falhas.length} de ${execucoes.length} caso(s) com falha HTTP: ${falhas.map((e) => `${e.id} (${e.falha_execucao})`).join(', ')}`)
   process.exit(1)
