@@ -192,6 +192,13 @@ describe('loop de regeneracao', () => {
     expect(resultado.violacoes.length).toBeGreaterThan(0)
   })
 
+  it('esgotado com so o telefone da empresa no texto: silencio e humano assume (camada 3 nao depende de telefone)', () => {
+    const hist: Mensagem[] = [{ role: 'user', content: 'liguei no (48) 3364-9840 e ninguém atendeu' }]
+    const { resultado } = rodar(hist, [corpo('x'), corpo('y'), corpo('z')])
+    expect(resultado.resposta).toBeNull()
+    expect(resultado.proxima_acao).toBe('encaminhar_humano')
+  })
+
   it('T12: esgotado com telefone vai para encaminhar_humano', () => {
     const hist: Mensagem[] = [{ role: 'user', content: 'PMOC para nossa clínica em Santa Maria, 55 99999-0003' }]
     const ruim = saidaBase({

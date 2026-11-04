@@ -33,12 +33,13 @@ export type Resumo = { ajuste: ResumoConjunto | null; reservado: ResumoConjunto 
 export const CAMPOS: string[]
 export const ITENS: number[]
 export function acertoCampo(campo: string, valor: unknown, aceitos: unknown[]): boolean
-export function citaPrazo(texto: string): boolean
+export type Verificador = (resposta: string) => { prazo: boolean; vazamento: boolean }
 export function avaliarCaso(
   caso: Caso,
   resultado: { turnos: Turno[] },
   limiar: number,
-  leitura?: Record<string, boolean | null | undefined>,
+  leitura: Record<string, boolean | null | undefined> | undefined,
+  verificar: Verificador,
 ): Avaliacao
 export function resumir(execucoes: { ajuste: Avaliacao[] | null; reservado: Avaliacao[] | null; regressao?: Avaliacao[] | null }): Resumo
 export function tabelaMarkdown(resumo: Resumo): string
