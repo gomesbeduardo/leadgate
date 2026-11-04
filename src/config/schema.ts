@@ -29,6 +29,10 @@ export const ConfigSchema = z
         'sou humano', 'sou humana', 'sou uma pessoa', 'não sou um robô', 'não sou robô',
         'não sou uma ia', 'não sou ia', 'sou uma atendente de verdade', 'sou um atendente de verdade',
       ]),
+      marcadores_ia: textos.default(['atendimento automatizado', 'assistente virtual', 'inteligência artificial']),
+      provedores_proibidos: textos.default([
+        'claude', 'anthropic', 'gpt', 'chatgpt', 'openai', 'gemini', 'llama', 'mistral', 'copilot', 'deepseek', 'grok',
+      ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
     textos: z.object({ aviso_lgpd: z.string().min(1), falha_tecnica: z.string().min(1) }),

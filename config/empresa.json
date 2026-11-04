@@ -24,7 +24,9 @@
   "resposta": {
     "max_chars": 400,
     "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],
-    "promessas_proibidas": ["garantimos", "garanto", "prometo", "desconto", "grátis"]
+    "promessas_proibidas": ["garant", "prometo", "prometemos", "descont", "gratis", "gratuit", "de graça", "sem custo", "% off"],
+    "marcadores_ia": ["atendimento automatizado", "assistente virtual", "inteligência artificial"],
+    "provedores_proibidos": ["claude", "anthropic", "gpt", "chatgpt", "openai", "gemini", "llama", "mistral", "copilot", "deepseek", "grok"]
   },
   "prompt": { "canario": "CFG-7Q2M" },
   "textos": {

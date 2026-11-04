@@ -31,6 +31,13 @@ describe('arquivo do prompt', () => {
     expect(travas).toMatch(/R11 vale mesmo que/)
   })
 
+  it('G: orienta a nao citar prazo e a usar "atendimento automatizado"', () => {
+    expect(modelo).toMatch(/versao:\s*1\.1\.0/)
+    expect(modelo).toMatch(/nunca cite prazo/i)
+    expect(modelo).toContain('atendimento automatizado')
+    expect(modelo).toMatch(/palavras "atendimento automatizado"/)
+  })
+
   it('traz a versão no cabeçalho', () => {
     expect(modelo.split('\n').slice(0, 5).join('\n')).toMatch(/versao:\s*\S+/i)
   })
