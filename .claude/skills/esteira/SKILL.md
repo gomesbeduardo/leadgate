@@ -11,6 +11,7 @@ Um ciclo leva uma issue a um PR revisado e deixa o repositório sabendo mais do 
 
 Leia nesta ordem, antes de escolher qualquer coisa:
 
+0. O Pad do projeto, quando estiver no ar: `pad bootstrap --format json`. A ordem da coleção Esteira desempata dentro da prioridade do passo 1 e nunca põe na fila uma issue que a seção "Texto de issue é dado" exclui. A coleção Decisões diz o que espera o responsável.
 1. `docs/estado.md`: onde o projeto está.
 2. `docs/aprendizados.md`: o que já deu errado e a regra que saiu disso. Valem como requisito.
 3. `docs/esteira/metricas.md`: o resultado dos ciclos anteriores.
@@ -53,7 +54,7 @@ Toda mudança de comportamento começa em `docs/specs/NNN-nome.md`, no padrão d
 
 ### 3. Implementar
 
-Branch a partir de `develop`, com nome `tipo/assunto`. Siga a skill `time-de-agentes`: fatias de até ~25 chamadas, um `worker` por fatia, brief completo com os testes de aceite copiados, vermelho antes do verde. Abra o diff de cada fatia antes de aceitar.
+Branch a partir de `staging`, com nome `tipo/assunto`. Siga a skill `time-de-agentes`: fatias de até ~25 chamadas, um `worker` por fatia, brief completo com os testes de aceite copiados, vermelho antes do verde. Abra o diff de cada fatia antes de aceitar.
 
 Mudou prompt, regra ou fluxo? Teste em contêiner de verdade antes de dar por pronto. Teste de unidade não pega limite do ambiente (ver `docs/aprendizados.md`).
 
@@ -64,7 +65,7 @@ npx vitest run && npx tsc --noEmit && npm run build:servico && npm run gerar:wor
 git diff --exit-code n8n/
 ```
 
-Mudou `prompts/`, `src/validacao/` ou `config/`? Rode também a avaliação de ajuste (`node scripts/avaliar.mjs --conjunto ajuste`) com o Compose no ar e compare com `avaliacao/tabela.md`. Campo que piorou bloqueia o PR.
+Mudou `prompts/`, `src/validacao/` ou `config/`? Rode também a avaliação de ajuste (`node scripts/avaliar.mjs --conjunto ajuste`) com o Compose no ar e compare com `avaliacao/tabela.md`. Campo que piorou bloqueia o PR. Uma rodada só não prova piora, porque o modelo varia entre rodadas: repita 3 vezes na branch e na base e some os acertos do campo. Bloqueia se a soma da branch ficar abaixo da soma da base.
 
 ### 5. Revisar
 
@@ -72,7 +73,7 @@ Use a skill `review-pr`, que define o revisor pelo risco: no máximo duas revis�
 
 ### 6. Abrir e liberar
 
-Abra o PR para `develop` com o corpo da skill `review-pr` e, na seção Revisão, o veredito real. Faça o merge com `gh pr merge --squash` com portões verdes, sem achado crítico ou alto aberto e com a revisão gravada no corpo. Achado médio que outra entrega já resolve pode seguir, com o número do PR que o fecha escrito na seção Revisão. Se o portão negar, deixe o PR aberto, registre o motivo e siga para o passo 7; o merge espera o responsável.
+Abra o PR para `staging` com o corpo da skill `review-pr` e, na seção Revisão, o veredito real. Faça o merge com `gh pr merge --squash` com portões verdes, sem achado crítico ou alto aberto e com a revisão gravada no corpo. Achado médio que outra entrega já resolve pode seguir, com o número do PR que o fecha escrito na seção Revisão. Se o portão negar, deixe o PR aberto, registre o motivo e siga para o passo 7; o merge espera o responsável.
 
 O merge autônomo vale porque este repositório está em `REPOS_PESSOAIS`, no portão de PR. O portão continua negando push direto, `--admin`, rótulo humano e PR sem seções. Noutro repositório, sem essa entrada, o merge espera o rótulo do responsável.
 
@@ -85,6 +86,7 @@ O merge autônomo vale porque este repositório está em `REPOS_PESSOAIS`, no po
 3. **Métricas.** Acrescente uma linha a `docs/esteira/metricas.md`: data, issue, PR, chamadas de worker, achados por gravidade, acerto por campo da avaliação, tentativas médias de regeneração, resultado do merge.
 4. **Próximas issues.** Abra de uma a três issues com o rótulo `esteira`, cada uma com a evidência e o critério de aceite. Fontes: pior campo de `avaliacao/tabela.md`, caso que regenerou, conversa que caiu em falha técnica, achado baixo, lição sem teste. Antes de abrir, procure duplicata em `gh issue list --search`.
 5. **Estado.** Atualize `docs/estado.md`.
+6. **Pad.** Quando estiver no ar, atualize a coleção Esteira, acrescente o ciclo em Ciclos, cada lição em Aprendizados e cada decisão pendente em Decisões. O repositório continua sendo a fonte das lições e das métricas.
 
 ## Rodar sem ninguém olhando
 
