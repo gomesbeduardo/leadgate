@@ -7,7 +7,7 @@ export type Mensagem = { role: 'user' | 'assistant'; content: string }
 export type TipoViolacao = 'schema' | 'cruzada' | 'resposta'
 export type Violacao = { tipo: TipoViolacao; regra: string; detalhe: string }
 
-export type Acao = 'perguntar' | 'encaminhar_vendas' | 'responder_e_encerrar' | 'encaminhar_humano'
+export type Acao = 'perguntar' | 'encaminhar_vendas' | 'responder_e_encerrar' | 'encaminhar_humano' | 'ignorar'
 export type Saida = {
   tipo_servico: string | null
   segmento: string | null
@@ -18,6 +18,8 @@ export type Saida = {
   dados_faltantes: ('tipo_servico' | 'segmento' | 'cidade' | 'telefone')[]
   qualificado: boolean
   confianca: number
+  desvios: number
+  vagos: number
   proxima_acao: Acao
   resposta: string
 }
@@ -37,7 +39,9 @@ function montarSchema(cfg: Config) {
     dados_faltantes: z.array(z.enum(['tipo_servico', 'segmento', 'cidade', 'telefone'])),
     qualificado: z.boolean(),
     confianca: z.number(),
-    proxima_acao: z.enum(['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano']),
+    desvios: z.number().int().min(0).max(3),
+    vagos: z.number().int().min(0).max(3),
+    proxima_acao: z.enum(['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano', 'ignorar']),
     resposta: z.string(),
   })
 }
@@ -236,13 +240,43 @@ export function analisarContrato(
     }
   }
 
+  const contadorNoLimite = s.desvios === 3 || s.vagos === 3
+
   // R5: lead dentro do escopo nunca e dispensado com um simples encerramento.
   if (!recusa && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
     if (temTelefone) {
       cruz('encerrar_com_telefone_exige_humano', 'Lead nao recusado com telefone nao pode ser encerrado: use proxima_acao=encaminhar_humano.')
-    } else if ((servido || aceito || cidadeOk) && !citaContato) {
+    } else if ((servido || aceito || cidadeOk || contadorNoLimite) && !citaContato) {
       cruz('encerrar_sem_telefone_exige_contato', `Lead dentro do escopo sem telefone: a resposta deve citar o contato da empresa: ${contato}.`)
     }
+  }
+
+  // Falas e interacao (spec 006): ignorar, desvios e vagos.
+  if (s.desvios > 0 && s.vagos > 0) {
+    cruz('contadores_exclusivos', 'desvios e vagos nao podem ser maiores que zero no mesmo turno. Conte so um deles.')
+  }
+  if (s.proxima_acao === 'ignorar') {
+    if (s.resposta.trim() !== '') cruz('ignorar_exige_resposta_vazia', 'proxima_acao=ignorar exige resposta vazia.')
+    const abertura = !historico.some((m) => m.role === 'assistant') && s.desvios >= 1 && !s.qualificado && s.telefone === null
+    const fimSilencioso = s.desvios === 3 && temTelefone && !s.qualificado
+    if (!abertura && !fimSilencioso) {
+      cruz('ignorar_fora_do_permitido', 'ignorar so vale na abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone) ou no fim silencioso (desvios=3, com telefone, nao qualificado).')
+    }
+  } else if ((s.desvios === 1 || s.desvios === 2 || s.vagos === 1 || s.vagos === 2) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
+    cruz('desvio_exige_pergunta', 'Com desvios ou vagos em 1 ou 2, a proxima_acao deve ser perguntar (reconduza o lead com uma pergunta).')
+  }
+  if (s.desvios === 3) {
+    const esperada = !temTelefone
+      ? s.proxima_acao === 'responder_e_encerrar'
+      : s.qualificado
+        ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
+        : s.proxima_acao === 'ignorar'
+    if (!esperada) {
+      cruz('limite_exige_encerrar', 'desvios=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone e nao qualificado, ignorar; com telefone e qualificado, encaminhar_vendas com resposta vazia.')
+    }
+  }
+  if (s.vagos === 3 && s.proxima_acao !== (temTelefone ? 'encaminhar_humano' : 'responder_e_encerrar')) {
+    cruz('limite_exige_encerrar', 'vagos=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone, encaminhar_humano.')
   }
 
   return { saida: s, violacoes: v }

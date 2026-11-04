@@ -31,7 +31,7 @@ const saidaBase = (extra: Record<string, unknown> = {}) =>
     urgencia: null,
     dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
     qualificado: false,
-    confianca: 0.5,
+    confianca: 0.5, desvios: 0, vagos: 0,
     proxima_acao: 'perguntar',
     resposta: 'Qual servico voce precisa?',
     ...extra,
@@ -118,10 +118,10 @@ describe('montarRequisicao', () => {
 
 describe('schemaSaida', () => {
   const s: any = schemaSaida(cfg)
-  it('fecha o objeto e exige os 11 campos', () => {
+  it('fecha o objeto e exige os 13 campos', () => {
     expect(s.type).toBe('object')
     expect(s.additionalProperties).toBe(false)
-    expect(s.required).toHaveLength(11)
+    expect(s.required).toHaveLength(13)
     expect([...s.required].sort()).toEqual(Object.keys(s.properties).sort())
   })
   it('enums vem da config e nulaveis usam anyOf', () => {
@@ -202,7 +202,7 @@ describe('loop de regeneracao', () => {
     const hist: Mensagem[] = [{ role: 'user', content: 'PMOC para nossa clínica em Santa Maria, 55 99999-0003' }]
     const ruim = saidaBase({
       tipo_servico: 'pmoc', segmento: 'comercial', cidade: 'Santa Maria', telefone: '55 99999-0003',
-      dados_faltantes: [], qualificado: false, confianca: 0.9, proxima_acao: 'responder_e_encerrar',
+      dados_faltantes: [], qualificado: false, confianca: 0.9, desvios: 0, vagos: 0, proxima_acao: 'responder_e_encerrar',
       resposta: 'Obrigado pelo contato.',
     })
     const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], semReserva)

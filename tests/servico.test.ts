@@ -114,7 +114,7 @@ describe('servico HTTP (porta interna)', () => {
     const saida = {
       tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, urgencia: null,
       dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
-      qualificado: false, confianca: 0.5, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
+      qualificado: false, confianca: 0.5, desvios: 0, vagos: 0, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
     }
     const r: any = await (await post('/validar', { estado: t.estado, resposta: resp(200, JSON.stringify(saida)) })).json()
     expect(r.fim).toBe(true)

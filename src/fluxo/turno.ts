@@ -157,7 +157,9 @@ export function schemaSaida(cfg: Config): object {
     dados_faltantes: { type: 'array', items: enumStr(['tipo_servico', 'segmento', 'cidade', 'telefone']) },
     qualificado: { type: 'boolean' },
     confianca: { type: 'number' },
-    proxima_acao: enumStr(['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano']),
+    desvios: { type: 'integer', enum: [0, 1, 2, 3] },
+    vagos: { type: 'integer', enum: [0, 1, 2, 3] },
+    proxima_acao: enumStr(['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano', 'ignorar']),
     resposta: { type: 'string' },
   }
   return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false }

@@ -578,7 +578,7 @@ describe('gerador: rejeitadas_por_categoria e --completar', () => {
 
 describe('deriva: regras do dataset iguais as de src/validacao/contrato.ts', () => {
   const cfgC = carregarConfig(bruto)
-  const base = { tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Palhoça', nome: null, urgencia: 'media', dados_faltantes: [], confianca: 0.9, resposta: 'ok' }
+  const base = { tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Palhoça', nome: null, urgencia: 'media', dados_faltantes: [], confianca: 0.9, desvios: 0, vagos: 0, resposta: 'ok' }
   for (const telefone of [null, '48 99999-1234']) {
     for (const qualificado of [true, false]) {
       for (const acao of ['perguntar', 'encaminhar_vendas']) {

@@ -17,7 +17,7 @@ const ok = (r: string) => expect(regrasDe(r)).toEqual([])
 const base = (): Record<string, unknown> => ({
   tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'São José', nome: 'Carlos',
   telefone: '48 99999-0001', urgencia: null, dados_faltantes: [], qualificado: true,
-  confianca: 0.9, proxima_acao: 'perguntar', resposta: 'Perfeito, qual o tamanho do local?',
+  confianca: 0.9, desvios: 0, vagos: 0, proxima_acao: 'perguntar', resposta: 'Perfeito, qual o tamanho do local?',
 })
 const saida = (over: Record<string, unknown>) =>
   validarSaida(JSON.stringify({ ...base(), ...over }), {

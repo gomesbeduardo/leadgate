@@ -17,6 +17,8 @@ const saidaValida = {
   dados_faltantes: ['segmento', 'cidade', 'telefone'],
   qualificado: false,
   confianca: 0.6,
+  desvios: 0,
+  vagos: 0,
   proxima_acao: 'perguntar',
   resposta: 'Claro, posso ajudar com a manutenção. Em qual cidade fica a loja?',
 }

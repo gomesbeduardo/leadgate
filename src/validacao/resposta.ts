@@ -131,7 +131,7 @@ function termoPromessa(norm: string, termo: string): boolean {
 
 export function validarResposta(
   resposta: string,
-  ctx: { cfg: Config; promptMontado: string; ultimaMsgLead?: string },
+  ctx: { cfg: Config; promptMontado: string; ultimaMsgLead?: string; vazioPermitido?: boolean },
 ): Violacao[] {
   const { cfg, promptMontado } = ctx
   const v: Violacao[] = []
@@ -144,7 +144,7 @@ export function validarResposta(
     seguro = seguro.split(limpar(publico)).join(' ')
   }
 
-  if (norm.length === 0) add('resposta_vazia', 'A resposta esta vazia. Escreva uma mensagem curta para o lead.')
+  if (norm.length === 0 && !ctx.vazioPermitido) add('resposta_vazia', 'A resposta esta vazia. Escreva uma mensagem curta para o lead.')
   if (resposta.length > max) add('resposta_longa', `A resposta tem ${resposta.length} caracteres; o maximo e ${max}. Encurte.`)
 
   const n = (resposta.normalize('NFKC').match(/[?؟]/g) ?? []).length
