@@ -13,6 +13,7 @@
   --navy: #254777;
   --navy-noturno: #202249;
   --azure: #0f6fac;
+  --foco-claro: #ffffff;
   --nevoa: #f3f5f8;
   --grafite: #515a6e;
   --tinta: #171b24;
@@ -24,6 +25,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; font: 1.0625rem/1.6 var(--fonte-texto); color: var(--tinta); background: var(--branco); overflow-x: hidden; }
 :focus-visible { outline: 3px solid var(--azure); outline-offset: 2px; }
+.btn.claro:focus-visible { outline-color: var(--foco-claro); }
 .logo { display: block; width: 8.5rem; aspect-ratio: 665 / 371; background: currentColor; -webkit-mask: url(/logo.svg) left center / contain no-repeat; mask: url(/logo.svg) left center / contain no-repeat; }
 .limite { width: 100%; max-width: 68rem; margin: 0 auto; padding: 0 var(--margem); }
 .btn { display: inline-flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 1.75rem; border-radius: 1.375rem; background: var(--azure); color: var(--branco); border: 2px solid var(--azure); font: 600 1.0625rem/1 var(--fonte-titulo); letter-spacing: .03em; text-decoration: none; white-space: nowrap; }

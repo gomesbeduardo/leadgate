@@ -20,7 +20,7 @@ Aqui a IA entra onde a linguagem é solta: entender o que a pessoa quer, pedir s
 - Uma avaliação reproduzível com 20 casos, mais um conjunto separado de regressão com falhas que já aconteceram.
 - Uma esteira de desenvolvimento em que agentes especificam, implementam, revisam e registram o que aprenderam (seção final).
 
-A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
+A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. Na tela do chat, `tela.titulo` define só o título da aba do navegador (o cabeçalho visível é fixo, "Atendimento CentralEng"); as cores da conversa ficam nos tokens de `chat/index.html`, e `cor_primaria` e `cor_destaque` não são mais aplicadas ali, embora `/tela.json` ainda as devolva. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
 
 ## O que funcionou
 

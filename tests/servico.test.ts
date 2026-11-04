@@ -308,6 +308,26 @@ describe('chat', () => {
     expect((await fetch(urlSem + '/logo.svg')).status).toBe(404)
   })
 
+  it('T6: a LP real tem ao menos dois links para /conversa (topo e fim)', () => {
+    const html = readFileSync('chat/lp.html', 'utf8')
+    expect(html.split('href="/conversa"').length - 1).toBeGreaterThanOrEqual(2)
+  })
+
+  it('T7: lp.html usa anel de foco claro nos botoes de secoes escuras', () => {
+    const html = readFileSync('chat/lp.html', 'utf8')
+    expect(html).toMatch(/--foco-claro:\s*#/)
+    expect(html).toMatch(/\.btn\.claro:focus-visible\s*\{[^}]*var\(--foco-claro\)/)
+  })
+
+  it('T8: chat/index.html sem link voltar, titulo vindo da tela, form[hidden] e aviso pre-wrap', () => {
+    const html = readFileSync('chat/index.html', 'utf8')
+    expect(html).not.toContain('class="voltar"')
+    expect(html).not.toContain('href="/"')
+    expect(html).toContain('document.title = tela.titulo')
+    expect(html).toMatch(/form\[hidden\]\s*\{\s*display:\s*none/)
+    expect(html).toMatch(/\.msg\.aviso\s*\{[^}]*white-space:\s*pre-wrap/)
+  })
+
   it('T5: chat/index.html nao cita WhatsApp e traz aviso_lgpd', () => {
     const html = readFileSync('chat/index.html', 'utf8')
     expect(/whatsapp/i.test(html)).toBe(false)

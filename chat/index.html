@@ -45,8 +45,6 @@ body {
 
 .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; }
 .topo { background: var(--msg-topo); color: var(--msg-topo-texto); padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
-.voltar { color: var(--msg-topo-texto); text-decoration: none; font-size: 1.75rem; line-height: 1; width: 32px; height: 44px; display: flex; align-items: center; justify-content: center; }
-.voltar:focus-visible { outline-color: var(--msg-topo-texto); }
 .avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--branco); color: var(--msg-topo); display: flex; align-items: center; justify-content: center; }
 .avatar i { display: block; width: 28px; height: 16px; background: currentColor; -webkit-mask: url(/logo.svg) center / contain no-repeat; mask: url(/logo.svg) center / contain no-repeat; }
 .topo h1 { margin: 0; font: 600 1.25rem/1.2 var(--fonte-titulo); letter-spacing: .01em; }
@@ -61,7 +59,7 @@ body.com-painel .corpo { max-width: none; flex-direction: column; }
 .msg .hora { display: block; text-align: right; font-size: .6875rem; line-height: 1.3; color: var(--msg-hora); margin-top: 2px; }
 .msg.sistema { align-self: flex-start; background: var(--msg-agente); color: var(--tinta); border-top-left-radius: 0; }
 .msg.lead { align-self: flex-end; background: var(--msg-lead); color: var(--tinta); border-top-right-radius: 0; }
-.msg.aviso { align-self: center; max-width: 92%; background: var(--msg-aviso); border: 1px solid var(--msg-aviso-borda); color: var(--tinta); font-size: .875rem; text-align: center; padding: 8px 12px; }
+.msg.aviso { align-self: center; max-width: 92%; background: var(--msg-aviso); border: 1px solid var(--msg-aviso-borda); color: var(--tinta); font-size: .875rem; text-align: center; padding: 8px 12px; white-space: pre-wrap; }
 .msg.aviso .rotulo { display: block; font: 600 .75rem/1.2 var(--fonte-titulo); text-transform: uppercase; letter-spacing: .08em; color: var(--grafite); margin-bottom: 4px; }
 .encerrado { align-self: center; font-size: .8125rem; color: var(--msg-hora); background: var(--msg-agente); border-radius: var(--raio); padding: 4px 12px; }
 
@@ -75,6 +73,7 @@ body.com-painel .corpo { max-width: none; flex-direction: column; }
 
 .rodape { flex: none; background: var(--nevoa-pagina); padding: 8px 12px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 form { display: flex; gap: 8px; align-items: flex-end; }
+form[hidden] { display: none; }
 textarea {
   flex: 1; min-width: 0; resize: none; font: inherit; color: var(--tinta); background: var(--branco);
   border: 1px solid var(--msg-borda); border-radius: 22px; padding: 9px 16px; max-height: 8.5em;
@@ -114,7 +113,6 @@ body.com-painel .painel { display: block; }
 <body>
 <div class="app">
   <header class="topo">
-    <a class="voltar" href="/" aria-label="Voltar para o início">&#8249;</a>
     <span class="avatar" aria-hidden="true"><i></i></span>
     <div><h1>Atendimento CentralEng</h1><p>Assistente virtual</p></div>
   </header>
@@ -306,6 +304,7 @@ body.com-painel .painel { display: block; }
 
   fetch('/tela.json').then(function (r) { return r.json(); }).then(function (c) {
     tela = c;
+    if (tela && tela.titulo) document.title = tela.titulo;
   }).catch(function () {}).then(function () {
     mostrarAviso();
     atualizarControles();
