@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
+import { montarPrompt } from '../src/prompt/montar'
 import { validarResposta } from '../src/validacao/resposta'
 import { validarSaida } from '../src/validacao/saida'
 import type { ResultadoValidacao } from '../src/validacao/contrato'
@@ -200,5 +201,48 @@ describe('validarSaida', () => {
   })
   it('saida limpa e ok', () => {
     expect(saida({}).ok).toBe(true)
+  })
+})
+
+describe('capacidade em BTUs não é valor monetário', () => {
+  const monetario = (r: string) => regrasDe(r).includes('resposta_valor_monetario')
+  it.each([
+    'Esse split de 18 mil BTUs fica em qual cidade?',
+    'Esse de 18 mil btus fica em qual cidade?',
+    'Esse de 18k BTU fica em qual cidade?',
+    'Esse de 18kBTU fica em qual cidade?',
+    'Esse de doze mil BTUs fica em qual cidade?',
+  ])('não marca: %s', (r) => expect(monetario(r)).toBe(false))
+  it.each(['Isso custa 18 mil.', 'R$ 18 mil', 'Fica em 18k.', 'Fica em doze mil.', 'São 18 mil reais'])(
+    'ainda marca: %s',
+    (r) => expect(monetario(r)).toBe(true),
+  )
+})
+
+describe('frases naturais não disparam vazamento com o prompt completo montado', () => {
+  const completo = montarPrompt(readFileSync('prompts/agente.md', 'utf8'), cfg)
+  it.each([
+    'Em qual cidade fica o equipamento?',
+    'Fazemos manutenção sim. O equipamento é um split de parede?',
+  ])('não marca: %s', (r) => {
+    const regras = validarResposta(r, { cfg, promptMontado: completo }).map((v) => v.regra)
+    expect(regras).not.toContain('resposta_vazamento_prompt')
+  })
+  it('não marca: Você precisa de instalação ou de manutenção? (frase dos exemplos de estilo)', () => {
+    const regras = validarResposta('Você precisa de instalação ou de manutenção?', { cfg, promptMontado: completo }).map((v) => v.regra)
+    expect(regras).not.toContain('resposta_vazamento_prompt')
+  })
+
+  it('ainda marca cópia de 36+ caracteres de instrução fora dos exemplos (Travas)', () => {
+    const r = 'Não invente preço, prazo, disponibilidade de agenda nem qualquer fato sobre a empresa'
+    expect(regrasDe(r)).not.toContain('resposta_vazamento_prompt')
+    const regras = validarResposta(r, { cfg, promptMontado: completo }).map((v) => v.regra)
+    expect(regras).toContain('resposta_vazamento_prompt')
+  })
+
+  it('sem o marcador dos exemplos, compara o prompt inteiro', () => {
+    const p = 'Instrucao. Voce precisa de instalacao ou de manutencao de ar-condicionado em qual local?'
+    const regras = validarResposta('Voce precisa de instalacao ou de manutencao de ar-condicionado em qual local?', { cfg, promptMontado: p }).map((v) => v.regra)
+    expect(regras).toContain('resposta_vazamento_prompt')
   })
 })

@@ -38,9 +38,19 @@ function vazouCanario(resposta: string, canario: string): boolean {
   return formasCodificadas(canario).some((f) => bruto.includes(f))
 }
 
+// Exemplos de estilo (falas fictícias) não são texto secreto: saem da comparação de vazamento.
+// Vão da linha "Os exemplos abaixo..." até o próximo título "## ". Sem o marcador, compara o prompt inteiro.
+function semExemplos(prompt: string): string {
+  const m = /^Os exemplos abaixo.*$/m.exec(prompt)
+  if (!m) return prompt
+  const ini = m.index + m[0].length
+  const fim = prompt.indexOf('\n## ', ini)
+  return prompt.slice(0, ini) + (fim === -1 ? '' : prompt.slice(fim))
+}
+
 function vazaPrompt(resposta: string, cfg: Config, promptMontado: string): boolean {
   if (vazouCanario(resposta, cfg.prompt.canario)) return true
-  const p = plano(promptMontado)
+  const p = plano(semExemplos(promptMontado))
   // Dados publicos da empresa podem ser citados (R5 exige o contato).
   const publicos = [cfg.empresa.contato, cfg.empresa.nome, cfg.empresa.horario].map((x) => plano(x))
   for (const cfComoEspaco of [false, true]) {
@@ -58,8 +68,8 @@ const DINHEIRO = [
   /(?<![a-z])r\s*\$/,
   /\b(?:brl|usd|eur|euros?|dolar(?:es)?)\b/,
   new RegExp(`(?:\\d|\\b(?:${NUM}|mil)\\b)[\\w.,\\s]{0,25}?\\b(?:reais|contos?|pilas?)\\b`),
-  /\d[\d.,]*\s*(?:mil|k)\b/,
-  new RegExp(`\\b(?:${NUM})\\s+mil\\b`),
+  /\d[\d.,]*\s*(?:mil|k)\b(?!\s*btus?\b)/,
+  new RegExp(`\\b(?:${NUM})\\s+mil\\b(?!\\s*btus?\\b)`),
   /\bpix\b|\bboleto\b|\bparcel\w*|\buns\s+\d{3,}/,
 ]
 const DIA = '(?:segunda|terca|quarta|quinta|sexta|sabado|domingo)'

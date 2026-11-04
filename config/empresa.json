@@ -32,7 +32,7 @@
     "modelo_reserva": "claude-haiku-5-5", "tentativas_http": 3, "espera_ms": [1000, 3000], "timeout_ms": 25000, "timeout_turno_ms": 180000, "tentativas_reserva": 2 },
   "resposta": {
     "max_chars": 400,
-    "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],
+    "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1", "mais detalhes"],
     "promessas_proibidas": ["garant", "prometo", "prometemos", "descont", "gratis", "gratuit", "de graça", "sem custo", "% off"],
     "marcadores_ia": ["atendimento automatizado", "assistente virtual", "inteligência artificial"],
     "provedores_proibidos": ["claude", "anthropic", "gpt", "chatgpt", "openai", "gemini", "llama", "mistral", "copilot", "deepseek", "grok"]
