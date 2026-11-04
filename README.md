@@ -249,3 +249,5 @@ A segunda metade do projeto é o processo que o construiu. Os arquivos citados a
 **Supervisão.** A esteira não rodou sozinha. Uma pessoa autorizou os merges neste repositório e aprovou as specs, e qualquer mudança pode ser revertida por uma pessoa. "Quase autônoma" quer dizer que os ciclos de especificar, implementar, revisar e registrar rodam sem ajuda a cada passo, não que ninguém acompanha.
 
 **Agente no GitHub Actions.** Quando ligado, o rótulo `claude-fix` numa issue do responsável dispara um agente que implementa e abre o PR. Esse PR pode entrar em `staging` sem leitura humana, se passar pelos portões, por um revisor agente e pela lista de caminhos barrados. Prompt, validação, configuração, specs, avaliação, CI e dependências sempre esperam uma pessoa. As regras estão em `docs/specs/005-agente-em-actions.md`.
+
+Para ligar a esteira em outro projeto, siga o guia em `docs/esteira/autonomia.md`.
