@@ -34,8 +34,8 @@ export function somar(json, esperadas = LINHAS_ESPERADAS) {
   const problemas = []
   for (const l of LADOS) {
     if (lados[l].n === 0) problemas.push(`${l}: não medida (nenhuma linha)`)
-    else if (lados[l].erros === lados[l].n) problemas.push(`${l}: não medida (as ${lados[l].n} linhas deram erro)`)
-    else if (lados[l].n < esperadas) problemas.push(`${l}: só ${lados[l].n} de ${esperadas} linhas`)
+    else if (lados[l].erros > 0) problemas.push(`${l}: ${lados[l].erros} de ${lados[l].n} linhas com erro${lados[l].erros === lados[l].n ? ' (não medida)' : ''}`)
+    if (lados[l].n > 0 && lados[l].n < esperadas) problemas.push(`${l}: só ${lados[l].n} de ${esperadas} linhas`)
   }
   const campos = CAMPOS.map((c) => {
     const base = lados.base.acertos[c]
@@ -47,14 +47,14 @@ export function somar(json, esperadas = LINHAS_ESPERADAS) {
   return { valido, problemas, lados, campos, bloqueado, aprovado: valido && !bloqueado }
 }
 
-const pct = (a, n) => (n <= 0 ? 'não medida' : `${a}/${n} (${((100 * a) / n).toFixed(1).replace('.', ',')} %)`)
+const pct = (a, n, erros) => (n === 0 || erros === n ? 'não medida' : `${a}/${n} (${((100 * a) / n).toFixed(1).replace('.', ',')} %)`)
 
 /** @param {ReturnType<typeof somar>} r */
 export function tabelaMarkdown(r) {
   const linhas = ['| campo | base | branch | situação |', '|---|---|---|---|']
   for (const c of r.campos) {
     const situacao = !r.valido ? 'inválida' : c.bloqueia ? 'bloqueia' : 'ok'
-    linhas.push(`| ${c.campo} | ${pct(c.base, r.lados.base.n - r.lados.base.erros)} | ${pct(c.branch, r.lados.branch.n - r.lados.branch.erros)} | ${situacao} |`)
+    linhas.push(`| ${c.campo} | ${pct(c.base, r.lados.base.n, r.lados.base.erros)} | ${pct(c.branch, r.lados.branch.n, r.lados.branch.erros)} | ${situacao} |`)
   }
   return linhas.join('\n')
 }

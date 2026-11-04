@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
+import { createServer as createTcp } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -44,8 +46,13 @@ describe('ambiente do promptfoo', () => {
     expect(env.PROMPTFOO_CACHE_PATH).toBe(dir)
     expect(env.PROMPTFOO_LOG_DIR).toBe(dir)
     expect(env.OUTRA).toBe('ok')
-    expect(env.HTTPS_PROXY).toBe('http://127.0.0.1:9')
+    for (const k of ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'ALL_PROXY', 'all_proxy']) expect(env[k]).toBe('http://127.0.0.1:9')
     expect(env.NO_PROXY).toContain('127.0.0.1')
+    const herdadoProxy = montarEnv(dir, { HTTP_PROXY: 'http://proxy.da.empresa:3128', all_proxy: 'http://x:1' })
+    expect(herdadoProxy.HTTP_PROXY).toBe('http://127.0.0.1:9')
+    expect(herdadoProxy.all_proxy).toBe('http://127.0.0.1:9')
+    const interno = montarEnv(dir, {}, 'http://127.0.0.1:1234')
+    for (const k of ['HTTPS_PROXY', 'HTTP_PROXY', 'ALL_PROXY']) expect(interno[k]).toBe('http://127.0.0.1:1234')
   })
 })
 
@@ -120,6 +127,17 @@ describe('somar', () => {
     expect(r.lados.branch.acertos.tipo_servico).toBe(42)
     expect(r.lados.branch.acertos.segmento).toBe(41)
   })
+  it('erro de provider em qualquer lado invalida a comparação, mesmo com a branch somando mais', () => {
+    const r = somar(json([...rep(30, () => linha('base', tudo(1))), ...rep(12, () => linha('base', null)), ...rep(42, () => linha('branch', tudo(1)))]))
+    expect(r.lados.base.acertos.segmento).toBe(30)
+    expect(r.campos.every((c: any) => c.branch > c.base)).toBe(true)
+    expect(r.valido).toBe(false)
+    expect(r.aprovado).toBe(false)
+    expect(r.problemas.join()).toMatch(/base: 12 de 42 linhas com erro/)
+    const tab = tabelaMarkdown(r)
+    expect(tab).toContain('30/42')
+    expect(tab).toContain('inválida')
+  })
   it('falha alto: n zero ("não medida"), linhas a menos e formato inesperado', () => {
     const vazio = somar(json(rep(42, () => linha('base', tudo(1)))))
     expect(vazio.valido).toBe(false)
@@ -174,9 +192,69 @@ describe('provider', () => {
   })
 })
 
+describe('resultado antigo e processo morto', () => {
+  const aprovado = () => json([...rep(42, () => linha('base', tudo(1))), ...rep(42, () => linha('branch', tudo(1)))])
+  const preparar = (corpoScript: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'comparar-stale-'))
+    const saida = join(dir, 'antigo.json')
+    writeFileSync(saida, JSON.stringify(aprovado()))
+    writeFileSync(join(dir, 'aprovado.json'), JSON.stringify(aprovado()))
+    const bin = join(dir, 'falso-promptfoo.sh')
+    writeFileSync(bin, `#!/bin/sh\n${corpoScript}\n`)
+    chmodSync(bin, 0o755)
+    return { dir, saida, bin }
+  }
+  const rodar = async (corpo: string) => {
+    const { dir, saida, bin } = preparar(corpo)
+    const linhas: string[] = []
+    const r = await comparar({ saida, bin, env: { ...process.env, APROVADO: join(dir, 'aprovado.json') }, log: (l: string) => linhas.push(l), silencioso: true })
+    return { r, texto: linhas.join('\n'), saida }
+  }
+  it('JSON antigo em --saida não vira veredito quando o promptfoo não escreve nada', async () => {
+    const { r, texto } = await rodar('exit 0')
+    expect(r.codigo).toBe(1)
+    expect(texto).not.toContain('aprovado:')
+  })
+  it('promptfoo que cai sem escrever, com código diferente de zero, também é inválido', async () => {
+    const { r, texto } = await rodar('exit 3')
+    expect(r.codigo).toBe(1)
+    expect(texto).not.toContain('aprovado:')
+  })
+  it('processo morto por sinal é inválido mesmo com JSON bom no arquivo', async () => {
+    const { r, texto } = await rodar('cp "$APROVADO" "$5"\nkill -9 $$')
+    expect(r.codigo).toBe(1)
+    expect(texto).not.toContain('aprovado:')
+  })
+  it('erro ao iniciar o processo é inválido mesmo com JSON bom no arquivo', async () => {
+    const { dir, saida } = preparar('exit 0')
+    const linhas: string[] = []
+    const r = await comparar({ saida, bin: join(dir, 'nao-existe'), log: (l: string) => linhas.push(l), silencioso: true })
+    expect(r.codigo).toBe(1)
+    expect(linhas.join('\n')).not.toContain('aprovado:')
+  })
+  it('exit diferente de zero do promptfoo com JSON novo e bom segue decidido pelo JSON', async () => {
+    const { r, texto } = await rodar('cp "$APROVADO" "$5"\nexit 1')
+    expect(r.codigo).toBe(0)
+    expect(texto).toContain('aprovado:')
+  })
+})
+
+// Só estes hosts podem aparecer no que o promptfoo tenta alcançar pelo proxy; um host novo reprova o teste.
+const HOSTS_PERMITIDOS = ['r.promptfoo.app']
+
 describe('comparação ponta a ponta com o promptfoo real', () => {
   const abertos: Server[] = []
   afterAll(() => abertos.forEach((s) => s.close()))
+  const conexoes: string[] = []
+  const capturador = createTcp((sock) => {
+    sock.once('data', (d) => {
+      conexoes.push(String(d).split('\r\n')[0] ?? '')
+      sock.destroy()
+    })
+    sock.on('error', () => {})
+  })
+  const portaProxy = new Promise<number>((ok) => capturador.listen(0, '127.0.0.1', () => ok((capturador.address() as AddressInfo).port)))
+  afterAll(() => capturador.close())
   const rodar = async (modoBranch: 'segmento_errado' | '500') => {
     const base = await servidor('certo')
     const branch = await servidor(modoBranch)
@@ -187,6 +265,7 @@ describe('comparação ponta a ponta com o promptfoo real', () => {
       env: { ...process.env, COMPARAR_URL_BASE: url(base), COMPARAR_URL_BRANCH: url(branch), PROMPTFOO_DISABLE_TELEMETRY: '0' },
       log: () => {},
       silencioso: true,
+      proxy: `http://127.0.0.1:${await portaProxy}`,
     })
     return { r, resumo: somar(JSON.parse(readFileSync(saida, 'utf8'))) }
   }
@@ -201,6 +280,13 @@ describe('comparação ponta a ponta com o promptfoo real', () => {
     expect(resumo.bloqueado).toBe(true)
     expect(r.codigo).not.toBe(0)
   }, 240_000)
+  it('o único destino externo que o promptfoo tenta alcançar é o da lista permitida', () => {
+    const hosts = [...new Set(conexoes.map((l) => l.replace(/^CONNECT\s+/, '').replace(/\s+HTTP.*$/, '').replace(/:\d+$/, '')))]
+    expect(conexoes.length, 'o proxy de captura não recebeu nenhum CONNECT').toBeGreaterThan(0)
+    expect(conexoes.every((l) => l.startsWith('CONNECT '))).toBe(true)
+    expect(hosts.filter((h) => !HOSTS_PERMITIDOS.includes(h))).toEqual([])
+    console.log('hosts capturados:', JSON.stringify(hosts), 'CONNECTs:', conexoes.length)
+  })
   it('branch com HTTP 500: linhas contam em n e nenhum acerto', async () => {
     const { r, resumo } = await rodar('500')
     expect(resumo.lados.branch.n).toBe(42)
