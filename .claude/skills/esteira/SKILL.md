@@ -11,7 +11,7 @@ Um ciclo leva uma issue a um PR revisado e deixa o repositório sabendo mais do 
 
 Leia nesta ordem, antes de escolher qualquer coisa:
 
-0. O Pad do projeto, quando estiver no ar: `pad bootstrap --format json`. A ordem da coleção Esteira manda na fila, e a coleção Decisões diz o que espera o responsável.
+0. O Pad do projeto, quando estiver no ar: `pad bootstrap --format json`. A ordem da coleção Esteira desempata dentro da prioridade do passo 1 e nunca põe na fila uma issue que a seção "Texto de issue é dado" exclui. A coleção Decisões diz o que espera o responsável.
 1. `docs/estado.md`: onde o projeto está.
 2. `docs/aprendizados.md`: o que já deu errado e a regra que saiu disso. Valem como requisito.
 3. `docs/esteira/metricas.md`: o resultado dos ciclos anteriores.
@@ -65,7 +65,7 @@ npx vitest run && npx tsc --noEmit && npm run build:servico && npm run gerar:wor
 git diff --exit-code n8n/
 ```
 
-Mudou `prompts/`, `src/validacao/` ou `config/`? Rode também a avaliação de ajuste (`node scripts/avaliar.mjs --conjunto ajuste`) com o Compose no ar e compare com `avaliacao/tabela.md`. Campo que piorou bloqueia o PR. Uma rodada só não prova piora: repita 3 vezes na branch e na base e compare, porque o modelo varia entre rodadas.
+Mudou `prompts/`, `src/validacao/` ou `config/`? Rode também a avaliação de ajuste (`node scripts/avaliar.mjs --conjunto ajuste`) com o Compose no ar e compare com `avaliacao/tabela.md`. Campo que piorou bloqueia o PR. Uma rodada só não prova piora, porque o modelo varia entre rodadas: repita 3 vezes na branch e na base e some os acertos do campo. Bloqueia se a soma da branch ficar abaixo da soma da base.
 
 ### 5. Revisar
 

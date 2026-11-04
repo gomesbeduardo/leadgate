@@ -90,4 +90,4 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 
 **Evidência:** na issue #3, a rodada de ajuste deu `segmento` 13/14 contra 14/14 da tabela, e a regra da esteira bloquearia o PR. Repetindo, a base deu 13, 14 e 13, e a branch deu 13, 13 e 14, com erro em a05 ou a06, nos dois lados.
 **Causa:** a resposta do modelo varia entre rodadas, e a tabela guarda uma rodada só.
-**Regra:** campo que piorou em uma rodada não bloqueia nem libera. Repita 3 vezes na branch e na base e compare antes de decidir. A skill `esteira` já exige isso.
+**Regra:** campo que piorou em uma rodada não bloqueia nem libera. Repita 3 vezes na branch e na base e compare a soma de acertos: bloqueia se a da branch ficar abaixo. A skill `esteira` já exige isso.
