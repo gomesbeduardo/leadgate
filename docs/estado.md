@@ -18,3 +18,4 @@ Atualizado em 04/11/2026.
 - Merge pelo `GITHUB_TOKEN` não fecha a issue nem roda `Portões` em `staging`. A emenda C14 da spec 005 troca por um GitHub App, que ainda precisa ser criado.
 - `claude-fix` só serve para issue fora dos caminhos barrados da C8. PR do agente nesses caminhos reprova `alcance`, que é obrigatório, e fica sem merge.
 - O rótulo `claude-sessao` é a fila das sessões locais: a sessão tira o rótulo, comenta na issue e faz uma por vez.
+- Comparação de versões com promptfoo (#15): `npm run comparar:prompt`, em pacote isolado em `scripts/promptfoo/`. O teste com o executável real roda em `npm run test:promptfoo`, fora do CI.

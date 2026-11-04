@@ -1,0 +1,21 @@
+# Comparacao base x branch (issue 15): o mesmo provider, duas URLs, 3 rodadas, so o conjunto de ajuste.
+description: leadgate base x branch
+prompts:
+  - '{{caso_id}}'
+providers:
+  - id: file://provider.mjs
+    label: base
+    config:
+      url: '{{ env.COMPARAR_URL_BASE | default("http://127.0.0.1:8080/api/chat") }}'
+  - id: file://provider.mjs
+    label: branch
+    config:
+      url: '{{ env.COMPARAR_URL_BRANCH | default("http://127.0.0.1:8081/api/chat") }}'
+tests: file://casos.mjs
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://asserir.mjs
+evaluateOptions:
+  repeat: 3
+  maxConcurrency: 1

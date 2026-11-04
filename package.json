@@ -10,7 +10,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "gerar:workflow": "node scripts/gerar-workflow.mjs",
-    "build:servico": "esbuild src/servico/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/servico.mjs"
+    "build:servico": "esbuild src/servico/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/servico.mjs",
+    "comparar:prompt": "node scripts/promptfoo/comparar.mjs",
+    "test:promptfoo": "COMPARAR_E2E=1 vitest run tests/promptfoo.test.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"
