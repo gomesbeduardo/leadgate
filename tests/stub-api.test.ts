@@ -17,8 +17,8 @@ afterAll(async () => {
   if (interno) await new Promise<void>((r) => interno.close(() => r()))
 })
 
-async function stub(cenario: string, porta: number) {
-  const f = spawn('node', ['scripts/stub-api.mjs'], { env: { ...process.env, PORT: String(porta), STUB_CENARIO: cenario } })
+async function stub(cenario: string, porta: number, extra: Record<string, string> = {}) {
+  const f = spawn('node', ['scripts/stub-api.mjs'], { env: { ...process.env, PORT: String(porta), STUB_CENARIO: cenario, ...extra } })
   filhos.push(f)
   await new Promise<void>((r) => f.stdout!.once('data', () => r()))
   return `http://127.0.0.1:${porta}`
@@ -68,6 +68,24 @@ describe('stub da API: cenarios', () => {
     const sRec = await stub('recusa_depois_ok', 18795)
     expect((await chamar(sRec, req)).corpo.stop_reason).toBe('refusal')
     expect((await chamar(sRec, req)).corpo.stop_reason).toBe('end_turn')
+  })
+
+  it('fecha_socket: destroi a conexao sem responder', async () => {
+    const base = await stub('fecha_socket', 18797)
+    await expect(chamar(base, { model: 'x', messages: [] })).rejects.toThrow()
+    await expect(chamar(base, { model: 'x', messages: [] })).rejects.toThrow()
+  })
+
+  it('lento: responde so depois de STUB_ATRASO_MS (padrao 30000)', async () => {
+    const base = await stub('lento', 18798, { STUB_ATRASO_MS: '400' })
+    const t0 = Date.now()
+    const r = await chamar(base, { model: 'x', messages: [] })
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(380)
+    expect(r.status).toBe(200)
+    expect(r.corpo.stop_reason).toBe('end_turn')
+    // sem STUB_ATRASO_MS o atraso padrao e 30 s: a resposta nao chega em 300 ms
+    const padrao = await stub('lento', 18799)
+    await expect(fetch(padrao + '/v1/messages', { method: 'POST', body: '{}', signal: AbortSignal.timeout(300) })).rejects.toThrow()
   })
 
   it('sem STUB_CENARIO mantem o comportamento antigo', async () => {

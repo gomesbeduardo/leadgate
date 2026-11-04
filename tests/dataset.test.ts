@@ -11,6 +11,7 @@ import {
   normalizar, proximaCategoria, revisaoMarkdown, telefoneValido, validarConversa, validarExemplosPrompt,
 } from '../src/dataset/dataset.mjs'
 import { carregarConfig } from '../src/config/schema'
+import { validarContrato } from '../src/validacao/contrato'
 
 const bruto = JSON.parse(readFileSync('config/empresa.json', 'utf8'))
 const cfg = bruto
@@ -18,7 +19,8 @@ const casos = JSON.parse(readFileSync('avaliacao/casos.json', 'utf8')) as any[]
 const regressao = JSON.parse(readFileSync('avaliacao/regressao.json', 'utf8')) as any[]
 const refs = [...casos, ...regressao].map((c) => c.mensagens[0] as string)
 
-const gab = { tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Palhoça', urgencia: 'media', qualificado: true, proxima_acao: 'perguntar' }
+const gab = { tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Palhoça', urgencia: 'media', qualificado: false, proxima_acao: 'perguntar' }
+const gabQ = { ...gab, qualificado: true }
 const conv = (primeira: string, extra: object[] = []) => ({
   conversa: [{ role: 'user', content: primeira }, { role: 'assistant', content: 'Certo, em que cidade fica?' }, ...extra],
   gabarito: gab,
@@ -86,11 +88,21 @@ describe('cobertura e escolha de categoria', () => {
     expect(proximaCategoria({ ...todas, spam: 4 })).toBe('spam')
   })
   it('cobertura aponta categorias abaixo do minimo', () => {
-    const cs = CATEGORIAS.flatMap((c) => Array.from({ length: c === 'spam' ? 4 : 5 }, () => ({ categoria: c })))
+    const segs = ['comercial', 'residencial', 'industrial']
+    const cs = CATEGORIAS.flatMap((c, i) => Array.from({ length: c === 'spam' ? 4 : 5 }, (_, j) => ({ categoria: c, gabarito: { segmento: segs[(i + j) % 3] } })))
     const r = cobertura(cs, 5)
     expect(r.completa).toBe(false)
     expect(r.faltando).toEqual(['spam'])
-    expect(cobertura(cs.concat({ categoria: 'spam' }), 5).completa).toBe(true)
+    expect(r.segmentosFaltando).toEqual([])
+    expect(cobertura(cs.concat({ categoria: 'spam', gabarito: { segmento: 'comercial' } }), 5).completa).toBe(true)
+  })
+  it('cobertura exige 5 conversas de cada segmento (comercial, residencial, industrial)', () => {
+    const cs = CATEGORIAS.flatMap((c) => Array.from({ length: 5 }, () => ({ categoria: c, gabarito: { segmento: 'comercial' } })))
+    const r = cobertura(cs, 5)
+    expect(r.completa).toBe(false)
+    expect(r.faltando).toEqual([])
+    expect(r.segmentosFaltando).toEqual(['residencial', 'industrial'])
+    expect(r.porSegmento).toMatchObject({ comercial: 45, residencial: 0, industrial: 0 })
   })
 })
 
@@ -121,6 +133,19 @@ describe('validarConversa', () => {
     const gruim = { ...conv('Quero PMOC em Tijucas'), gabarito: { ...gab, urgencia: 'altissima' } }
     expect(validarConversa(gruim, cfg, refs, 'claro')).toEqual({ ok: false, motivo: 'schema' })
   })
+  it('contrato: qualificado=true sem telefone do lead (forma do sint-0001) e rejeitado', () => {
+    const semFone = { ...conv('Bom dia, somos uma clínica veterinária e precisamos de PMOC em Tijucas'), gabarito: gabQ }
+    expect(validarConversa(semFone, cfg, refs, 'claro')).toEqual({ ok: false, motivo: 'contrato' })
+    // telefone so na fala do atendente nao conta
+    const soAtendente = { conversa: [{ role: 'user', content: 'Quero PMOC em Tijucas, comercial' }, { role: 'assistant', content: 'Ligue 48 99999-0001' }], gabarito: gabQ }
+    expect(validarConversa(soAtendente, cfg, refs, 'claro')).toEqual({ ok: false, motivo: 'contrato' })
+    const comFone = { ...conv('Bom dia, somos uma clínica veterinária e precisamos de PMOC em Tijucas, 48 99999-1234'), gabarito: gabQ }
+    expect(validarConversa(comFone, cfg, refs, 'claro')).toEqual({ ok: true })
+  })
+  it('contrato: encaminhar_vendas com qualificado=false e rejeitado', () => {
+    const c = { ...conv('Bom dia, somos uma clínica veterinária e precisamos de PMOC em Tijucas'), gabarito: { ...gab, proxima_acao: 'encaminhar_vendas' } }
+    expect(validarConversa(c, cfg, refs, 'claro')).toEqual({ ok: false, motivo: 'contrato' })
+  })
   it('multiturno exige 3+ mensagens do lead', () => {
     const duas = conv('Quero PMOC em Tijucas', [{ role: 'user', content: 'sou o Pedro' }, { role: 'assistant', content: 'ok' }])
     expect(validarConversa(duas, cfg, refs, 'multiturno')).toEqual({ ok: false, motivo: 'schema' })
@@ -133,6 +158,13 @@ describe('validarConversa', () => {
 })
 
 describe('T4: prompt do gerador nao carrega os reservados', () => {
+  it('prompt: qualificado exige telefone do lead; sem telefone o atendente pede e nao qualifica', () => {
+    const p = montarPromptGerador(cfg, 'claro', 'Palhoça', 'industrial') as string
+    expect(p).toMatch(/qualificado: true somente quando[^\n]*telefone/)
+    expect(p).toMatch(/qualificado=false[^\n]*proxima_acao=perguntar/)
+    expect(p).toMatch(/encaminhar_vendas[^\n]*qualificado/)
+    expect(p).toContain('Segmento do lead, quando ele aparecer: industrial')
+  })
   it('nenhuma 1a mensagem de caso reservado aparece no prompt, em nenhuma categoria', () => {
     const reservados = casos.filter((c) => c.conjunto === 'reservado')
     expect(reservados).toHaveLength(6)
@@ -172,13 +204,13 @@ describe('converterValidacao', () => {
       { role: 'user', content: 'oi' }, { role: 'assistant', content: 'olá' }, { role: 'user', content: 'tchau' },
     ], gabarito: gab }])
     expect(c!).toMatchObject({ id: 'sint-0002', conjunto: 'validacao', mensagens: ['oi', 'tchau'] })
-    expect(c!.esperado).toEqual({ tipo_servico: ['manutencao'], segmento: ['comercial'], cidade: ['Palhoça'], urgencia: ['media'], qualificado: [true], proxima_acao: ['perguntar'] })
+    expect(c!.esperado).toEqual({ tipo_servico: ['manutencao'], segmento: ['comercial'], cidade: ['Palhoça'], urgencia: ['media'], qualificado: [false], proxima_acao: ['perguntar'] })
   })
 })
 
 // ---- gerador com stub da API ----
 type Stub = { url: string; chamadas: any[]; fechar: () => Promise<void> }
-async function subirStub(corpo: (n: number, categoria: string, req: any) => object): Promise<Stub> {
+async function subirStub(corpo: (n: number, categoria: string, req: any) => object, seguirSegmento = true): Promise<Stub> {
   const chamadas: any[] = []
   const srv = createServer((req, res) => {
     let b = ''
@@ -189,7 +221,11 @@ async function subirStub(corpo: (n: number, categoria: string, req: any) => obje
       const n = chamadas.length
       const categoria = /categoria: (\w+)/.exec(JSON.stringify(req2.messages))?.[1] ?? 'claro'
       res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(corpo(n, categoria, req2)) }], usage: { input_tokens: 1000, output_tokens: 500 } }))
+      const obj: any = corpo(n, categoria, req2)
+      // o modelo do stub segue o segmento pedido no prompt (quando a conversa tem segmento)
+      const seg = /Segmento do lead, quando ele aparecer: (\w+)/.exec(String(req2.system))?.[1]
+      if (seguirSegmento && seg && obj?.gabarito?.segmento) obj.gabarito = { ...obj.gabarito, segmento: seg }
+      res.end(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(obj) }], usage: { input_tokens: 1000, output_tokens: 500 } }))
     })
   })
   await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
@@ -248,6 +284,58 @@ describe('gerador (CLI com stub da API)', () => {
     }
   }, 60_000)
 
+  it('segmentos: o prompt roda os tres segmentos e cada um fecha >= 5 conversas', async () => {
+    const stub = await subirStub(valida)
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(stub.url, ['--volume', '80'], dir)
+      const todas = [...ler(dir, 'exemplos.json'), ...ler(dir, 'validacao.json')]
+      for (const sg of ['comercial', 'residencial', 'industrial']) expect(todas.filter((x: any) => x.gabarito.segmento === sg).length).toBeGreaterThanOrEqual(5)
+      const pedidos = new Set(stub.chamadas.map((c) => /Segmento do lead, quando ele aparecer: (\w+)/.exec(c.body.system)?.[1]))
+      expect(pedidos).toEqual(new Set(['comercial', 'residencial', 'industrial']))
+      expect(ler(dir, 'rodada.json').status).toBe('completa')
+    } finally {
+      await stub.fechar()
+    }
+  }, 60_000)
+
+  it('segmentos: modelo que so devolve comercial deixa a rodada incompleta', async () => {
+    const stub = await subirStub(valida, false)
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(stub.url, ['--volume', '80'], dir)
+      const rod = ler(dir, 'rodada.json')
+      expect(rod.status).toBe('incompleta')
+      expect(rod.segmentos).toMatchObject({ residencial: 0, industrial: 0 })
+    } finally {
+      await stub.fechar()
+    }
+  }, 60_000)
+
+  it('--completar tambem preenche o buraco de segmento, no teto de 3x', async () => {
+    const s1 = await subirStub(valida, false)
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(s1.url, ['--volume', '80'], dir)
+    } finally {
+      await s1.fechar()
+    }
+    expect(ler(dir, 'rodada.json').status).toBe('incompleta')
+    const s2 = await subirStub((n, cat) => valida(n + 1000, cat))
+    try {
+      const r = await cli(s2.url, ['--completar'], dir)
+      expect(r.code).toBe(0)
+      const rod = ler(dir, 'rodada.json')
+      expect(rod.segmentos.residencial).toBeGreaterThanOrEqual(5)
+      expect(rod.segmentos.industrial).toBeGreaterThanOrEqual(5)
+      expect(rod.status).toBe('completa')
+      expect(s2.chamadas.length).toBeLessThanOrEqual(30)
+      expect(s2.chamadas.length).toBeGreaterThanOrEqual(10)
+    } finally {
+      await s2.fechar()
+    }
+  }, 60_000)
+
   it('T2: stub sem conversa multiturno valida: incompleta e prompt_liberado false', async () => {
     const stub = await subirStub((n) => valida(n, 'claro'))
     const dir = mkdtempSync(join(tmpdir(), 'ds-'))
@@ -276,6 +364,24 @@ describe('gerador (CLI com stub da API)', () => {
       expect(rod.rejeitadas.duplicata).toBe(1)
       expect(rod.rejeitadas.telefone).toBe(1)
       expect(rod.geradas).toBe(10)
+    } finally {
+      await stub.fechar()
+    }
+  }, 60_000)
+
+  it('contrato: gabarito qualificado sem telefone do lead e rejeitado e contado em rejeitadas.contrato', async () => {
+    const stub = await subirStub((n, cat) => {
+      if (n === 1) return { ...conv('Bom dia, somos uma clínica veterinária e precisamos de PMOC em Tijucas'), gabarito: gabQ }
+      return valida(n, cat)
+    })
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(stub.url, ['--volume', '10'], dir)
+      const rod = ler(dir, 'rodada.json')
+      expect(rod.rejeitadas.contrato).toBe(1)
+      expect(rod.geradas).toBe(10)
+      const soma = (Object.values(rod.rejeitadas_por_categoria) as number[]).reduce((a, b) => a + b, 0)
+      expect(soma).toBe(Object.values(rod.rejeitadas as Record<string, number>).reduce((a, b) => a + b, 0))
     } finally {
       await stub.fechar()
     }
@@ -468,4 +574,25 @@ describe('gerador: rejeitadas_por_categoria e --completar', () => {
       await stub.fechar()
     }
   }, 30_000)
+})
+
+describe('deriva: regras do dataset iguais as de src/validacao/contrato.ts', () => {
+  const cfgC = carregarConfig(bruto)
+  const base = { tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Palhoça', nome: null, urgencia: 'media', dados_faltantes: [], confianca: 0.9, resposta: 'ok' }
+  for (const telefone of [null, '48 99999-1234']) {
+    for (const qualificado of [true, false]) {
+      for (const acao of ['perguntar', 'encaminhar_vendas']) {
+        it(`telefone=${telefone} qualificado=${qualificado} acao=${acao}`, () => {
+          const lead = `Quero manutenção comercial em Palhoça${telefone ? `, meu telefone é ${telefone}` : ''}`
+          const historico = [{ role: 'user' as const, content: lead }]
+          const r = validarContrato(JSON.stringify({ ...base, telefone, qualificado, proxima_acao: acao }), { historico, cfg: cfgC })
+          const regras = r.ok ? [] : r.violacoes.map((v) => v.regra)
+          const contratoRejeita = regras.includes('qualificado_exige_telefone') || regras.includes('vendas_exige_qualificado')
+          const c = { conversa: [{ role: 'user', content: lead }, { role: 'assistant', content: 'Certo.' }], gabarito: { ...gab, qualificado, proxima_acao: acao } }
+          const ds = validarConversa(c, cfg, [], 'claro')
+          expect(ds.ok).toBe(!contratoRejeita)
+        })
+      }
+    }
+  }
 })

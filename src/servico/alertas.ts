@@ -136,12 +136,12 @@ export const canalResend = (env: Env): CanalAlerta => ({
   },
 })
 
-/** O simulado sempre roda; o resend entra com ALERTA_CANAL=resend e RESEND_API_KEY. */
+/** O simulado sempre roda; o resend entra com ALERTA_CANAL=resend, RESEND_API_KEY, ALERTA_EMAIL_DE e ALERTA_EMAIL_PARA. */
 export function criarCanais(env: Env, log: (l: string) => void): CanalAlerta[] {
   const canais = [canalSimulado(log)]
   if (env.ALERTA_CANAL === 'resend') {
-    if (env.RESEND_API_KEY) canais.push(canalResend(env))
-    else log('ALERTA_CANAL=resend sem RESEND_API_KEY: usando so o canal simulado')
+    if (env.RESEND_API_KEY && env.ALERTA_EMAIL_DE && env.ALERTA_EMAIL_PARA) canais.push(canalResend(env))
+    else log('ALERTA_CANAL=resend exige RESEND_API_KEY, ALERTA_EMAIL_DE e ALERTA_EMAIL_PARA: usando so o canal simulado')
   }
   return canais
 }

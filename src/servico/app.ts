@@ -55,6 +55,8 @@ export type OpcoesChat = {
   /** Requisicoes por minuto por endereco de socket em /api/chat (padrao 20). */
   limitePorMinuto?: number
   /** Turnos simultaneos em /api/chat (padrao 4). */
+  /** Folga do abort do proxy sobre ia.timeout_turno_ms (padrao 10 s); so os testes mexem. */
+  folgaProxyMs?: number
   maxConcorrentes?: number
   /** Relogio injetavel, em ms. */
   agora?: () => number
@@ -68,6 +70,9 @@ export type OpcoesChat = {
 
 type Perfil = 'publico' | 'interno'
 const JANELA_MS = 60_000
+// O prazo do turno conta a partir de /preparar, depois do inicio da chamada do proxy: o proxy espera a folga a mais
+// para nao cortar uma ultima tentativa que o servico ainda ia encerrar sozinho (tem de ficar abaixo do EXECUTIONS_TIMEOUT do n8n).
+const FOLGA_PROXY_MS = 10_000
 
 function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat): Server {
   const agora = opcoes.agora ?? Date.now
@@ -144,7 +149,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ historico: corpo.historico }),
-        signal: AbortSignal.timeout(cfg.ia.timeout_turno_ms),
+        signal: AbortSignal.timeout(cfg.ia.timeout_turno_ms + (opcoes.folgaProxyMs ?? FOLGA_PROXY_MS)),
       })
       if (!r.ok) {
         registrar(falhaChat)
@@ -211,8 +216,8 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
           }
           if (emVoo >= maxConcorrentes) {
             req.resume()
-            // Sobrecarga e turno perdido do lead: conta como falha `servico`, sem disparar alerta de queda.
-            registrar({ origem: 'falha', tipo: 'servico' }, false)
+            // Sobrecarga e turno perdido do lead, mas nao e o n8n fora do ar: tipo proprio, sem alerta de queda.
+            registrar({ origem: 'falha', tipo: 'sobrecarga' }, false)
             return responder(res, 503, { erro: 'servico ocupado' })
           }
           emVoo++

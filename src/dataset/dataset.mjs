@@ -66,10 +66,15 @@ export function proximaCategoria(/** @type {Record<string, number>} */ contagem)
   return melhor
 }
 
-export function cobertura(/** @type {{categoria: string}[]} */ conversas, minimo = 5) {
+/** Segmentos que a rodada precisa medir (a regra de segmento so e testada se os tres aparecem). */
+export const SEGMENTOS_COBERTURA = ['comercial', 'residencial', 'industrial']
+
+export function cobertura(/** @type {{categoria: string, gabarito?: {segmento?: string|null}}[]} */ conversas, minimo = 5) {
   const porCategoria = Object.fromEntries(CATEGORIAS.map((c) => [c, conversas.filter((x) => x.categoria === c).length]))
+  const porSegmento = Object.fromEntries(SEGMENTOS_COBERTURA.map((sg) => [sg, conversas.filter((x) => x.gabarito?.segmento === sg).length]))
   const faltando = CATEGORIAS.filter((c) => porCategoria[c] < minimo)
-  return { porCategoria, faltando, completa: faltando.length === 0 }
+  const segmentosFaltando = SEGMENTOS_COBERTURA.filter((sg) => porSegmento[sg] < minimo)
+  return { porCategoria, porSegmento, faltando, segmentosFaltando, completa: faltando.length === 0 && segmentosFaltando.length === 0 }
 }
 
 /** Amostra deterministica: 1 por categoria presente e o resto pela ordem do hash do id. */
@@ -153,10 +158,15 @@ export function schemaGerador(/** @type {any} */ cfg) {
  * Valida schema, telefone e duplicata (nessa ordem).
  * `refs`: 1as mensagens contra as quais a 1a do lead e comparada (casos e, nas outras categorias, as ja geradas).
  * `leadsGerados`: texto inteiro do lead das multiturno ja geradas; so o multiturno compara contra elas (regra nossa, nao da spec).
- * @returns {{ok: true} | {ok: false, motivo: 'schema'|'telefone'|'duplicata'}}
+ * Depois valida o gabarito contra as regras do contrato que o dataset costuma violar (motivo `contrato`):
+ * qualificado=true exige telefone dito pelo lead (`qualificado_exige_telefone`, src/validacao/contrato.ts) e
+ * encaminhar_vendas exige qualificado=true (`vendas_exige_qualificado`). O contrato e TypeScript e este arquivo e
+ * .mjs puro (roda sem build), entao as duas regras sao copiadas aqui; tests/dataset.test.ts compara as duas
+ * implementacoes para que nao se afastem.
+ * @returns {{ok: true} | {ok: false, motivo: 'schema'|'telefone'|'duplicata'|'contrato'}}
  */
 export function validarConversa(/** @type {any} */ c, /** @type {any} */ cfg, /** @type {string[]} */ refs, /** @type {string} */ categoria, /** @type {string[]} */ leadsGerados = []) {
-  const ruim = (/** @type {'schema'|'telefone'|'duplicata'} */ motivo) => ({ ok: false, motivo })
+  const ruim = (/** @type {'schema'|'telefone'|'duplicata'|'contrato'} */ motivo) => ({ ok: false, motivo })
   const conv = c?.conversa
   const g = c?.gabarito
   if (!Array.isArray(conv) || conv.length === 0 || !g || typeof g !== 'object') return ruim('schema')
@@ -179,17 +189,23 @@ export function validarConversa(/** @type {any} */ c, /** @type {any} */ cfg, /*
   if (!telefoneValido(conv.map((/** @type {any} */ m) => m.content).join('\n'))) return ruim('telefone')
   if (ehDuplicata(doLead[0].content, refs)) return ruim('duplicata')
   if (categoria === 'multiturno' && ehDuplicata(textoDoLead(doLead), leadsGerados)) return ruim('duplicata')
+  if (g.qualificado && !leadTemTelefone(doLead)) return ruim('contrato')
+  if (g.proxima_acao === 'encaminhar_vendas' && !g.qualificado) return ruim('contrato')
   return { ok: true }
 }
 
+/** O lead disse um telefone? (Depois de `telefoneValido`, so o formato `48/55 99999-xxxx` pode existir no texto.) */
+const leadTemTelefone = (/** @type {{content: string}[]} */ doLead) => new RegExp(TEL_OK.source).test(textoDoLead(doLead))
+
 /** Prompt do gerador. Nao recebe nenhum caso de avaliacao (casos reservados nunca entram aqui). */
-export function montarPromptGerador(/** @type {any} */ cfg, /** @type {string} */ categoria, /** @type {string} */ cidade) {
+export function montarPromptGerador(/** @type {any} */ cfg, /** @type {string} */ categoria, /** @type {string} */ cidade, /** @type {string|null} */ segmento = null) {
   const e = enums(cfg)
   return [
     `Voce cria conversas FICTICIAS de pre-atendimento por mensagem para a empresa ${cfg.empresa.nome}, que vende e presta servicos de ar-condicionado (${cfg.servicos.join(', ')}) para clientes dos segmentos ${cfg.segmentos.join(', ')}.`,
     '',
     `Categoria pedida: ${categoria}. ${DESCRICAO[/** @type {keyof typeof DESCRICAO} */ (categoria)] ?? ''}`,
     `Cidade a usar no lead, quando ela aparecer: ${cidade}.`,
+    ...(segmento ? [`Segmento do lead, quando ele aparecer: ${segmento}.`] : []),
     '',
     'Regras:',
     '- Escreva a conversa completa, alternando mensagens do lead (role user) e do atendente (role assistant), sempre comecando pelo lead.',
@@ -203,7 +219,9 @@ export function montarPromptGerador(/** @type {any} */ cfg, /** @type {string} *
     `- segmento: ${e.segmento.join(', ')} ou null.`,
     '- cidade: nome da cidade do lead ou null.',
     '- urgencia: alta, media, baixa ou null.',
-    '- qualificado: true quando ha servico atendido, segmento aceito e cidade na regiao.',
+    '- qualificado: true somente quando ha servico atendido, segmento aceito, cidade na regiao E o lead ja informou um telefone na conversa. Se o lead ainda nao deu telefone, a conversa termina com o atendente pedindo o telefone, qualificado=false e proxima_acao=perguntar.',
+    '- encaminhar_vendas so com qualificado=true; qualificado=false nunca vai com encaminhar_vendas.',
+    '- segmento nao aceito ou servico fora do escopo: qualificado=false e proxima_acao=responder_e_encerrar.',
     `- proxima_acao: ${e.proxima_acao.join(', ')}.`,
     `Regiao atendida: ${cfg.regiao.cidades.join(', ')}. Segmentos aceitos: ${cfg.segmentos_aceitos.join(', ')}.`,
     'Responda somente com o JSON do schema.',

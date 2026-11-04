@@ -119,7 +119,8 @@ describe('achado 2: orcamento do turno', () => {
 
   it('o timeout do n8n no compose fica acima do orcamento do turno', () => {
     const m = /EXECUTIONS_TIMEOUT: "(\d+)"/.exec(readFileSync('docker-compose.yml', 'utf8'))
-    expect(Number(m![1]) * 1000).toBeGreaterThan(cfg.ia.timeout_turno_ms)
+    // o proxy aborta em timeout_turno_ms + 10 s; o n8n so corta depois disso
+    expect(Number(m![1]) * 1000).toBeGreaterThan(cfg.ia.timeout_turno_ms + 10_000)
   })
 
   const historico = [{ role: 'user' as const, content: 'Oi, preciso de um orcamento' }]
@@ -221,7 +222,7 @@ describe('achado 5: mensagem longa e sobrecarga', () => {
     expect(/<textarea[^>]*maxlength="2000"/.test(readFileSync('chat/index.html', 'utf8'))).toBe(true)
   })
 
-  it('503 por concorrencia conta como turno falho servico; 429 e 413 ficam de fora', async () => {
+  it('503 por concorrencia conta como turno falho sobrecarga; 429 e 413 ficam de fora', async () => {
     const soltar: Array<() => void> = []
     const lento = await subir(createHttpServer((req, res) => {
       req.resume()
@@ -232,7 +233,7 @@ describe('achado 5: mensagem longa e sobrecarga', () => {
     const primeiro = chatar(url)
     while (soltar.length < 1) await new Promise((r) => setTimeout(r, 10))
     expect((await chatar(url)).status).toBe(503)
-    expect(falhas.resumo()).toMatchObject({ turnos_totais: 1, turnos_falha: 1, tentativas_falhas_por_tipo: { servico: 1 } })
+    expect(falhas.resumo()).toMatchObject({ turnos_totais: 1, turnos_falha: 1, tentativas_falhas_por_tipo: { sobrecarga: 1 } })
     expect((await chatar(url)).status).toBe(429)
     const grande = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [], x: 'y'.repeat(500) }) })
     expect([413, 429]).toContain(grande.status)

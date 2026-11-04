@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  CATEGORIAS, amostrar, cobertura, conjuntoDoId, montarPromptGerador, marcacoesDoRevisao, proximaCategoria, revisaoMarkdown, schemaGerador, textoDoLead, validarConversa,
+  CATEGORIAS, SEGMENTOS_COBERTURA, amostrar, cobertura, conjuntoDoId, montarPromptGerador, marcacoesDoRevisao, proximaCategoria, revisaoMarkdown, schemaGerador, textoDoLead, validarConversa,
 } from './dataset.mjs'
 
 /** Cidade da chamada: ~20% fora da regiao configurada (1 a cada 5), as demais em rodizio pela lista. */
@@ -10,6 +10,11 @@ export function cidadeDaChamada(/** @type {any} */ cfg, /** @type {number} */ n)
   const fora = ['Joinville', 'Curitiba', 'Porto Alegre', 'Pelotas', 'Blumenau']
   const dentro = cfg.regiao.cidades
   return n % 5 === 4 ? fora[Math.floor(n / 5) % fora.length] : dentro[n % dentro.length]
+}
+
+/** Segmento da chamada: rodizio pela lista de segmentos da empresa. */
+export function segmentoDaChamada(/** @type {any} */ cfg, /** @type {number} */ n) {
+  return cfg.segmentos[n % cfg.segmentos.length]
 }
 
 export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGeracao} */ o) {
@@ -24,8 +29,9 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
 
   /** @type {any[]} */ const aceitas = []
   const reservadas = Object.fromEntries(CATEGORIAS.map((c) => [c, 0])) // aceitas + em voo
+  const reservadasSeg = Object.fromEntries(SEGMENTOS_COBERTURA.map((sg) => [sg, 0])) // aceitas + em voo, por segmento do gabarito
   const rejCat = Object.fromEntries(CATEGORIAS.map((c) => [c, 0])) // rejeicoes desta execucao, para ceder a vez
-  const rejeitadas = { duplicata: 0, telefone: 0, schema: 0, api: 0 }
+  const rejeitadas = { duplicata: 0, telefone: 0, schema: 0, contrato: 0, api: 0 }
   const rejeitadasPorCategoria = Object.fromEntries(CATEGORIAS.map((c) => [c, 0]))
   let semCategoria = false
   const tokens = { entrada: 0, saida: 0 }
@@ -40,6 +46,8 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
   const registrar = (/** @type {any} */ x) => {
     aceitas.push(x)
     reservadas[x.categoria]++
+    const sg = x.gabarito?.segmento
+    if (sg in reservadasSeg) reservadasSeg[sg]++
     proximoId = Math.max(proximoId, Number(String(x.id).replace(/\D/g, '')) + 1)
     const lead = x.conversa.filter((/** @type {any} */ m) => m.role === 'user')
     if (x.categoria === 'multiturno') leadsMulti.push(textoDoLead(lead))
@@ -66,7 +74,10 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
     tokens.saida = ant.tokens?.saida ?? 0
     if (existsSync(join(saidaDir, 'revisao.md'))) marcas = marcacoesDoRevisao(readFileSync(join(saidaDir, 'revisao.md'), 'utf8'))
   }
-  const faltam = () => CATEGORIAS.reduce((t, c) => t + Math.max(0, MINIMO - reservadas[c]), 0)
+  const faltamCat = () => CATEGORIAS.reduce((t, c) => t + Math.max(0, MINIMO - reservadas[c]), 0)
+  const faltamSeg = () => SEGMENTOS_COBERTURA.reduce((t, sg) => t + Math.max(0, MINIMO - reservadasSeg[sg]), 0)
+  // uma chamada pode fechar um buraco de categoria e um de segmento ao mesmo tempo: vale o maior dos dois
+  const faltam = () => Math.max(faltamCat(), faltamSeg())
   // completar: no maximo 3x o que falta; rodada nova: o teto do config
   const maxChamadas = completar ? 3 * faltam() : cfg.dataset.max_chamadas
   const continuar = () => (completar ? faltam() > 0 : aceitas.length + emVoo < volume) && chamadas < maxChamadas
@@ -86,6 +97,7 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
       rejeitadas,
       rejeitadas_por_categoria: semCategoria ? null : rejeitadasPorCategoria,
       categorias: cob.porCategoria,
+      segmentos: cob.porSegmento,
       tokens,
       chamadas: chamadasAnteriores + chamadas,
       status,
@@ -96,14 +108,14 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
     return rodada
   }
 
-  async function uma(/** @type {number} */ n, /** @type {string} */ categoria) {
+  async function uma(/** @type {number} */ n, /** @type {string} */ categoria, /** @type {string} */ segmento) {
     const r = await fetch(`${base}/v1/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'anthropic-version': '2026-10-21', 'x-api-key': apiKey },
       body: JSON.stringify({
         model: cfg.ia.modelo,
         max_tokens: cfg.ia.max_tokens,
-        system: montarPromptGerador(cfg, categoria, cidadeDaChamada(cfg, n)),
+        system: montarPromptGerador(cfg, categoria, cidadeDaChamada(cfg, n), segmento),
         messages: [{ role: 'user', content: `Gere uma conversa. categoria: ${categoria}. variacao: ${n}` }],
         output_config: { effort: cfg.ia.effort, format: { type: 'json_schema', schema } },
       }),
@@ -122,11 +134,18 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
       // (completar so escolhe entre as categorias abaixo do minimo)
       const ajustada = Object.fromEntries(CATEGORIAS.map((c) => [c, reservadas[c] + Math.floor(rejCat[c] / 3)]))
       if (completar) for (const c of CATEGORIAS) if (reservadas[c] >= MINIMO) ajustada[c] = Infinity
-      const categoria = proximaCategoria(ajustada)
+      // completar sem buraco de categoria, so de segmento: 'claro' e a categoria em que o segmento sempre aparece
+      const categoria = completar && faltamCat() === 0 ? 'claro' : proximaCategoria(ajustada)
+      // completar com buraco de segmento pede o segmento que mais falta; senao, rodizio
+      const emFalta = SEGMENTOS_COBERTURA.filter((sg) => reservadasSeg[sg] < MINIMO)
+      const segmento = completar && emFalta.length > 0
+        ? emFalta.reduce((a, b) => (reservadasSeg[b] < reservadasSeg[a] ? b : a))
+        : segmentoDaChamada(cfg, n)
       reservadas[categoria]++
+      if (segmento in reservadasSeg) reservadasSeg[segmento]++
       let motivo = null
       try {
-        const resp = await uma(n, categoria)
+        const resp = await uma(n, categoria, segmento)
         tokens.entrada += resp?.usage?.input_tokens ?? 0
         tokens.saida += resp?.usage?.output_tokens ?? 0
         let obj = null
@@ -144,6 +163,7 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
         if (v.ok) {
           const id = `sint-${String(proximoId).padStart(4, '0')}`
           reservadas[categoria]-- // registrar() conta de novo
+          if (segmento in reservadasSeg) reservadasSeg[segmento]--
           registrar({
             id, categoria, conjunto: conjuntoDoId(id), origem: 'sintetico',
             conversa: obj.conversa, gabarito: obj.gabarito, revisado: false, revisor_ok: null,
@@ -159,6 +179,7 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
         rejCat[categoria]++
         rejeitadasPorCategoria[categoria]++
         reservadas[categoria]--
+        if (segmento in reservadasSeg) reservadasSeg[segmento]--
       }
       gravar('em_andamento')
     }

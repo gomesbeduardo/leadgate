@@ -73,6 +73,13 @@ describe('FalhasStore', () => {
     expect(s.tentativas().map((t) => t.origem_componente)).toEqual(['n8n', 'servico'])
   })
 
+  it('sobrecarga vira registro sintetico do componente servico', () => {
+    const s = novo()
+    s.registrarTurno({ origem: 'falha', tipo: 'sobrecarga' })
+    expect(s.resumo().tentativas_falhas_por_tipo).toEqual({ sobrecarga: 1 })
+    expect(s.tentativas().map((t) => t.origem_componente)).toEqual(['servico'])
+  })
+
   it('reset zera tudo', () => {
     const s = novo()
     s.registrarTurno(falha('429', [reg('429')]))

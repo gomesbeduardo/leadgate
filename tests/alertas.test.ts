@@ -34,6 +34,10 @@ describe('maquina de queda (R18)', () => {
     expect(nova({ v: 0 }).registrar({ origem: 'falha', tipo: 'servico' })).toHaveLength(1)
   })
 
+  it('sobrecarga nao abre queda de uma vez', () => {
+    expect(nova({ v: 0 }).registrar({ origem: 'falha', tipo: 'sobrecarga' })).toHaveLength(0)
+  })
+
   it('T19: 5 turnos falhos ate 10:20 geram 1 queda; o 6o as 10:31 gera a 2a', () => {
     const r = { v: t('10:00') }
     const m = nova(r)
@@ -129,8 +133,21 @@ describe('canais', () => {
     expect(logs.filter((l) => l.includes('RESEND_API_KEY'))).toHaveLength(1)
   })
 
-  it('com chave, simulado e resend; padrao so simulado', () => {
-    expect(criarCanais({ ALERTA_CANAL: 'resend', RESEND_API_KEY: 'segredo-123' }, () => {}).map((c) => c.nome)).toEqual(['simulado', 'resend'])
+  it('resend sem ALERTA_EMAIL_DE ou ALERTA_EMAIL_PARA: so simulado, uma linha de aviso, sem a chave no log', () => {
+    for (const faltando of [{}, { ALERTA_EMAIL_DE: 'de@x.com' }, { ALERTA_EMAIL_PARA: 'para@x.com' }]) {
+      const logs: string[] = []
+      const canais = criarCanais({ ALERTA_CANAL: 'resend', RESEND_API_KEY: 'segredo-123', ...faltando }, (l) => logs.push(l))
+      expect(canais.map((c) => c.nome)).toEqual(['simulado'])
+      expect(logs).toHaveLength(1)
+      expect(logs[0]).toContain('ALERTA_EMAIL_DE')
+      expect(logs[0]).toContain('ALERTA_EMAIL_PARA')
+      expect(logs.join('\n')).not.toContain('segredo-123')
+    }
+  })
+
+  it('com chave e os dois e-mails, simulado e resend; padrao so simulado', () => {
+    const env = { ALERTA_CANAL: 'resend', RESEND_API_KEY: 'segredo-123', ALERTA_EMAIL_DE: 'de@x.com', ALERTA_EMAIL_PARA: 'para@x.com' }
+    expect(criarCanais(env, () => {}).map((c) => c.nome)).toEqual(['simulado', 'resend'])
     expect(criarCanais({}, () => {}).map((c) => c.nome)).toEqual(['simulado'])
   })
 
@@ -138,7 +155,7 @@ describe('canais', () => {
     const { url } = await receptor(500)
     const logs: string[] = []
     const store = new AlertasStore({ agora: () => t('10:00'), retencaoDias: 30 })
-    const canais = criarCanais({ ALERTA_CANAL: 'resend', RESEND_API_KEY: 'segredo-123', RESEND_BASE_URL: url }, (l) => logs.push(l))
+    const canais = criarCanais({ ALERTA_CANAL: 'resend', RESEND_API_KEY: 'segredo-123', RESEND_BASE_URL: url, ALERTA_EMAIL_DE: 'de@x.com', ALERTA_EMAIL_PARA: 'para@x.com' }, (l) => logs.push(l))
     const n = criarNotificador({
       empresa: 'CentralEng', turnosParaQueda: 2, intervaloMin: 30, agora: () => t('10:00'), store, canais,
       textos: { alerta_queda: 'parou {{hora}} {{tipo}} {{efeito_no_lead}}', alerta_recuperado: 'voltou {{hora}} {{n}}' },

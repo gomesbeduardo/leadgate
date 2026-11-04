@@ -105,8 +105,8 @@ export class FalhasStore {
         modelo: texto(x.modelo), tentativa: inteiro(x.tentativa), camada: inteiro(x.camada), recuperado,
       }]
     })
-    if (tipoTurno === 'n8n' || tipoTurno === 'servico') {
-      novas.push({ ts, turno_id, tipo: tipoTurno, origem_componente: componente ?? tipoTurno, modelo: null, tentativa: null, camada: null, recuperado: false })
+    if (tipoTurno === 'n8n' || tipoTurno === 'servico' || tipoTurno === 'sobrecarga') {
+      novas.push({ ts, turno_id, tipo: tipoTurno, origem_componente: componente ?? (tipoTurno === 'n8n' ? 'n8n' : 'servico'), modelo: null, tentativa: null, camada: null, recuperado: false })
     }
     this.dados.tentativas.push(...novas)
     this.dados.turnos.push({

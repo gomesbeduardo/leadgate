@@ -237,7 +237,7 @@ describe('chat', () => {
       const fake = createHttpServer((req, res) => { req.resume(); req.on('end', () => h(res)) })
       const urlFake = await subir(fake)
       const cfgRapido = { ...cfg, ia: { ...cfg.ia, timeout_turno_ms: 300 } }
-      const s = criarServidor(cfgRapido, prompt, { webhookUrl: urlFake })
+      const s = criarServidor(cfgRapido, prompt, { webhookUrl: urlFake, folgaProxyMs: 0 })
       const url = await subir(s)
       try {
         const r = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
@@ -251,7 +251,29 @@ describe('chat', () => {
     }
   })
 
-  it('timeout do proxy vem de ia.timeout_turno_ms (180000 na config)', () => {
+  it('o proxy aborta so depois do prazo do turno: ia.timeout_turno_ms + 10000', async () => {
+    // webhook responde depois de timeout_turno_ms (300) mas antes do abort do proxy (10300)
+    const fake = createHttpServer((req, res) => {
+      req.resume()
+      req.on('end', () => setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
+      }, 450))
+    })
+    const urlFake = await subir(fake)
+    const s = criarServidor({ ...cfg, ia: { ...cfg.ia, timeout_turno_ms: 300 } }, prompt, { webhookUrl: urlFake })
+    const url = await subir(s)
+    try {
+      const r = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
+      expect(await r.json()).toMatchObject({ resposta: 'ola', origem: 'modelo' })
+    } finally {
+      fake.closeAllConnections()
+      await new Promise<void>((r) => s.close(() => r()))
+      await new Promise<void>((r) => fake.close(() => r()))
+    }
+  })
+
+  it('config: ia.timeout_turno_ms e 180000', () => {
     expect(cfg.ia.timeout_turno_ms).toBe(180000)
   })
 
@@ -344,6 +366,35 @@ describe('limites publicas em /api/chat', () => {
       expect((await chat(url)).status).toBe(429)
     } finally {
       await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+
+  it('503 de concorrencia registra o tipo sobrecarga (nao servico) e nao dispara alerta', async () => {
+    const lento = createHttpServer((req, res) => {
+      req.resume()
+      soltar.push(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
+      })
+    })
+    const urlLento = await subir(lento)
+    const falhas = new FalhasStore({ retencaoDias: 30 })
+    const alertas = new AlertasStore({ retencaoDias: 30 })
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlLento, limitePorMinuto: 100, falhas, alertas, log: () => {} })
+    const url = await subir(s)
+    soltar = []
+    try {
+      const em_voo = [1, 2, 3, 4].map(() => chat(url))
+      while (soltar.length < 4) await new Promise((r) => setTimeout(r, 10))
+      expect((await chat(url)).status).toBe(503)
+      expect(falhas.resumo().tentativas_falhas_por_tipo).toEqual({ sobrecarga: 1 })
+      expect(alertas.json().eventos).toHaveLength(0)
+      soltar.forEach((f) => f())
+      await Promise.all(em_voo)
+    } finally {
+      for (const f of soltar) try { f() } catch { /* ja respondido */ }
+      await new Promise<void>((r) => s.close(() => r()))
+      await new Promise<void>((r) => lento.close(() => r()))
     }
   })
 

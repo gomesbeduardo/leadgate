@@ -235,7 +235,7 @@ Conta: taxa_falha = turnos com origem falha / turnos totais; turno recuperado na
  * @param {{ conjunto: string, md: string }[]} arquivos
  */
 export function blocoFalhas(arquivos) {
-  if (arquivos.length === 0) return '\n## Taxa de falha\n\nnão medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver falhas-<conjunto>.md).\n'
+  if (arquivos.length === 0) return '\n## Taxa de falha\n\nnão medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver avaliacao/falhas-<conjunto>.md).\n'
   const linhas = arquivos.map(({ conjunto, md }) => {
     const turnos = Number(/^- turnos = (\d+)/m.exec(md)?.[1] ?? 0)
     const taxa = /^- taxa_falha = (.*)$/m.exec(md)?.[1] ?? ''

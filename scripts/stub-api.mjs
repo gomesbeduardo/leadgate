@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 
 const porta = Number(process.env.PORT ?? 8787)
 const cenario = process.env.STUB_CENARIO ?? 'padrao'
+const atrasoMs = Number(process.env.STUB_ATRASO_MS ?? 30000)
 const MODELO_RESERVA = 'claude-haiku-5-5'
 const chamadas = new Map()
 
@@ -36,6 +37,10 @@ function decidir(corpo) {
         : { status: 200, corpo: ok }
     case 'reserva_ok':
       return corpo?.model === MODELO_RESERVA ? { status: 200, corpo: ok } : { status: 503, corpo: { error: { type: 'overloaded_error' } } }
+    case 'fecha_socket':
+      return { fecharSocket: true }
+    case 'lento':
+      return { status: 200, atrasoMs, corpo: ok }
     case 'recusa_depois_ok':
       return n === 1 ? { status: 200, corpo: { stop_reason: 'refusal', content: [] } } : { status: 200, corpo: ok }
     default:
@@ -52,6 +57,8 @@ createServer((req, res) => {
       let corpo = null
       try { corpo = JSON.parse(Buffer.concat(partes).toString('utf8')) } catch { /* corpo invalido vira null */ }
       const d = decidir(corpo)
+      if (d.fecharSocket) return req.socket.destroy()
+      if (d.atrasoMs) return setTimeout(() => { res.writeHead(d.status, { 'content-type': 'application/json' }); res.end(JSON.stringify(d.corpo)) }, d.atrasoMs)
       res.writeHead(d.status, { 'content-type': 'application/json', ...(d.cabecalhos ?? {}) })
       res.end(JSON.stringify(d.corpo))
     } else {

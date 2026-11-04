@@ -75,6 +75,7 @@ Tipos e como se detecta:
 | `schema` | texto não é JSON ou falha no schema/validação cruzada (inclui camada 2 de R10) |
 | `n8n` | proxy não recebe resposta válida do webhook (erro de rede, timeout ou status ≠ 200) |
 | `servico` | n8n não recebe resposta válida de `/preparar` ou `/validar`; o workflow devolve ao proxy `{ origem: 'falha', tipo: 'servico' }` (S2) |
+| `sobrecarga` | o proxy recusa o turno com 503 porque já há `4` turnos em andamento (limite de concorrência). Registrada como componente `servico`, mas **não abre queda de uma vez** (R18): o lead recebe o 503, não há n8n parado |
 
 - **Quem conta:** o serviço Node, no proxy (`/api/chat`), que é o único componente vivo quando o n8n cai. Cada tentativa que falha vira um registro; cada turno vira um registro de turno.
 - **Onde:** arquivo `dados/falhas.json` (recomendação; volume do Compose para sobreviver a reinício) e `GET /falhas`, que devolve o resumo abaixo. Registro de tentativa: `{ ts, turno_id, tipo, origem_componente: 'modelo' | 'n8n' | 'servico', modelo, tentativa, camada, recuperado }`. `recuperado = true` quando o turno acabou com `origem = 'modelo'` depois da falha.
@@ -135,7 +136,7 @@ Os campos do `gabarito` seguem os nomes e valores de `avaliacao/casos.json` (S3)
 - C6 — Dado o primário esgotado (3 tentativas) e `ia.modelo_reserva` configurado, então a reserva recebe o mesmo histórico, responde, e `/falhas` registra `modelo = reserva` (T11).
 - C7 — Dado primário e reserva esgotados, então o lead não recebe texto, o estado é `aguardando_humano`, `proxima_acao = encaminhar_humano` e o turno conta na taxa de falha (T12, T24).
 - C8 — Dado `refusal`, `max_tokens` ou `schema`, então o tipo certo aparece em `/falhas` e a regeneração segue R10 (T13, T14, T15).
-- C9 — Dado o n8n parado, então o proxy responde em até `ia.timeout_turno_ms`, registra `n8n`, dispara o alerta de queda uma vez e, ao voltar, o aviso de recuperação (T16, T17).
+- C9 — Dado o n8n parado, então o proxy responde em até `ia.timeout_turno_ms` + 10 s (o abort do proxy espera essa folga porque o prazo do turno conta a partir de `/preparar`; fica abaixo do `EXECUTIONS_TIMEOUT` do n8n, 240 s), registra `n8n`, dispara o alerta de queda uma vez e, ao voltar, o aviso de recuperação (T16, T17).
 - C10 — Dado o serviço parado durante o turno do n8n, então o workflow devolve `tipo: 'servico'` e o proxy, ao receber, registra e alerta (T18). Depende da suposição S2.
 - C11 — Dado dois alertas na mesma queda em menos de `alerta.intervalo_min`, então só o primeiro é emitido (T19).
 - C12 — Dado `ALERTA_CANAL = resend` com chave, então o POST sai com o JSON de R18; falha no POST não altera o turno (T20, T21).
