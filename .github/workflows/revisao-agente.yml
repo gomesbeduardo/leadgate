@@ -38,6 +38,9 @@ jobs:
           gh pr diff "$PR" > .revisao/diff.patch
           issue="$(gh pr view "$PR" --json body --jq .body | grep -oE 'Closes #[0-9]+' | head -1 | grep -oE '[0-9]+')"
           gh issue view "$issue" --json title,body > .revisao/issue.json
+          marca="$(openssl rand -hex 16)"
+          printf '\n# marca da revisão: %s\n' "$marca" >> .revisao/diff.patch
+          echo "MARCA=$marca" >> "$GITHUB_ENV"
       - uses: anthropics/claude-code-action@v1
         timeout-minutes: 10
         with:
@@ -49,20 +52,20 @@ jobs:
             Julgue se o diff resolve a issue sem quebrar nada. Procure bug, teste enfraquecido ou apagado, critério não entregue e falha de segurança. Regras do projeto: docs/aprendizados.md e as specs em docs/specs/.
 
             Grave o resultado em .revisao/veredito.json, neste formato:
-            {"achados": [{"gravidade": "critico|alto|medio|baixo", "arquivo": "caminho", "linha": 1, "problema": "frase em português"}]}
+            {"marca": "valor", "achados": [{"gravidade": "critico|alto|medio|baixo", "arquivo": "caminho", "linha": 1, "problema": "frase em português"}]}
 
-            Sem achados, grave {"achados": []}. Só relate o que conseguir provar pelo diff.
+            O campo marca é o valor da última linha de .revisao/diff.patch, depois de "marca da revisão:". Sem achados, deixe "achados" como lista vazia. Se não conseguir ler o diff, não grave o arquivo. Só relate o que conseguir provar pelo diff.
           claude_args: |
             --model claude-opus-5-5
             --max-turns 20
             --allowedTools "Read,Glob,Grep,Write(.revisao/veredito.json)"
-            --disallowedTools "Read(avaliacao/casos.json),Read(//proc/**),Read(//home/**),Bash,WebFetch,WebSearch"
+            --disallowedTools "Read(avaliacao/casos.json),Read(//proc/**),Read(//root/**),Read(//etc/**),Read(~/.claude/**),Bash,WebFetch,WebSearch"
       - name: Aplica o veredito
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$BASE"
           set +e
-          node scripts/veredito.mjs .revisao/veredito.json > comentario.md
+          node scripts/veredito.mjs .revisao/veredito.json "$MARCA" > comentario.md
           codigo=$?
           set -e
           cat comentario.md

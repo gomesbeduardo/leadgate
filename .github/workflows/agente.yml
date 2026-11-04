@@ -69,8 +69,8 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git diff),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npx vitest run:*),Bash(npx tsc --noEmit),Bash(npm run build:servico),Bash(npm run gerar:workflow)"
-            --disallowedTools "Read(avaliacao/casos.json),Bash(gh pr create*--label*),Bash(gh pr create*-l *),Bash(curl:*),Bash(wget:*),WebFetch,WebSearch"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status),Bash(git add:*),Bash(git commit:*),Bash(git push origin claude/issue-${{ github.event.issue.number }}),Bash(git push -u origin claude/issue-${{ github.event.issue.number }}),Bash(git switch:*),Bash(git diff),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npx vitest run:*),Bash(npx tsc --noEmit),Bash(npm run build:servico),Bash(npm run gerar:workflow)"
+            --disallowedTools "Read(avaliacao/casos.json),Bash(gh pr create*--label*),Bash(gh pr create* -l*),Bash(curl:*),Bash(wget:*),WebFetch,WebSearch"
       - name: Confere que o PR existe
         shell: bash
         env:
