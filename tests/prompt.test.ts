@@ -186,4 +186,19 @@ describe('T12: prompt 1.3.0', () => {
     }
     expect(cfg.resposta.frases_bot).toContain('mais detalhes')
   })
+
+  it('risada e mensagem curta ficam ao julgamento do modelo; só o ininteligível é vago', () => {
+    expect(modelo).toContain('sem nenhum sentido aparente ("asdfg")')
+    expect(modelo).toContain('não têm regra fixa')
+    expect(modelo).not.toContain('Lead: "kkk"')
+  })
+
+  it('casos n08 e n19 não usam kkk e n08 aceita perguntar e responder_e_encerrar', () => {
+    const casos = JSON.parse(readFileSync('avaliacao/casos.json', 'utf8')) as { id: string; mensagens: string[]; esperado: Record<string, unknown[]> }[]
+    const n08 = casos.find((c) => c.id === 'n08')!
+    const n19 = casos.find((c) => c.id === 'n19')!
+    expect(JSON.stringify(n08)).not.toContain('kkk')
+    expect(JSON.stringify(n19)).not.toContain('kkk')
+    expect(n08.esperado.proxima_acao).toEqual(expect.arrayContaining(['perguntar', 'responder_e_encerrar']))
+  })
 })

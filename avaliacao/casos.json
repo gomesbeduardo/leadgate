@@ -830,6 +830,7 @@
         "perguntar"
       ],
       "vagos": [
+        0,
         1
       ]
     },
@@ -847,7 +848,7 @@
       "oi",
       "?",
       "sei la",
-      "kkk"
+      "asdfg"
     ],
     "esperado": {
       "tipo_servico": [
@@ -868,10 +869,12 @@
         false
       ],
       "proxima_acao": [
-        "responder_e_encerrar"
+        "responder_e_encerrar",
+        "perguntar"
       ],
       "vagos": [
-        3
+        3,
+        2
       ]
     },
     "itens_na": [
@@ -1395,9 +1398,9 @@
     "teste": "T-falas 3o vago com lead qualificado na lista curta",
     "tipo": "vago",
     "mensagens": [
-      "kkk",
-      "sei la",
-      "hmm"
+      "asdfg",
+      "qwerty",
+      "zxcvb"
     ],
     "historico_inicial": [
       {
