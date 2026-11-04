@@ -143,6 +143,10 @@ DEMO_PAINEL=1 node scripts/avaliar.mjs --conjunto ajuste && node scripts/tabela-
 
 A avaliação zera a contagem de falhas antes de começar e grava `avaliacao/falhas-<conjunto>.md` (a taxa é por conjunto; sem nenhum turno medido o arquivo diz "não medida"). O segundo comando regenera `avaliacao/tabela.md`, com um bloco listando cada `falhas-<conjunto>.md` encontrado. Os conjuntos `reservado` e `regressao` rodam com o mesmo comando trocando o nome; o reservado recusa uma segunda rodada sem `--forcar`. O modelo não é determinístico, então uma nova rodada pode dar números diferentes.
 
+#### Comparar duas versões (base x branch)
+
+Para ver se uma mudança em `prompts/`, `src/validacao/` ou `config/` piorou algum campo, suba duas pilhas, uma da base (porta 8080) e outra da branch (porta 8081), e rode `npm run comparar:prompt`. As URLs saem de `COMPARAR_URL_BASE` e `COMPARAR_URL_BRANCH` (padrão `http://127.0.0.1:8080/api/chat` e `http://127.0.0.1:8081/api/chat`). O promptfoo roda 3 vezes cada um dos 14 casos do conjunto `ajuste` nas duas pilhas, soma os acertos por campo e imprime uma tabela em Markdown; sai com código diferente de zero se a soma da branch ficar abaixo da base em algum campo ou se a medição for inválida (lado sem linhas medidas, linhas a menos, JSON inesperado). O resultado em JSON fica num diretório temporário, ou no arquivo de `--saida`. O comando usa só asserções determinísticas (nenhuma chamada a modelo avaliador), desliga a telemetria do promptfoo e não grava em `~/.promptfoo`. Ele não substitui `scripts/avaliar.mjs`: não conta falhas, não gera `avaliacao/tabela.md` e não toca o conjunto `reservado`.
+
 ## Quando algo falha
 
 O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os valores abaixo vêm de `config/empresa.json`.
