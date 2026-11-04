@@ -148,6 +148,12 @@ describe('portao de alcance', () => {
     expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, '["bug"]')).code).toBe(0)
   })
 
+  it('T35: rotulo revisado-por-humano com caixa diferente tambem rejeita', async () => {
+    const r = await rodar([mod('src/a.ts')], corpoCompleto, undefined, '["Revisado-por-humano"]')
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('revisado-por-humano')
+  })
+
   it('rotulos.json ausente ou que nao e lista sai com 2', async () => {
     expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, null)).code).toBe(2)
     expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, '{}')).code).toBe(2)

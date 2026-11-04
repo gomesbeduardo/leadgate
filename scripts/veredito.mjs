@@ -8,8 +8,8 @@ function invalido(causa) {
   process.exit(2)
 }
 
-const [caminho] = process.argv.slice(2)
-if (!caminho) invalido('uso: node scripts/veredito.mjs <veredito.json>')
+const [caminho, marca] = process.argv.slice(2)
+if (!caminho) invalido('uso: node scripts/veredito.mjs <veredito.json> <marca>')
 
 let texto
 try {
@@ -25,7 +25,9 @@ try {
   invalido('JSON inválido')
 }
 
-if (!dados || typeof dados !== 'object' || !('achados' in dados)) invalido('campo achados ausente')
+if (!dados || typeof dados !== 'object' || typeof dados.marca !== 'string' || typeof marca !== 'string' || dados.marca !== marca) invalido('marca de leitura ausente ou diferente')
+
+if (!('achados' in dados)) invalido('campo achados ausente')
 if (!Array.isArray(dados.achados)) invalido('achados deve ser uma lista')
 
 for (const [i, a] of dados.achados.entries()) {

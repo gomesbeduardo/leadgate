@@ -74,7 +74,7 @@ for (const a of arquivos) {
   if (saiuDeTests) motivos.push(`${saiuDeTests}: remocao de arquivo de tests/`)
 }
 
-if (rotulos.includes('revisado-por-humano')) motivos.push('rotulo revisado-por-humano presente')
+if (rotulos.some((r) => typeof r === 'string' && r.toLowerCase() === 'revisado-por-humano')) motivos.push('rotulo revisado-por-humano presente')
 
 const linhas = new Set(corpo.split(/\r?\n/).map((l) => l.trimEnd()))
 for (const s of secoes) if (!linhas.has(s)) motivos.push(`corpo sem a secao ${s}`)
