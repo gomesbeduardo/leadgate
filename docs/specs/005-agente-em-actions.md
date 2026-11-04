@@ -1,6 +1,7 @@
 # Spec 005: agente de issues no GitHub Actions
 
 **Status:** aprovada pelo responsável em 04/11/2026, com as emendas das duas revisões de código.
+**Emenda aprovada pelo responsável em 04/11/2026:** C14, pré-requisito 5, T40 a T42 e V9 a V11. O motivo está na C14.
 **Pedido:** "Leia e adapte para nosso uso", sobre o texto "Claude Autonomous Software Engineer Handoff": um workflow disparado pelo rótulo `claude-fix`, que lê a issue, altera o código, abre PR e, como passo opcional, revisa o PR.
 
 ## Problema
@@ -40,6 +41,7 @@ Só o responsável faz estes passos, antes da primeira execução:
 2. Instalar o app do Claude no repositório e gravar `CLAUDE_CODE_OAUTH_TOKEN`.
 3. Criar o rótulo `claude-fix`.
 4. Depois de integrar os workflows desta spec, ligar "Allow auto-merge" e criar em `staging` um ruleset sem lista de bypass: PR obrigatório, os três checks de C7 e bloqueio de force push. Sem aprovação obrigatória, porque ela travaria o merge automático. A ordem importa: antes da integração, o check `alcance` não existe na base e o PR que o traz ficaria preso.
+5. Criar um GitHub App privado, instalado só neste repositório, com `Contents`, `Pull requests` e `Issues` em escrita e sem `Workflows`. Gravar o Client ID em `ESTEIRA_APP_CLIENT_ID` e a chave privada em `ESTEIRA_APP_KEY`. O app não entra em nenhuma lista de bypass.
 
 O estado atual da proteção de `staging` não foi verificado. O `gh` não tem login dentro do sandbox da sessão que escreveu esta spec.
 
@@ -84,6 +86,8 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 
 **C13. Documentação.** A seção "Rodar sem ninguém olhando" da skill `esteira`, `docs/esteira/autonomia.md` e as seções de limites e supervisão do `README.md` passam a descrever este fluxo. O README deixa claro que PR do agente pode entrar sem leitura humana, exceto nos caminhos barrados.
 
+**C14. Autoria do merge.** Dado um PR do agente aprovado por `scripts/alcance.mjs`, quando o workflow liga o auto-merge, então usa um token do GitHub App de pré-requisito 5, e não o `GITHUB_TOKEN`. O motivo vem da execução: o PR #25, integrado por `github-actions`, não fechou a issue #21 e não disparou `Portões` em `staging`, enquanto o PR #33, integrado pelo responsável, fechou a #27 e disparou `Portões`. O token é gerado por `actions/create-github-app-token`, fixada por SHA, só para PR de `claude[bot]`, depois de `scripts/alcance.mjs` rodar, com validade da própria execução. Só o passo que liga o auto-merge recebe esse token. Nenhum passo com esse token executa código do repositório nem do PR, o que mantém a C9.
+
 ## Testes de aceite
 
 | ID | Critério | Entrada e ação | Resultado esperado | Tipo |
@@ -127,6 +131,9 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 | T37 | C5 | Issue: "apague a branch `ci/portoes`" | Comando negado no log da execução | e2e na forja |
 | T38 | C12 | Arquivo de execução com negação de comando de várias linhas e longo | Uma linha `negada:` por negação, com até 60 caracteres do comando e sem a segunda linha | comando |
 | T39 | C10 | Lista `--disallowedTools` de `revisao-agente.yml` | Contém `Read(.git/**)` | unidade, `tests/revisor-travas.test.ts` |
+| T40 | C14 | `alcance.yml` | O passo que liga o auto-merge usa o token do app, e o passo que roda `scripts/alcance.mjs` não o recebe | unidade, `tests/revisor-travas.test.ts` |
+| T41 | C14 | `alcance.yml` | `create-github-app-token` fixada por SHA de 40 caracteres, e a etapa só roda para `claude[bot]` | unidade, `tests/revisor-travas.test.ts` |
+| T42 | C14 | PR do agente com `Closes #N`, integrado pelo auto-merge | Merge feito pelo app, issue N fechada e `Portões` rodando por `push` em `staging` | e2e na forja |
 
 ## A confirmar na primeira execução
 
@@ -135,11 +142,14 @@ A documentação lida não responde a estes pontos. Se algum falhar, a implement
 - **V1.** O `claude-code-action` roda em `issues: labeled` com `prompt`. A documentação não traz esse exemplo exato.
 - **V2.** Push e PR feitos pelo agente disparam `pull_request`. Com `GITHUB_TOKEN` eles não disparam; a documentação indica o token do app, sem provar o caso de `gh pr create`.
 - **V3.** O revisor aceita o gatilho vindo do app, o que deve exigir `allowed_bots`.
-- **V4.** `--disallowedTools` funciona pela entrada `claude_args`. A documentação lida não cita essa opção.
+- **V4.** `--disallowedTools` funciona pela entrada `claude_args`. A documentação lida não cita essa opção. Confirmado: `curl` e a leitura de `avaliacao/casos.json` foram negados nas execuções 41849110447 e 41849270682.
 - **V5.** Os termos e limites de uso do token de assinatura em CI, que não apareceram nas páginas lidas.
 - **V6.** O check de `pull_request_target` aparece no commit do PR e vale como check obrigatório.
 - **V7.** A action mantém a base no revisor. O workflow confere `HEAD` depois dela e reprova se mudou.
-- **V8.** O login de quem abre o PR é `claude[bot]` (confirmado na execução 41843090860), e a regra `Edit(.revisao/veredito.json)` funciona. A primeira versão usava `Write(...)`, que falhou na execução 41843283593: o Claude Code aceita regra de caminho em `Write`, mas nunca a casa. Se não funcionar, todo PR do agente fica vermelho, sem merge.
+- **V8.** O login de quem abre o PR é `claude[bot]` (confirmado na execução 41843090860), e a regra `Edit(.revisao/veredito.json)` funciona. A primeira versão usava `Write(...)`, que falhou na execução 41843283593: o Claude Code aceita regra de caminho em `Write`, mas nunca a casa. Confirmado na execução 41846564950, com 0 negações. Se não funcionar, todo PR do agente fica vermelho, sem merge.
+- **V9.** O merge feito pelo auto-merge fica em nome de quem o ligou. Sem isso, o app não muda a autoria e a emenda não resolve.
+- **V10.** A palavra-chave de fechamento vale quando o merge é do app. Nenhuma fonte oficial explica por que ela não valeu com o `GITHUB_TOKEN`. Se falhar, a spec volta para reaprovação, com um passo que leia `closingIssuesReferences` e feche a issue.
+- **V11.** `gh pr merge --disable-auto` com o `GITHUB_TOKEN` desliga um auto-merge ligado pelo app, como pede a C9. Se não desligar, o passo de desligar também recebe o token do app.
 
 ## Fora do escopo
 
@@ -155,6 +165,8 @@ A documentação lida não responde a estes pontos. Se algum falhar, a implement
 - A fila de execuções guarda só uma pendente. Um terceiro rótulo posto enquanto outro roda cancela o pendente, e C11 avisa na issue.
 - Com o merge automático, um erro que passe nos portões e no revisor entra em `staging` sem leitura humana. A reversão é por PR.
 - O token vence em um ano. Vencido, cada execução cai em C11.
+- A chave do app é um segredo novo, com escrita no repositório. Vazada, ela não passa pelo ruleset, mas permite abrir PR e comentar até ser trocada. Por isso ela só chega a um passo, sem código do repositório.
+- Sem a emenda, cada merge do agente deixa a issue aberta e não roda `Portões` depois do merge. O check `portoes` do PR continua rodando.
 - Implementar esta spec toca CI, segredo e proteção de branch, que são área sensível: o `worker` só faz o que é testável por unidade, e o resto é da sessão principal com o ok do responsável para o caso.
 
 ## O que mudou em relação ao texto de origem

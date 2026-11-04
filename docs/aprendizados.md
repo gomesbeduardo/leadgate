@@ -97,3 +97,33 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 **Evidência:** ao registrar a leitura humana, a linha 211 do README foi atualizada, e a linha 128 continuou dizendo que ninguém tinha feito a leitura. A revisão apontou a contradição.
 **Causa:** o mesmo fato estava escrito em dois lugares, e a busca antes de editar não foi feita.
 **Regra:** antes de mudar um status em documento, procure o assunto no repositório inteiro e atualize todas as ocorrências.
+
+## 04/11/2026 — Log público sem o que foi negado
+
+**Evidência:** o agente terminou duas execuções sem PR, com 5 ferramentas negadas, e o log só mostrava a contagem. Com o passo de listagem, cada bloqueio apareceu numa execução: `git checkout`, depois `git push -q`.
+**Causa:** a saída completa fica desligada porque o repositório é público, e nada filtrado substituía essa informação.
+**Regra:** todo job com lista fechada de ferramentas imprime as negações filtradas antes de qualquer ajuste. Lista de comando exato falha com variação de opção, então o prompt diz o comando exato de cada passo.
+
+## 04/11/2026 — Regra de permissão aceita que nunca casa
+
+**Evidência:** `Write(.revisao/veredito.json)` não deu erro e o revisor não conseguiu gravar o veredito. Com `Edit(...)`, 0 negações.
+**Causa:** o Claude Code aceita regra de caminho em `Write`, mas confere escrita só contra `Edit`.
+**Regra:** regra de permissão nova é provada numa execução real. Aceitar a configuração não prova nada.
+
+## 04/11/2026 — Merge pelo token do workflow não dispara o resto
+
+**Evidência:** o PR #25, integrado por `github-actions`, não fechou a issue #21 nem rodou `Portões` em `staging`. O PR #33, integrado pelo responsável, fechou a #27 e rodou `Portões`.
+**Causa:** evento do `GITHUB_TOKEN` não dispara workflow, o que está documentado. Para o fechamento da issue, nenhuma fonte oficial explica o mecanismo.
+**Regra:** depois do primeiro merge automático, confira se a issue fechou e se os workflows de `push` rodaram. Causa sem fonte fica como hipótese, com um caso de controle.
+
+## 04/11/2026 — Recusa do modelo não testa a trava
+
+**Evidência:** nos testes T17, T18 e T37, o agente recusou pelo prompt e não tentou o comando. Só as variantes que pediam o comando diretamente mostraram `curl`, a leitura e `git push --delete` negados.
+**Causa:** a instrução do prompt age antes da lista de ferramentas.
+**Regra:** teste de trava só vale quando o log mostra a negação. Recusa do modelo é outra camada e é contada à parte.
+
+## 04/11/2026 — PR aberto usa o workflow antigo
+
+**Evidência:** depois do merge do PR #26, duas execuções do revisor no PR #25 ainda rodaram a versão velha, e uma foi pulada pela action por diferir da branch padrão.
+**Causa:** o `pull_request` usa o merge calculado do PR, que só foi atualizado depois de fechar e reabrir.
+**Regra:** ao mudar workflow com PR aberto, feche e reabra o PR, gere outro evento e confira no log qual versão rodou antes de tirar conclusão.
