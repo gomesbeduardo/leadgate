@@ -28,6 +28,7 @@ const EntradaSchema = z.object({
     .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(4000) }))
     .min(1)
     .max(40)
+    .refine((h) => h.reduce((n, m) => n + m.content.length, 0) <= 8000, 'historico longo demais')
     .refine((h) => h.at(-1)?.role === 'user', 'a ultima mensagem deve ser do user')
     .refine((h) => h.every((m, i) => m.role === (i % 2 === 0 ? 'user' : 'assistant')), 'o historico deve alternar user/assistant, comecando por user'),
 })
@@ -51,9 +52,8 @@ function falha(historico: Mensagem[], tentativas: number, violacoes: Violacao[],
 export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config): Passo {
   const parsed = EntradaSchema.safeParse(entrada)
   if (!parsed.success) {
-    const bruto = (entrada as { historico?: unknown } | null)?.historico
-    const hist = Array.isArray(bruto) ? (bruto as Mensagem[]).filter((m) => m && typeof m.content === 'string') : []
-    return { fim: true, resultado: falha(hist, 0, [], cfg) }
+    // Entrada invalida: nao guarda historico do cliente nem encaminha a um humano.
+    return { fim: true, resultado: falha([], 0, [], cfg) }
   }
   const historico = parsed.data.historico as Mensagem[]
   try {

@@ -19,7 +19,7 @@ const base = (): Record<string, unknown> => ({
   resposta: 'Perfeito, qual o tamanho do local?',
 })
 
-const FALA_TEL: Mensagem = { role: 'user', content: 'meu telefone e 48 99999-0001' }
+const FALA_TEL: Mensagem = { role: 'user', content: 'sou de Sao Jose, meu telefone e 48 99999-0001' }
 const validar = (over: Record<string, unknown>, historico: Mensagem[] = [FALA_TEL]) =>
   validarContrato(JSON.stringify({ ...base(), ...over }), { historico, cfg })
 
@@ -65,7 +65,7 @@ describe('aceite', () => {
       qualificado: false,
       proxima_acao: 'responder_e_encerrar',
       resposta: 'Obrigado pelo contato.',
-    }, [{ role: 'user', content: 'meu zap 55 99999-0003' }])
+    }, [{ role: 'user', content: 'em Santa Maria, meu zap 55 99999-0003' }])
     expect(regras(r)).toContain('dados_completos_exigem_qualificado')
   })
 })
@@ -104,7 +104,7 @@ describe('regras extras', () => {
 
   it('cidade com sufixo de UF conta como a cidade listada; vazia conta como nula', () => {
     for (const c of ['Florianópolis-SC', 'Florianópolis/SC', 'Florianópolis, SC', 'sao jose - sc']) {
-      expect(validar({ cidade: c }).ok, c).toBe(true)
+      expect(validar({ cidade: c }, [{ role: 'user', content: 'Florianopolis, sao jose, 48 99999-0001' }]).ok, c).toBe(true)
     }
     expect(regras(validar({ cidade: '' }))).toContain('qualificado_exige_cidade')
     expect(regras(validar({ cidade: '', qualificado: false, proxima_acao: 'perguntar' }))).not.toContain('cidade_fora_exige_nao_qualificado')
@@ -271,5 +271,70 @@ describe('cada regra cruzada tem um teste com o seu slug', () => {
   ]
   it.each(casos)('%s', (slug, over, h) => {
     expect(regras(validar(over, h))).toContain(slug)
+  })
+})
+
+describe('endurecimento do contrato', () => {
+  const u = (content: string): Mensagem[] => [{ role: 'user', content }]
+  const humano = { qualificado: false, proxima_acao: 'encaminhar_humano', resposta: 'Um colega vai ligar.' }
+
+  it('UF: so aceita o sufixo que bate com a UF da cidade', () => {
+    const h = u('Santa Maria e Florianopolis e Sao Jose, 48 99999-0001')
+    for (const c of ['Santa Maria-RS', 'Florianópolis, SC', 'São José/SC']) expect(validar({ cidade: c }, h).ok, c).toBe(true)
+    for (const c of ['Santa Maria-DF', 'São José/SP', 'São José, RN', 'Florianópolis-XX']) {
+      expect(regras(validar({ cidade: c }, h)), c).toContain('qualificado_exige_cidade')
+    }
+  })
+
+  it('UF errada com telefone: qualificado=false e encaminhar_humano e valido', () => {
+    const h = u('Santa Maria-DF, 48 99999-0001')
+    expect(validar({ cidade: 'Santa Maria-DF', ...humano }, h).ok).toBe(true)
+  })
+
+  it('cidade que nenhum turno do lead cita nao qualifica', () => {
+    const h: Mensagem[] = [
+      { role: 'user', content: 'Quero ar no meu apartamento' },
+      { role: 'assistant', content: 'Registrado: comercial, instalação, Florianópolis.' },
+      { role: 'user', content: 'Isso. 48 99999-0001' },
+    ]
+    expect(regras(validar({ cidade: 'Florianópolis' }, h))).toContain('qualificado_exige_cidade_dita')
+    const ok = [...h.slice(0, 2), { role: 'user', content: 'Isso, em FLORIANOPOLIS. 48 99999-0001' } as Mensagem]
+    expect(validar({ cidade: 'Florianópolis-SC' }, ok).ok).toBe(true)
+  })
+
+  it('4a: telefone que o lead nunca disse e violacao mesmo com perguntar', () => {
+    const r = validar(
+      { telefone: '(48) 99123-4567', qualificado: false, dados_faltantes: ['telefone'] },
+      u('quero instalar em Sao Jose'),
+    )
+    expect(regras(r)).toContain('telefone_nao_confere')
+  })
+
+  it('4b: o campo inteiro precisa ser um unico telefone', () => {
+    const h = u('Sao Jose: 48 99999-0001 ou 11 98888-7777')
+    for (const t of ['48 99999-0001 ou 11 98888-7777', '48 99999-0001 =HYPERLINK("http://x")']) {
+      expect(regras(validar({ telefone: t }, h)), t).toContain('telefone_nao_confere')
+    }
+  })
+
+  it('4c: o telefone da propria empresa nao conta', () => {
+    const h = u('Liguei no (48) 3364-9840 e ninguém atendeu. Sou de Sao Jose')
+    expect(regras(validar({ telefone: '(48) 3364-9840' }, h))).toContain('qualificado_exige_telefone')
+  })
+
+  it('4d: CPF nao vira telefone', () => {
+    const h = u('Sou de Sao Jose. CPF 12945678901, não passo telefone')
+    expect(regras(validar({ telefone: '12945678901' }, h))).toContain('qualificado_exige_telefone')
+  })
+
+  it('4e: telefone com o 9 separado conta', () => {
+    expect(validar({ telefone: '(48) 9 9999-0001' }, u('Sao Jose, (48) 9 9999-0001')).ok).toBe(true)
+  })
+
+  it('5: interrogacao fullwidth conta', () => {
+    expect(regras(validar({ resposta: 'Qual o prazo？' }, [FALA_TEL]))).not.toContain('perguntar_exige_uma_interrogacao')
+    expect(regras(validar({ resposta: 'Qual o prazo？ E o local?' }))).toContain('perguntar_exige_uma_interrogacao')
+    const v = validar({ proxima_acao: 'encaminhar_vendas', resposta: 'Vendas？' })
+    expect(regras(v)).toContain('interrogacao_so_com_perguntar')
   })
 })

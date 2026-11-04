@@ -14,13 +14,20 @@
       "Governador Celso Ramos", "Antônio Carlos", "São Pedro de Alcântara", "Tijucas",
       "Santa Maria", "Itaara", "Silveira Martins", "Restinga Sêca", "São Sepé",
       "Júlio de Castilhos", "São Pedro do Sul"
-    ]
+    ],
+    "ufs": {
+      "Florianópolis": "SC", "São José": "SC", "Palhoça": "SC", "Biguaçu": "SC",
+      "Santo Amaro da Imperatriz": "SC", "Governador Celso Ramos": "SC", "Antônio Carlos": "SC",
+      "São Pedro de Alcântara": "SC", "Tijucas": "SC",
+      "Santa Maria": "RS", "Itaara": "RS", "Silveira Martins": "RS", "Restinga Sêca": "RS",
+      "São Sepé": "RS", "Júlio de Castilhos": "RS", "São Pedro do Sul": "RS"
+    }
   },
   "conversa": {
     "teto_perguntas": 8,
     "perguntas_curtas": ["tamanho ou quantidade de equipamentos", "tipo de local", "prazo desejado"]
   },
-  "ia": { "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 4000 },
+  "ia": { "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 1500 },
   "resposta": {
     "max_chars": 400,
     "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],
