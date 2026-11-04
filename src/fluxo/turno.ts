@@ -2,8 +2,7 @@ import { z } from 'zod'
 import type { Config } from '../config/schema'
 import { montarPrompt, ErroMontagem } from '../prompt/montar'
 import { validarSaida } from '../validacao/saida'
-import { extrairTelefones } from '../validacao/telefone'
-import type { Mensagem, Saida, Violacao } from '../validacao/contrato'
+import { telefonesDoLead, type Mensagem, type Saida, type Violacao } from '../validacao/contrato'
 
 export type Estado = {
   historico: Mensagem[]
@@ -33,13 +32,14 @@ const EntradaSchema = z.object({
     .refine((h) => h.every((m, i) => m.role === (i % 2 === 0 ? 'user' : 'assistant')), 'o historico deve alternar user/assistant, comecando por user'),
 })
 
-const temTelefone = (historico: Mensagem[]) =>
-  historico.filter((m) => m.role === 'user').some((m) => extrairTelefones(m.content).length > 0)
+// Numero da propria empresa (empresa.contato) escrito pelo lead nao e contato do lead.
+const temTelefone = (historico: Mensagem[], cfg: Config) =>
+  historico.filter((m) => m.role === 'user').some((m) => telefonesDoLead(m.content, cfg.empresa.contato).length > 0)
 
 function falha(historico: Mensagem[], tentativas: number, violacoes: Violacao[], cfg: Config): Resultado {
   return {
     resposta: cfg.textos.falha_tecnica,
-    proxima_acao: temTelefone(historico) ? 'encaminhar_humano' : 'responder_e_encerrar',
+    proxima_acao: temTelefone(historico, cfg) ? 'encaminhar_humano' : 'responder_e_encerrar',
     saida: null,
     tentativas,
     origem: 'falha',

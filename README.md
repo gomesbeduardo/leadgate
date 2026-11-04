@@ -125,7 +125,7 @@ O ajuste tem um par de aberturas idênticas, então a meta de variação não fo
 
 ### Checklist de tom e travas
 
-Os itens 1 a 4 são automáticos (travas da resposta). No ajuste, os casos a03 e a04 falharam no item 3 (a resposta citou prazo ou disponibilidade de agenda); os demais casos de ajuste, todo o reservado e toda a regressão passaram nos itens automáticos aplicáveis. Os itens 5 a 10 dependem de leitura humana, sim ou não por item, e **ainda estão pendentes**: ninguém fez essa leitura. A tabela completa por caso está em `avaliacao/tabela.md`.
+Os itens 1 a 4 são automáticos (travas da resposta). O item 3 usa o mesmo detector de prazo da trava da resposta, então só conta formas como "ainda hoje" ou "até amanhã", não um "hoje" solto. Com isso, todos os casos do ajuste, do reservado e da regressão passam nos itens automáticos aplicáveis. Uma versão anterior da checagem, mais larga, marcava a03 e a04 por "hoje" e "agora mesmo" em frases que não prometiam prazo. Os itens 5 a 10 dependem de leitura humana, sim ou não por item, e **ainda estão pendentes**: ninguém fez essa leitura. A tabela completa por caso está em `avaliacao/tabela.md`.
 
 ### Reproduzir
 
@@ -146,7 +146,7 @@ As camadas, da mais interna para a mais externa:
 3. **Checagem da resposta ao lead.** Nunca negar ser IA nem afirmar ser humano; nenhum preço inventado (valor em reais); nenhuma promessa (garantia, desconto, grátis) nem prazo; o canário do prompt não pode aparecer; nome de provedor de IA (Claude, GPT, Gemini e outros da lista) não pode aparecer; no máximo um `?`, até 400 caracteres, sem menu numerado, sem frase de robô.
 4. **Regeneração.** Reprovou, o fluxo chama o modelo de novo com uma instrução que aponta a regra violada, até 2 vezes (3 tentativas). Esgotou: caminho humano (com telefone) ou mensagem de falha técnica com o contato da empresa.
 5. **Rotas internas em porta separada.** `/preparar` e `/validar` ficam na porta 3001, não publicada no host.
-6. **Limites de uso.** Corpo de até 16 KB, 20 requisições por minuto por cliente e 4 chamadas simultâneas (configuráveis em `.env.example`). Histórico limitado a 8 mil caracteres.
+6. **Limites de uso.** Corpo de até 16 KB, 20 requisições por minuto por cliente e 4 chamadas simultâneas (configuráveis em `.env.example`). Histórico limitado a 8 mil caracteres. A porta 5678 é publicada em localhost, então um processo local pode postar direto no webhook do n8n e pular os limites da rota pública.
 
 Limites conhecidos, que a spec não esconde:
 

@@ -185,6 +185,12 @@ describe('loop de regeneracao', () => {
     expect(resultado.violacoes.length).toBeGreaterThan(0)
   })
 
+  it('esgotado com so o telefone da empresa no texto: encerra', () => {
+    const hist: Mensagem[] = [{ role: 'user', content: 'liguei no (48) 3364-9840 e ninguém atendeu' }]
+    const { resultado } = rodar(hist, [corpo('x'), corpo('y'), corpo('z')])
+    expect(resultado.proxima_acao).toBe('responder_e_encerrar')
+  })
+
   it('T12: esgotado com telefone vai para encaminhar_humano', () => {
     const hist: Mensagem[] = [{ role: 'user', content: 'PMOC para nossa clínica em Santa Maria, 55 99999-0003' }]
     const ruim = saidaBase({
@@ -217,6 +223,10 @@ describe('falhaDeApi', () => {
     const r = falhaDeApi(est([{ role: 'user', content: 'meu zap (48) 99999-0001' }]), cfg)
     expect(r.proxima_acao).toBe('encaminhar_humano')
     expect(r.erro).toBe(true)
+  })
+  it('telefone da propria empresa no texto do lead nao conta como contato', () => {
+    const h: Mensagem[] = [{ role: 'user', content: 'liguei no (48) 3364-9840 e ninguém atendeu' }]
+    expect(falhaDeApi(est(h), cfg).proxima_acao).toBe('responder_e_encerrar')
   })
   it('ignora numero de 4 digitos e so olha mensagens do user', () => {
     const h: Mensagem[] = [

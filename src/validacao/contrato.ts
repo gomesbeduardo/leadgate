@@ -82,7 +82,7 @@ function cidadeParecida(cidade: string, cfg: Config): boolean {
 }
 
 /** Telefones do lead, sem os da propria empresa. */
-const telefonesDoLead = (texto: string, contato: string): string[] => {
+export const telefonesDoLead = (texto: string, contato: string): string[] => {
   const da_empresa = new Set(extrairTelefones(contato).map(digitosTelefone))
   return extrairTelefones(texto).filter((t) => !da_empresa.has(digitosTelefone(t)))
 }

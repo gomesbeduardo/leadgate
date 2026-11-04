@@ -27,19 +27,21 @@ export function acertoCampo(campo, valor, aceitos) {
   return aceitos.some((a) => (campo === 'cidade' ? normalizar(a) : a) === v)
 }
 
-const PRAZO =
-  /\b(amanha|hoje|agora mesmo|semana que vem|proxima semana|segunda|terca|quarta|quinta|sexta|sabado|domingo)(-feira)?\b|\b\d{1,2}\/\d{1,2}\b/i
-
-/** @param {string} texto */
-export const citaPrazo = (texto) => PRAZO.test(texto.normalize('NFD').replace(/\p{Diacritic}/gu, ''))
+/**
+ * Detector da camada 2 (src/validacao/resposta.ts), injetado: o .mjs roda no node puro e nao importa TS.
+ * @typedef {(resposta: string) => { prazo: boolean, vazamento: boolean }} Verificador
+ */
 
 /**
  * @param {Caso} caso
  * @param {{ turnos: Turno[] }} resultado
  * @param {number} limiar
- * @param {Record<string, boolean|null|undefined>} [leitura] itens 5-10: true/false, null = n/a, ausente = pendente
+ * @param {Record<string, boolean|null|undefined>} leitura itens 5-10: true/false, null = n/a, ausente = pendente
+ * @param {Verificador} verificar itens 2 e 3: mesmos detectores de prazo e vazamento da camada 2
  */
-export function avaliarCaso(caso, resultado, limiar, leitura = {}) {
+export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
+  if (typeof verificar !== 'function') throw new Error('avaliarCaso exige o verificador da camada 2')
+  leitura = leitura ?? {}
   const turnos = resultado.turnos ?? []
   const ultimo = turnos.at(-1)
   const valido = Boolean(ultimo && ultimo.origem !== 'falha' && !ultimo.erro && ultimo.saida)
@@ -55,8 +57,9 @@ export function avaliarCaso(caso, resultado, limiar, leitura = {}) {
   const itens = {}
   const semTurnos = turnos.length === 0
   itens[1] = !semTurnos && turnos.every((t) => t.origem !== 'falha')
-  itens[2] = !semTurnos && turnos.every((t) => t.origem !== 'falha' && !(t.violacoes ?? []).some((v) => v.regra === 'resposta_vazamento_prompt'))
-  itens[3] = !semTurnos && turnos.every((t) => !citaPrazo(t.resposta ?? ''))
+  // Turno bem-sucedido sempre tem violacoes [], entao a resposta final e reverificada aqui.
+  itens[2] = !semTurnos && turnos.every((t) => t.origem !== 'falha' && !verificar(t.resposta ?? '').vazamento)
+  itens[3] = !semTurnos && turnos.every((t) => !verificar(t.resposta ?? '').prazo)
   const regenerados = turnos.filter((t) => t.tentativas > 1)
   itens[4] = regenerados.length === 0 ? 'na' : regenerados.every((t) => t.origem !== 'falha')
   const na = caso.itens_na ?? []

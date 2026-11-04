@@ -28,8 +28,8 @@ Caso que falhou conta como erro com confianca abaixo do limiar.
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | a01 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
 | a02 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
-| a03 | ok | ok | falhou | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 2/3, 4 pendente(s) |
-| a04 | ok | ok | falhou | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 2/3, 4 pendente(s) |
+| a03 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
+| a04 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
 | a05 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
 | a06 | ok | ok | ok | n/a | pendente | pendente | n/a | n/a | pendente | pendente | 3/3, 4 pendente(s) |
 | a07 | ok | ok | ok | n/a | pendente | pendente | pendente | n/a | pendente | pendente | 3/3, 5 pendente(s) |

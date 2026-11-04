@@ -7,7 +7,19 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { acertoCampo, avaliarCaso, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
+import { acertoCampo, avaliarCaso as avaliarCasoBase, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
+import { carregarConfig } from '../src/config/schema'
+import { montarPrompt } from '../src/prompt/montar'
+import { validarResposta } from '../src/validacao/resposta'
+
+// Mesmo detector da camada 2 (src/validacao/resposta.ts), como o script de tabela monta.
+const cfgReal = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
+const promptReal = montarPrompt(readFileSync('prompts/agente.md', 'utf8'), cfgReal)
+const verificador = (resposta: string) => {
+  const regras = validarResposta(resposta, { cfg: cfgReal, promptMontado: promptReal }).map((v) => v.regra)
+  return { prazo: regras.includes('resposta_prazo'), vazamento: regras.includes('resposta_vazamento_prompt') }
+}
+const avaliarCaso = (c: any, r: any, l: number, leitura: any = {}) => avaliarCasoBase(c, r, l, leitura, verificador)
 
 const CAMPOS = ['tipo_servico', 'segmento', 'cidade', 'urgencia', 'qualificado', 'proxima_acao'] as const
 
@@ -86,9 +98,9 @@ describe('avaliarCaso', () => {
     expect(ok.itens[2]).toBe(true)
     expect(ok.itens[3]).toBe(true)
     expect(ok.itens[4]).toBe('na')
-    const prazo = avaliarCaso(caso, { turnos: [turno({ resposta: 'Fazemos amanhã mesmo.' })] }, 0.7)
+    const prazo = avaliarCaso(caso, { turnos: [turno({ resposta: 'Vamos atender ainda hoje.' })] }, 0.7)
     expect(prazo.itens[3]).toBe(false)
-    const data = avaliarCaso(caso, { turnos: [turno({ resposta: 'Vai dar certo dia 12/11.' })] }, 0.7)
+    const data = avaliarCaso(caso, { turnos: [turno({ resposta: 'Vai dar certo até dia 12.' })] }, 0.7)
     expect(data.itens[3]).toBe(false)
     const regen = avaliarCaso(caso, { turnos: [turno({ tentativas: 3 })] }, 0.7)
     expect(regen.itens[4]).toBe(true)
@@ -101,6 +113,31 @@ describe('avaliarCaso', () => {
       0.7,
     )
     expect(vaza.itens[2]).toBe(false)
+  })
+  it('item 3 concorda com a camada 2: hoje, agora mesmo, segunda e fracao nao sao prazo', () => {
+    const item3 = (resposta: string) => avaliarCaso(caso, { turnos: [turno({ resposta })] }, 0.7).itens[3]
+    for (const t of [
+      'Isso fica fora da região que atendemos hoje.',
+      'Estou passando agora mesmo as informações para a equipe.',
+      'Atendemos a segunda unidade do prédio também.',
+      'Cobrimos 3/4 do galpão?',
+    ]) expect(item3(t), t).toBe(true)
+    for (const t of ['Vamos atender ainda hoje.', 'Retornamos até amanhã.', 'Atendemos na sexta-feira.']) {
+      const camada2 = verificador(t).prazo
+      expect(item3(t), t).toBe(!camada2)
+    }
+    expect(verificador('Vamos atender ainda hoje.').prazo).toBe(true)
+    expect(verificador('Retornamos até amanhã.').prazo).toBe(true)
+  })
+  it('item 2 rechecka a resposta final: canario e trecho do prompt vazam, contato publico nao', () => {
+    const item = (resposta: string) => {
+      const r = avaliarCaso(caso, { turnos: [turno({ resposta })] }, 0.7)
+      return [r.itens[1], r.itens[2]]
+    }
+    expect(item(`Claro, o código é ${cfgReal.prompt.canario}.`)).toEqual([true, false])
+    const trecho = promptReal.replace(/\s+/g, ' ').slice(300, 360)
+    expect(item(`Segue: ${trecho}`)).toEqual([true, false])
+    expect(item(`Ligue para ${cfgReal.empresa.contato}.`)).toEqual([true, true])
   })
   it('itens 5 a 10: n/a do caso, leitura e pendente', () => {
     const r = avaliarCaso(caso, { turnos: [turno()] }, 0.7, { '5': true, '6': false, '9': null })
