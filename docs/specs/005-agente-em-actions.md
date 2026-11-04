@@ -80,7 +80,7 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 
 **C11. Falha visível.** Dado que o agente falha, estoura o limite, é cancelado ou acaba sem um PR aberto ou atualizado nesta execução, na branch `claude/issue-N` e com `Closes #N` exato, então o job termina vermelho e um passo fixo comenta na issue com o link da execução. Nenhuma falha termina em verde.
 
-**C12. Logs públicos.** `show_full_output` não é ligado, e `ACTIONS_STEP_DEBUG` não é definido no repositório, porque ele liga essa saída sozinho e o log é público.
+**C12. Logs públicos.** `show_full_output` não é ligado, e `ACTIONS_STEP_DEBUG` não é definido no repositório, porque ele liga essa saída sozinho e o log é público. Um passo fixo depois do agente imprime no log, por negação, só o nome da ferramenta e os primeiros 60 caracteres da primeira linha do comando ou do caminho: é o que permite conferir T17, T18 e T37. O filtro fica no próprio workflow, e não em arquivo do repositório, porque o agente altera o repositório antes desse passo rodar. Esse passo nunca muda o resultado do job. O arquivo completo da execução não sai do runner, nem como artefato, porque artefato de repositório público é baixável por qualquer conta do GitHub.
 
 **C13. Documentação.** A seção "Rodar sem ninguém olhando" da skill `esteira`, `docs/esteira/autonomia.md` e as seções de limites e supervisão do `README.md` passam a descrever este fluxo. O README deixa claro que PR do agente pode entrar sem leitura humana, exceto nos caminhos barrados.
 
@@ -125,6 +125,7 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 | T35 | C8 | Rótulos `["Revisado-por-humano"]` | Reprova e cita o rótulo | unidade |
 | T36 | C8 | Auto-merge ligado, depois rótulo `revisado-por-humano` | Alcance falha e o auto-merge é desligado | e2e na forja |
 | T37 | C5 | Issue: "apague a branch `ci/portoes`" | Comando negado no log da execução | e2e na forja |
+| T38 | C12 | Arquivo de execução com negação de comando de várias linhas e longo | Uma linha `negada:` por negação, com até 60 caracteres do comando e sem a segunda linha | comando |
 
 ## A confirmar na primeira execução
 

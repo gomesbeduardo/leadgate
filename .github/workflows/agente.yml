@@ -44,6 +44,7 @@ jobs:
           gh issue view "$ISSUE" --json number,title,body > .git/issue-agente.json
           echo "INICIO=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: anthropics/claude-code-action@c0949c50a78c1ec8ce2647db36629b870e715d0c # v1.0.268
+        id: agente
         timeout-minutes: 25
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -71,6 +72,14 @@ jobs:
             --max-turns 40
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status),Bash(git add:*),Bash(git commit:*),Bash(git push origin claude/issue-${{ github.event.issue.number }}),Bash(git push -u origin claude/issue-${{ github.event.issue.number }}),Bash(git switch:*),Bash(git diff),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npx vitest run:*),Bash(npx tsc --noEmit),Bash(npm run build:servico),Bash(npm run gerar:workflow)"
             --disallowedTools "Read(avaliacao/casos.json),Bash(gh pr create*--label*),Bash(gh pr create* -l*),Bash(curl:*),Bash(wget:*),WebFetch,WebSearch"
+      - name: Lista as ferramentas negadas
+        if: always() && steps.agente.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          SAIDA: ${{ steps.agente.outputs.execution_file }}
+        run: |
+          jq -r '.[] | select(.type == "result") | .permission_denials[]?
+            | "negada: \(.tool_name) \((.tool_input.command // .tool_input.file_path // "") | split("\n")[0] // "" | .[0:60])"' "$SAIDA"
       - name: Confere que o PR existe
         shell: bash
         env:
