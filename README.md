@@ -17,7 +17,7 @@ Aqui a IA entra onde a linguagem é solta: entender o que a pessoa quer, pedir s
 - Um chat que conversa com o lead, coleta o mínimo (serviço, segmento, cidade e, só depois, nome e telefone) e decide se ele é qualificado.
 - Um JSON validado como saída, com a próxima ação: perguntar, encaminhar para vendas, encerrar com educação ou encaminhar para uma pessoa.
 - Travas em camadas para o agente não sair do papel, não prometer preço ou prazo e nunca negar que é uma IA.
-- Uma avaliação reproduzível com 20 casos, mais um conjunto separado de regressão com falhas que já aconteceram.
+- Uma avaliação reproduzível com 39 casos, mais um conjunto separado de regressão com falhas que já aconteceram.
 
 A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. Na tela do chat, `tela.titulo` define só o título da aba do navegador (o cabeçalho visível é fixo, "Atendimento CentralEng"); as cores da conversa ficam nos tokens de `chat/index.html`, e `cor_primaria` e `cor_destaque` não são mais aplicadas ali, embora `/tela.json` ainda as devolva. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
 
@@ -25,10 +25,10 @@ A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, n�
 
 Os números abaixo vêm de `avaliacao/tabela.md` e estão detalhados em Avaliação.
 
-- No conjunto reservado (6 casos, rodado uma única vez), `tipo_servico`, `cidade`, `urgencia`, `qualificado` e `proxima_acao` acertaram 6 de 6. `segmento` acertou 5 de 6.
-- No conjunto de regressão (9 casos de falhas passadas, separado), todos os campos acertaram 9 de 9.
-- A validação determinística cobre o que o modelo pode errar sem perceber. A média foi de 1,03 tentativa por turno no ajuste e de 1,13 no reservado, ou seja, a regeneração é rara.
-- O conjunto de ajuste fechou em 14 de 14 em todos os campos, mas isso não conta como prova: o prompt foi ajustado olhando esses mesmos casos.
+- No conjunto reservado (6 casos, medido uma única vez com a versão 1.2.0 do prompt), `tipo_servico`, `cidade`, `urgencia`, `qualificado` e `proxima_acao` acertaram 6 de 6. `segmento` acertou 5 de 6.
+- No conjunto de regressão (10 casos de falhas passadas, separado), todos os campos acertaram 30 de 30 em três rodadas, com a versão 1.3.0.
+- A validação determinística cobre o que o modelo pode errar sem perceber. A média foi de 1,00 tentativa por turno no ajuste e de 1,13 no reservado, ou seja, a regeneração é rara.
+- O conjunto de ajuste fechou em 33 de 33 em todos os campos, nas três rodadas, mas isso não conta como prova: o prompt foi ajustado olhando esses mesmos casos.
 
 ## O que aprendi
 
@@ -89,20 +89,22 @@ Regras que o código impõe sobre esse contrato: `qualificado = true` só com se
 
 Modelo: `claude-opus-5-5`, com `effort` em `low` (`config/empresa.json`). Limiar de confiança: 0,7. O gabarito está em `avaliacao/casos.json` e `avaliacao/regressao.json`; todos os dados são fictícios.
 
-**Como os números devem ser lidos.** A divisão entre ajuste e reservado é desenho nosso, não um benchmark público, e a amostra é pequena: com 14 e 6 casos, um caso a mais ou a menos muda muito o percentual. O prompt foi ajustado olhando os 14 casos de ajuste, então o 14/14 deles não é independente. O conjunto reservado (6 casos) rodou exatamente uma vez, com a versão 1.2.0 do prompt, e só os números dele não foram usados para ajustar nada. O conjunto de regressão (9 casos) guarda falhas que já aconteceram e reúne falhas que já corrigimos no prompt e nas travas, por isso não entra nos números do ajuste nem do reservado.
+**Como os números devem ser lidos.** A divisão entre ajuste e reservado é desenho nosso, não um benchmark público, e a amostra é pequena: com 33 e 6 casos, um caso a mais ou a menos muda muito o percentual. O prompt foi ajustado olhando os 33 casos de ajuste, então o 33/33 deles não é independente. Os números do conjunto reservado (6 casos) são os da única medição, com a versão 1.2.0 do prompt, e não valem para a versão 1.3.0: esses casos foram lidos durante o trabalho na versão atual, então o conjunto deixou de ser independente e precisa ser substituído por um novo, escrito por quem não viu o prompt. O conjunto de regressão (10 casos) guarda falhas que já aconteceram e reúne falhas que já corrigimos no prompt e nas travas, por isso não entra nos números do ajuste nem do reservado.
 
 ### Acerto por campo
 
-| Campo | Acerto ajuste (n=14) | Acerto reservado (n=6) | Regressão (n=9, separado) |
+| Campo | Acerto ajuste (n=33) | Acerto reservado (n=6, versão 1.2.0) | Regressão (n=10, separado) |
 |---|---|---|---|
-| tipo_servico | 14/14 (100%) | 6/6 (100%) | 9/9 (100%) |
-| segmento | 14/14 (100%) | 5/6 (83%) | 9/9 (100%) |
-| cidade | 14/14 (100%) | 6/6 (100%) | 9/9 (100%) |
-| urgencia | 14/14 (100%) | 6/6 (100%) | 9/9 (100%) |
-| qualificado | 14/14 (100%) | 6/6 (100%) | 9/9 (100%) |
-| proxima_acao | 14/14 (100%) | 6/6 (100%) | 9/9 (100%) |
+| tipo_servico | 33/33 (100%) | 6/6 (100%) | 10/10 (100%) |
+| segmento | 33/33 (100%) | 5/6 (83%) | 10/10 (100%) |
+| desvios | 17/17 (100%) | sem medição | 2/2 (100%) |
+| vagos | 6/6 (100%) | sem medição | sem medição |
+| cidade | 33/33 (100%) | 6/6 (100%) | 10/10 (100%) |
+| urgencia | 33/33 (100%) | 6/6 (100%) | 10/10 (100%) |
+| qualificado | 33/33 (100%) | 6/6 (100%) | 10/10 (100%) |
+| proxima_acao | 33/33 (100%) | 6/6 (100%) | 10/10 (100%) |
 
-Ajuste e regressão: números em que se mexeu no prompt (não independentes). Reservado: números em que não se mexeu.
+Ajuste e regressão: versão 1.3.0, uma rodada na tabela e o mesmo resultado nas outras duas (99 de 99 acertos por campo no ajuste e 30 de 30 na regressão). São números em que se mexeu no prompt, não independentes. `desvios` e `vagos` só contam nos casos que os esperam. Reservado: medição antiga da versão 1.2.0.
 
 **O erro do reservado.** No caso r05 ("Vocês consertam geladeira do meu restaurante?", fora de escopo), o gabarito esperava `segmento` vazio e o modelo preencheu `comercial`. Os outros campos do caso estavam certos: `fora_escopo`, `qualificado = false`, `responder_e_encerrar`. Não ajustei o prompt depois disso, para manter o reservado como foi medido.
 
@@ -110,10 +112,10 @@ Ajuste e regressão: números em que se mexeu no prompt (não independentes). Re
 
 | Conjunto | Acerto com confiança >= limiar | Acerto com confiança < limiar | Erro com confiança >= limiar | Erro com confiança < limiar | Limiar separa |
 |---|---|---|---|---|---|
-| ajuste | 10 | 4 | 0 | 0 | 10/14 |
+| ajuste | 28 | 5 | 0 | 0 | 28/33 |
 | reservado | 3 | 2 | 1 | 0 | 3/6 |
 
-O erro do reservado teve confiança de 0,85, acima do limiar. Então o limiar, neste conjunto, não separou o erro dos acertos. No conjunto de regressão a contagem foi: acerto alta 3, acerto baixa 6, erro alta 0, erro baixa 0. Caso que falhou conta como erro com confiança abaixo do limiar.
+O erro do reservado teve confiança de 0,85, acima do limiar. Então o limiar, neste conjunto, não separou o erro dos acertos. No conjunto de regressão a contagem foi: acerto alta 5, acerto baixa 5, erro alta 0, erro baixa 0. Caso que falhou conta como erro com confiança abaixo do limiar.
 
 ### Variação e custo
 
@@ -419,7 +421,7 @@ Lacuna honesta: a base legal do tratamento e a transferência internacional (as 
 ## Limitações
 
 - O histórico vem do cliente (ver Segurança), então o teto de perguntas pode ser forjado.
-- A amostra é pequena: 14 casos de ajuste, 6 reservados e 9 de regressão, todos escritos por nós.
+- A amostra é pequena: 33 casos de ajuste, 6 reservados e 10 de regressão, todos escritos por nós.
 - Não há cliente em produção. Tudo roda em teste.
 - O checklist de leitura humana (itens 5 a 10) foi feito uma vez: 120 de 124 marcações aprovadas, e os casos a01, a03, a04 e a14 têm um item reprovado.
 - Não há autenticação.

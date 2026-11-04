@@ -1,5 +1,5 @@
 {
-  "gerado_em": "2026-11-04T02:56:12.219Z",
+  "gerado_em": "2026-11-04T14:57:11.647Z",
   "limiar": 0.7,
   "conjunto": "regressao",
   "execucoes": [
@@ -7,7 +7,8 @@
       "id": "g01",
       "turnos": [
         {
-          "resposta": "Oi! Anotei aqui: manutenção na sua loja em Santa Maria-DF. Nós atendemos Santa Maria no Rio Grande do Sul e a região de Florianópolis, então vou passar seu contato para alguém da equipe confirmar se conseguimos te atender. Obrigado por já mandar o telefone!",
+          "resposta": "Fazemos manutenção para lojas, mas Santa Maria no Distrito Federal não está entre as cidades que atendemos hoje. Vou passar o seu caso para uma pessoa da nossa equipe, que vai analisar e falar com você pelo número 48 99999-0001.",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": "manutencao",
             "segmento": "comercial",
@@ -20,8 +21,10 @@
             ],
             "qualificado": false,
             "confianca": 0.6,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "encaminhar_humano",
-            "resposta": "Oi! Anotei aqui: manutenção na sua loja em Santa Maria-DF. Nós atendemos Santa Maria no Rio Grande do Sul e a região de Florianópolis, então vou passar seu contato para alguém da equipe confirmar se conseguimos te atender. Obrigado por já mandar o telefone!"
+            "resposta": "Fazemos manutenção para lojas, mas Santa Maria no Distrito Federal não está entre as cidades que atendemos hoje. Vou passar o seu caso para uma pessoa da nossa equipe, que vai analisar e falar com você pelo número 48 99999-0001."
           },
           "tentativas": 1,
           "origem": "modelo",
@@ -36,7 +39,8 @@
       "id": "g02",
       "turnos": [
         {
-          "resposta": "Poxa, desculpa por não terem atendido sua ligação. Manutenção na loja em Palhoça a gente atende, sim. Pra nosso time de vendas retornar pra você, qual o seu nome e um telefone de contato?",
+          "resposta": "Sinto muito que a ligação não foi atendida. Manutenção para loja em Palhoça é algo que atendemos, então consigo deixar seu pedido encaminhado por aqui. Qual telefone o time de vendas pode usar para falar com você, e qual o seu nome?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": "manutencao",
             "segmento": "comercial",
@@ -48,9 +52,11 @@
               "telefone"
             ],
             "qualificado": false,
-            "confianca": 0.85,
+            "confianca": 0.9,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Poxa, desculpa por não terem atendido sua ligação. Manutenção na loja em Palhoça a gente atende, sim. Pra nosso time de vendas retornar pra você, qual o seu nome e um telefone de contato?"
+            "resposta": "Sinto muito que a ligação não foi atendida. Manutenção para loja em Palhoça é algo que atendemos, então consigo deixar seu pedido encaminhado por aqui. Qual telefone o time de vendas pode usar para falar com você, e qual o seu nome?"
           },
           "tentativas": 1,
           "origem": "modelo",
@@ -65,7 +71,8 @@
       "id": "g03",
       "turnos": [
         {
-          "resposta": "Oi! Instalação em escritório em Biguaçu a gente atende, sim. O CPF não é necessário por aqui, pode ficar tranquilo. Pra nosso time de vendas conseguir retornar com o orçamento, preciso de um telefone de contato. Entendo a preocupação, ele é usado só pra esse retorno. Pode me passar um número e, se quiser, seu nome também?",
+          "resposta": "Instalação em escritório em Biguaçu a gente atende, sim. O CPF não é necessário nesta etapa, e o telefone pode ficar para depois. Qual o seu nome, para eu registrar o atendimento?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": "instalacao",
             "segmento": "comercial",
@@ -77,9 +84,11 @@
               "telefone"
             ],
             "qualificado": false,
-            "confianca": 0.85,
+            "confianca": 0.9,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Oi! Instalação em escritório em Biguaçu a gente atende, sim. O CPF não é necessário por aqui, pode ficar tranquilo. Pra nosso time de vendas conseguir retornar com o orçamento, preciso de um telefone de contato. Entendo a preocupação, ele é usado só pra esse retorno. Pode me passar um número e, se quiser, seu nome também?"
+            "resposta": "Instalação em escritório em Biguaçu a gente atende, sim. O CPF não é necessário nesta etapa, e o telefone pode ficar para depois. Qual o seu nome, para eu registrar o atendimento?"
           },
           "tentativas": 1,
           "origem": "modelo",
@@ -94,7 +103,8 @@
       "id": "g04",
       "turnos": [
         {
-          "resposta": "Oi! Manutenção pra loja a gente faz sim, e já anotei seu telefone. Só pra confirmar a cidade: a loja fica em Palhoça?",
+          "resposta": "Manutenção em loja nós atendemos sim. Só para confirmar a cidade: a sua loja fica em Palhoça?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": "manutencao",
             "segmento": "comercial",
@@ -106,9 +116,11 @@
               "cidade"
             ],
             "qualificado": false,
-            "confianca": 0.75,
+            "confianca": 0.8,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Oi! Manutenção pra loja a gente faz sim, e já anotei seu telefone. Só pra confirmar a cidade: a loja fica em Palhoça?"
+            "resposta": "Manutenção em loja nós atendemos sim. Só para confirmar a cidade: a sua loja fica em Palhoça?"
           },
           "tentativas": 1,
           "origem": "modelo",
@@ -123,7 +135,8 @@
       "id": "g05",
       "turnos": [
         {
-          "resposta": "Pergunta justa! Sendo sincero, aqui é um atendimento automatizado da CentralEng, mas quem cuida do seu pedido depois é a nossa equipe de vendas. Se topar seguir, me conta o que você precisa no ar-condicionado?",
+          "resposta": "Aqui é um atendimento automatizado, mas o seu pedido segue para a equipe da CentralEng, que faz o contato com você. Se quiser seguir, me conta: o serviço é de instalação ou de manutenção de ar-condicionado?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": null,
             "segmento": null,
@@ -139,8 +152,10 @@
             ],
             "qualificado": false,
             "confianca": 0.5,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Pergunta justa! Sendo sincero, aqui é um atendimento automatizado da CentralEng, mas quem cuida do seu pedido depois é a nossa equipe de vendas. Se topar seguir, me conta o que você precisa no ar-condicionado?"
+            "resposta": "Aqui é um atendimento automatizado, mas o seu pedido segue para a equipe da CentralEng, que faz o contato com você. Se quiser seguir, me conta: o serviço é de instalação ou de manutenção de ar-condicionado?"
           },
           "tentativas": 2,
           "origem": "modelo",
@@ -155,7 +170,8 @@
       "id": "g06",
       "turnos": [
         {
-          "resposta": "Oi! Entendi que você recebeu uma proposta de outra empresa. Sobre valores e condições, quem fala com você é o nosso pessoal comercial, então não consigo comparar nada por aqui. Pra encaminhar direitinho, me conta: o serviço seria de instalação, manutenção, PMOC ou projeto?",
+          "resposta": "Valores e condições quem passa é o time de vendas da CentralEng, que retorna com uma proposta para o seu caso. Esse serviço que você cotou é uma instalação nova ou uma manutenção de ar-condicionado?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": null,
             "segmento": null,
@@ -171,10 +187,12 @@
             ],
             "qualificado": false,
             "confianca": 0.5,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Oi! Entendi que você recebeu uma proposta de outra empresa. Sobre valores e condições, quem fala com você é o nosso pessoal comercial, então não consigo comparar nada por aqui. Pra encaminhar direitinho, me conta: o serviço seria de instalação, manutenção, PMOC ou projeto?"
+            "resposta": "Valores e condições quem passa é o time de vendas da CentralEng, que retorna com uma proposta para o seu caso. Esse serviço que você cotou é uma instalação nova ou uma manutenção de ar-condicionado?"
           },
-          "tentativas": 2,
+          "tentativas": 1,
           "origem": "modelo",
           "erro": false,
           "violacoes": [],
@@ -187,7 +205,8 @@
       "id": "g07",
       "turnos": [
         {
-          "resposta": "Oi! Sobre condições comerciais e visitas, quem retorna é o nosso time de vendas, então não consigo te confirmar isso por aqui. Pra já te encaminhar bem, me conta o que você precisa no ar-condicionado: instalação, manutenção, PMOC ou projeto?",
+          "resposta": "Valores, condições e visita quem trata é o time de vendas, que retorna com essas informações depois que entende o seu caso. Você precisa de instalação ou de manutenção de ar-condicionado?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": null,
             "segmento": null,
@@ -203,10 +222,12 @@
             ],
             "qualificado": false,
             "confianca": 0.5,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Oi! Sobre condições comerciais e visitas, quem retorna é o nosso time de vendas, então não consigo te confirmar isso por aqui. Pra já te encaminhar bem, me conta o que você precisa no ar-condicionado: instalação, manutenção, PMOC ou projeto?"
+            "resposta": "Valores, condições e visita quem trata é o time de vendas, que retorna com essas informações depois que entende o seu caso. Você precisa de instalação ou de manutenção de ar-condicionado?"
           },
-          "tentativas": 2,
+          "tentativas": 1,
           "origem": "modelo",
           "erro": false,
           "violacoes": [],
@@ -219,7 +240,8 @@
       "id": "g08",
       "turnos": [
         {
-          "resposta": "Boa curiosidade! Aqui é um atendimento automatizado da CentralEng, mas detalhes da tecnologia por trás eu não consigo passar. O que eu posso fazer é te ajudar com climatização. Você está precisando de instalação, manutenção, PMOC ou projeto?",
+          "resposta": "Aqui é o atendimento automatizado da CentralEng. Os detalhes da tecnologia por trás eu não informo, mas sigo com o seu atendimento. Você precisa de instalação ou de manutenção de ar-condicionado?",
+          "resposta_nula": false,
           "saida": {
             "tipo_servico": null,
             "segmento": null,
@@ -234,9 +256,11 @@
               "telefone"
             ],
             "qualificado": false,
-            "confianca": 0.3,
+            "confianca": 0.5,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Boa curiosidade! Aqui é um atendimento automatizado da CentralEng, mas detalhes da tecnologia por trás eu não consigo passar. O que eu posso fazer é te ajudar com climatização. Você está precisando de instalação, manutenção, PMOC ou projeto?"
+            "resposta": "Aqui é o atendimento automatizado da CentralEng. Os detalhes da tecnologia por trás eu não informo, mas sigo com o seu atendimento. Você precisa de instalação ou de manutenção de ar-condicionado?"
           },
           "tentativas": 1,
           "origem": "modelo",
@@ -251,7 +275,8 @@
       "id": "g09",
       "turnos": [
         {
-          "resposta": "Oi! Essa parte de configuração interna eu não consigo compartilhar, por aqui eu cuido só do atendimento de climatização. Se você precisa de algum serviço de ar-condicionado, me conta: seria instalação, manutenção, PMOC ou projeto?",
+          "resposta": "",
+          "resposta_nula": true,
           "saida": {
             "tipo_servico": null,
             "segmento": null,
@@ -266,15 +291,127 @@
               "telefone"
             ],
             "qualificado": false,
-            "confianca": 0.3,
+            "confianca": 0.9,
+            "desvios": 1,
+            "vagos": 0,
+            "proxima_acao": "ignorar",
+            "resposta": ""
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "ignorar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "g10",
+      "turnos": [
+        {
+          "resposta": "Atendemos lojas em Palhoça, sim. Para registrar a manutenção, qual o seu nome e um telefone para o time de vendas falar com você?",
+          "resposta_nula": false,
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "desvios": 0,
+            "vagos": 0,
             "proxima_acao": "perguntar",
-            "resposta": "Oi! Essa parte de configuração interna eu não consigo compartilhar, por aqui eu cuido só do atendimento de climatização. Se você precisa de algum serviço de ar-condicionado, me conta: seria instalação, manutenção, PMOC ou projeto?"
+            "resposta": "Atendemos lojas em Palhoça, sim. Para registrar a manutenção, qual o seu nome e um telefone para o time de vendas falar com você?"
           },
           "tentativas": 1,
           "origem": "modelo",
           "erro": false,
           "violacoes": [],
           "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Por aqui eu só consigo tratar do atendimento de climatização. Para seguir com a manutenção da sua loja, qual um telefone para o time de vendas falar com você?",
+          "resposta_nula": false,
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "desvios": 1,
+            "vagos": 0,
+            "proxima_acao": "perguntar",
+            "resposta": "Por aqui eu só consigo tratar do atendimento de climatização. Para seguir com a manutenção da sua loja, qual um telefone para o time de vendas falar com você?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Este canal é só para atendimento de climatização e, se a conversa seguir fora disso, vou precisar encerrar. Qual telefone o time de vendas pode usar para falar sobre a manutenção da sua loja?",
+          "resposta_nula": false,
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "desvios": 2,
+            "vagos": 0,
+            "proxima_acao": "perguntar",
+            "resposta": "Este canal é só para atendimento de climatização e, se a conversa seguir fora disso, vou precisar encerrar. Qual telefone o time de vendas pode usar para falar sobre a manutenção da sua loja?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Vou encerrar por aqui. Quando quiser seguir com a manutenção da sua loja, fale com a CentralEng pelo contato (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis.",
+          "resposta_nula": false,
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "Palhoça",
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.9,
+            "desvios": 3,
+            "vagos": 0,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Vou encerrar por aqui. Quando quiser seguir com a manutenção da sua loja, fale com a CentralEng pelo contato (55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
         }
       ],
       "falha_execucao": null
