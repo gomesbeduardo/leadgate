@@ -13,7 +13,8 @@ const aqui = fileURLToPath(new URL('.', import.meta.url))
 // Porta 9 (descarte): ninguem escuta. So um parametro interno pode trocar, nunca uma variavel de ambiente.
 const PROXY_MORTO = 'http://127.0.0.1:9'
 
-/** Ambiente forcado: nada do que veio herdado liga telemetria, compartilhamento nem escreve em ~/.promptfoo. */
+/** Ambiente forcado: nada do que veio herdado liga telemetria, compartilhamento nem escreve em ~/.promptfoo.
+ * Opt-out documentado em https://www.promptfoo.dev/docs/configuration/telemetry/ (PROMPTFOO_DISABLE_TELEMETRY=1); so ele nao basta no 0.124.1 (ver o proxy abaixo). */
 export function montarEnv(dir, herdado = process.env, proxy = PROXY_MORTO) {
   return {
     ...herdado,

@@ -17,7 +17,7 @@ import { comparar, montarEnv } from '../scripts/promptfoo/comparar.mjs'
 // @ts-expect-error .mjs sem declaração de tipos
 import ProviderChat from '../scripts/promptfoo/provider.mjs'
 // @ts-expect-error .mjs sem declaração de tipos
-import { somar, tabelaMarkdown } from '../scripts/promptfoo/somar.mjs'
+import { LINHAS_ESPERADAS, RODADAS, somar, tabelaMarkdown } from '../scripts/promptfoo/somar.mjs'
 
 const todos: any[] = JSON.parse(readFileSync('avaliacao/casos.json', 'utf8'))
 const ajuste = todos.filter((c) => c.conjunto === 'ajuste')
@@ -90,7 +90,8 @@ describe('asserção por campo', () => {
   const concorda = (turno: any) => {
     const ref = avaliarCaso(caso, { turnos: turno ? [turno] : [] }, 0.7, {}, verificador).campos
     const r = pontuar(turno, caso.esperado)
-    expect(Object.keys(r.namedScores)).toEqual(CAMPOS)
+    expect(Object.keys(r.namedScores)).toEqual([...CAMPOS, 'saida_valida'])
+    expect(r.namedScores.saida_valida).toBe(turno && turno.origem !== 'falha' && !turno.erro && turno.saida ? 1 : 0)
     for (const c of CAMPOS) expect(r.namedScores[c] === 1).toBe(ref[c])
     return r
   }
@@ -103,13 +104,13 @@ describe('asserção por campo', () => {
   it('concorda com avaliarCaso em saídas inválidas (falha, erro, sem saída)', () => {
     for (const t of [{ ...ok, origem: 'falha' }, { ...ok, erro: true }, { ...ok, saida: null }, null]) {
       const r = concorda(t)
-      expect(Object.values(r.namedScores).every((v) => v === 0)).toBe(true)
+      expect(Object.values(r.namedScores).every((v) => v === 0)).toBe(true) // inclui saida_valida
     }
   })
 })
 
 const linha = (label: string, scores: Record<string, number> | null) =>
-  scores ? { provider: { label }, gradingResult: { namedScores: scores } } : { provider: { label }, error: 'HTTP 500', response: { error: 'HTTP 500' } }
+  scores ? { provider: { label }, gradingResult: { namedScores: { saida_valida: 1, ...scores } } } : { provider: { label }, error: 'HTTP 500', response: { error: 'HTTP 500' } }
 const tudo = (v: number, extra: Record<string, number> = {}) => Object.fromEntries(CAMPOS.map((c) => [c, v])) && { ...Object.fromEntries(CAMPOS.map((c) => [c, v])), ...extra }
 const json = (linhas: any[]) => ({ results: { results: linhas } })
 const rep = (n: number, f: () => any) => Array.from({ length: n }, f)
@@ -153,6 +154,61 @@ describe('somar', () => {
     expect(tab).toContain('30/42')
     expect(tab).toContain('inválida')
   })
+  const lin = (label: string, extra: Record<string, number> = {}) => linha(label, tudo(1, extra))
+  const semSaida = (label: string) => linha(label, tudo(0, { saida_valida: 0 }))
+  it('empate com tudo zerado e saída ausente nos dois lados é inválido, nunca aprovado (DEMO_PAINEL desligado)', () => {
+    const r = somar(json([...rep(42, () => semSaida('base')), ...rep(42, () => semSaida('branch'))]))
+    expect(r.valido).toBe(false)
+    expect(r.aprovado).toBe(false)
+    expect(r.bloqueado).toBe(false)
+    expect(r.problemas.join('\n')).toMatch(/base: 42 de 42 linhas sem saída válida/)
+    expect(r.problemas.join('\n')).toMatch(/branch: 42 de 42 linhas sem saída válida/)
+    expect(r.problemas.join('\n')).toContain('DEMO_PAINEL=1')
+  })
+  it('falha técnica só na base, ou só na branch, invalida: nem aprova nem bloqueia', () => {
+    for (const lado of ['base', 'branch']) {
+      const outro = lado === 'base' ? 'branch' : 'base'
+      const r = somar(json([...rep(30, () => lin(lado)), ...rep(12, () => semSaida(lado)), ...rep(42, () => lin(outro))]))
+      expect(r.valido, lado).toBe(false)
+      expect(r.aprovado, lado).toBe(false)
+      expect(r.problemas.join('\n'), lado).toContain(`${lado}: 12 de 42 linhas sem saída válida`)
+    }
+    const soBranchPior = somar(json([...rep(42, () => lin('base')), ...rep(30, () => lin('branch')), ...rep(12, () => semSaida('branch'))]))
+    expect(soBranchPior.bloqueado).toBe(true)
+    expect(soBranchPior.aprovado).toBe(false)
+    expect(tabelaMarkdown(soBranchPior)).toContain('inválida')
+  })
+  it('lado com zero acertos em todos os campos é "não medida", mesmo com linhas válidas', () => {
+    const r = somar(json([...rep(42, () => lin('base')), ...rep(42, () => linha('branch', tudo(0)))]))
+    expect(r.valido).toBe(false)
+    expect(r.aprovado).toBe(false)
+    expect(r.problemas.join('\n')).toMatch(/branch: não medida \(zero acertos/)
+  })
+  it('um campo melhora e outro piora: bloqueia', () => {
+    const r = somar(json([...rep(42, () => lin('base')), ...rep(41, () => lin('branch')), linha('branch', tudo(1, { segmento: 0, cidade: 1 }))]))
+    expect(r.campos.find((c: any) => c.campo === 'segmento')).toMatchObject({ base: 42, branch: 41, bloqueia: true })
+    expect(r.valido).toBe(true)
+    expect(r.bloqueado).toBe(true)
+    const melhor = somar(json([...rep(41, () => lin('base')), linha('base', tudo(1, { cidade: 0 })), ...rep(41, () => lin('branch')), linha('branch', tudo(1, { segmento: 0 }))]))
+    expect(melhor.campos.find((c: any) => c.campo === 'cidade')).toMatchObject({ base: 41, branch: 42, bloqueia: false })
+    expect(melhor.bloqueado).toBe(true)
+  })
+  it('mais linhas que o esperado (n > 14 x rodadas) invalida; um caso a mais não esconde um a menos', () => {
+    const mais = somar(json([...rep(42, () => lin('base')), ...rep(56, () => lin('branch'))]))
+    expect(mais.valido).toBe(false)
+    expect(mais.problemas.join('\n')).toContain('branch: 56 linhas, esperado 42')
+    expect(mais.aprovado).toBe(false)
+  })
+  it('saida_valida ausente é formato inesperado e falha alto', () => {
+    const sem = { provider: { label: 'base' }, gradingResult: { namedScores: { ...tudo(1) } } }
+    delete (sem.gradingResult.namedScores as any).saida_valida
+    expect(() => somar(json([sem]))).toThrow(/saida_valida/)
+  })
+  it('RODADAS de somar.mjs é o repeat do yaml, e o esperado vem do gerador', () => {
+    const yaml = readFileSync('scripts/promptfoo/promptfooconfig.yaml', 'utf8')
+    expect(Number(/repeat:\s*(\d+)/.exec(yaml)?.[1])).toBe(RODADAS)
+    expect(LINHAS_ESPERADAS).toBe(gerarTestes().length * RODADAS)
+  })
   it('falha alto: n zero ("não medida"), linhas a menos e formato inesperado', () => {
     const vazio = somar(json(rep(42, () => linha('base', tudo(1)))))
     expect(vazio.valido).toBe(false)
@@ -173,12 +229,17 @@ describe('somar', () => {
 })
 
 // Servidor falso do /api/chat: acerta tudo, erra um campo ou responde 500.
-function servidor(modo: 'certo' | 'segmento_errado' | '500'): Promise<Server> {
+function servidor(modo: 'certo' | 'segmento_errado' | '500' | 'falha' | 'sem_saida'): Promise<Server> {
   const s = createServer((req, res) => {
     let corpo = ''
     req.on('data', (d) => (corpo += d))
     req.on('end', () => {
       if (modo === '500') return void res.writeHead(500).end('erro')
+      if (modo === 'falha' || modo === 'sem_saida') {
+        const extra = modo === 'falha' ? { origem: 'falha', erro: true, saida: null } : {}
+        res.writeHead(200, { 'content-type': 'application/json' })
+        return void res.end(JSON.stringify({ resposta: 'x', proxima_acao: 'encaminhar_humano', tentativas: 1, origem: 'modelo', erro: false, ...extra }))
+      }
       const { historico } = JSON.parse(corpo)
       const falas = historico.filter((m: any) => m.role === 'user').map((m: any) => m.content)
       const turno = falas.length
@@ -291,7 +352,7 @@ describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo
   })
   const portaProxy = new Promise<number>((ok) => capturador.listen(0, '127.0.0.1', () => ok((capturador.address() as AddressInfo).port)))
   afterAll(() => capturador.close())
-  const rodar = async (modoBranch: 'segmento_errado' | '500') => {
+  const rodar = async (modoBranch: 'segmento_errado' | '500' | 'falha' | 'sem_saida') => {
     const base = await servidor('certo')
     const branch = await servidor(modoBranch)
     abertos.push(base, branch)
@@ -323,6 +384,13 @@ describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo
     expect(hosts.filter((h) => !HOSTS_PERMITIDOS.includes(h))).toEqual([])
     console.log('hosts capturados:', JSON.stringify(hosts), 'CONNECTs:', conexoes.length)
   })
+  it.each(['falha', 'sem_saida'] as const)('branch respondendo %s (sem DEMO_PAINEL): comparação inválida e saída diferente de zero', async (modo) => {
+    const { r, resumo } = await rodar(modo)
+    expect(resumo.valido).toBe(false)
+    expect(resumo.aprovado).toBe(false)
+    expect(resumo.problemas.join('\n')).toMatch(/branch: 42 de 42 linhas sem saída válida/)
+    expect(r.codigo).not.toBe(0)
+  }, 240_000)
   it('branch com HTTP 500: linhas contam em n e nenhum acerto', async () => {
     const { r, resumo } = await rodar('500')
     expect(resumo.lados.branch.n).toBe(42)
