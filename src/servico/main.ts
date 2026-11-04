@@ -18,10 +18,14 @@ const numero = (v: string | undefined) => (v !== undefined && v !== '' && Number
 let cfg
 let prompt: string
 let chatHtml: string | undefined
+let lpHtml: string | undefined
+let logoSvg: string | undefined
 try {
   cfg = carregarConfig(JSON.parse(readFileSync(caminhoConfig, 'utf8')))
   prompt = readFileSync(caminhoPrompt, 'utf8')
   if (process.env.CHAT_PATH) chatHtml = readFileSync(process.env.CHAT_PATH, 'utf8')
+  if (process.env.LP_PATH) lpHtml = readFileSync(process.env.LP_PATH, 'utf8')
+  if (process.env.LOGO_PATH) logoSvg = readFileSync(process.env.LOGO_PATH, 'utf8')
 } catch (e) {
   falhar(`config ou prompt invalido (${caminhoConfig}, ${caminhoPrompt}): ${e instanceof Error ? e.message : String(e)}`)
 }
@@ -35,6 +39,8 @@ criarServidor(cfg, prompt, {
   alertas,
   env: process.env,
   chatHtml,
+  lpHtml,
+  logoSvg,
   webhookUrl: process.env.N8N_WEBHOOK_URL,
   painel: process.env.DEMO_PAINEL === '1',
   limiteCorpo: numero(process.env.LIMITE_CORPO_BYTES),

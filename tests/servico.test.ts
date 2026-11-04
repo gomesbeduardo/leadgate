@@ -178,7 +178,7 @@ describe('chat', () => {
       })
     })
     const urlWeb = await subir(web)
-    comChat = criarServidor(cfg, prompt, { chatHtml: '<!doctype html><title>x</title>', webhookUrl: urlWeb + '/webhook' })
+    comChat = criarServidor(cfg, prompt, { chatHtml: '<!doctype html><title>x</title>', lpHtml: '<!doctype html><title>lp</title><a href="/conversa">Entrar em contato</a>', logoSvg: '<svg xmlns="http://www.w3.org/2000/svg"/>', webhookUrl: urlWeb + '/webhook' })
     urlChat = await subir(comChat)
     semWebhook = criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/webhook' })
     urlSem = await subir(semWebhook)
@@ -277,12 +277,41 @@ describe('chat', () => {
     expect(cfg.ia.timeout_turno_ms).toBe(180000)
   })
 
-  it('GET / serve o HTML quando fornecido e 404 quando nao', async () => {
+  it('T1: GET / serve a LP com link para /conversa', async () => {
     const r = await fetch(urlChat + '/')
     expect(r.status).toBe(200)
     expect(r.headers.get('content-type')).toContain('text/html')
+    const t = await r.text()
+    expect(t).toContain('<title>lp</title>')
+    expect(t).toContain('href="/conversa"')
+  })
+
+  it('T2: GET /conversa serve o chat', async () => {
+    const r = await fetch(urlChat + '/conversa')
+    expect(r.status).toBe(200)
+    expect(r.headers.get('content-type')).toContain('text/html')
     expect(await r.text()).toContain('<title>x</title>')
+  })
+
+  it('T3: GET / sem LP configurada da 404', async () => {
     expect((await fetch(urlSem + '/')).status).toBe(404)
+  })
+
+  it('T4: GET /conversa sem chat configurado da 404', async () => {
+    expect((await fetch(urlSem + '/conversa')).status).toBe(404)
+  })
+
+  it('GET /logo.svg serve o logo quando fornecido e 404 quando nao', async () => {
+    const r = await fetch(urlChat + '/logo.svg')
+    expect(r.status).toBe(200)
+    expect(r.headers.get('content-type')).toContain('image/svg+xml')
+    expect((await fetch(urlSem + '/logo.svg')).status).toBe(404)
+  })
+
+  it('T5: chat/index.html nao cita WhatsApp e traz aviso_lgpd', () => {
+    const html = readFileSync('chat/index.html', 'utf8')
+    expect(/whatsapp/i.test(html)).toBe(false)
+    expect(html).toContain('aviso_lgpd')
   })
 })
 

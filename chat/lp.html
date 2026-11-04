@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CentralEng | Engenharia aplicada a grandes projetos</title>
+<meta name="description" content="Projeto, instalação e manutenção de climatização há 25 anos, no RS e em SC.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Mukta:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #254777;
+  --navy-noturno: #202249;
+  --azure: #0f6fac;
+  --nevoa: #f3f5f8;
+  --grafite: #515a6e;
+  --tinta: #171b24;
+  --branco: #ffffff;
+  --fonte-titulo: 'Barlow Semi Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --fonte-texto: 'Mukta', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --margem: 1rem;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 1.0625rem/1.6 var(--fonte-texto); color: var(--tinta); background: var(--branco); overflow-x: hidden; }
+:focus-visible { outline: 3px solid var(--azure); outline-offset: 2px; }
+.logo { display: block; width: 8.5rem; aspect-ratio: 665 / 371; background: currentColor; -webkit-mask: url(/logo.svg) left center / contain no-repeat; mask: url(/logo.svg) left center / contain no-repeat; }
+.limite { width: 100%; max-width: 68rem; margin: 0 auto; padding: 0 var(--margem); }
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 2.75rem; padding: 0 1.75rem; border-radius: 1.375rem; background: var(--azure); color: var(--branco); border: 2px solid var(--azure); font: 600 1.0625rem/1 var(--fonte-titulo); letter-spacing: .03em; text-decoration: none; white-space: nowrap; }
+.btn:hover { background: var(--navy); border-color: var(--navy); }
+.btn.claro { background: var(--branco); color: var(--navy-noturno); border-color: var(--branco); }
+.btn.claro:hover { background: var(--nevoa); border-color: var(--nevoa); }
+
+.topo { background: var(--navy-noturno); color: var(--branco); }
+.topo .limite { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .75rem; padding-bottom: .75rem; }
+.topo .logo { width: 7rem; }
+
+.heroi { background: var(--navy); color: var(--branco); padding: 3.5rem 0 4rem; }
+.heroi h1 { margin: 0 0 1rem; max-width: 18ch; font: 600 clamp(2.25rem, 8vw, 4rem)/1.05 var(--fonte-titulo); }
+.heroi p { margin: 0 0 2rem; max-width: 36rem; font-size: 1.1875rem; }
+
+section { padding: 3.5rem 0; }
+h2 { margin: 0 0 1.5rem; font: 600 clamp(1.75rem, 5vw, 2.25rem)/1.15 var(--fonte-titulo); color: var(--navy); }
+.servicos { background: var(--nevoa); }
+.servicos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; grid-template-columns: 1fr; }
+.servicos li { background: var(--branco); border-left: 4px solid var(--azure); padding: 1rem 1.25rem; font: 600 1.25rem/1.25 var(--fonte-titulo); color: var(--navy-noturno); }
+.telefones dl { margin: 0; display: grid; gap: 1rem; grid-template-columns: 1fr; }
+.telefones dt { font: 600 1rem/1.2 var(--fonte-titulo); color: var(--grafite); text-transform: uppercase; letter-spacing: .08em; }
+.telefones dd { margin: .25rem 0 0; font: 600 1.5rem/1.2 var(--fonte-titulo); }
+.telefones a { color: var(--navy); text-decoration: none; }
+.telefones a:hover { text-decoration: underline; }
+.fim { background: var(--navy-noturno); color: var(--branco); text-align: left; }
+.fim h2 { color: var(--branco); }
+.fim p { margin: 0 0 1.5rem; max-width: 36rem; }
+.rodape { background: var(--tinta); color: var(--branco); padding: 1.5rem 0; font-size: .875rem; }
+
+@media (min-width: 640px) {
+  :root { --margem: 2rem; }
+  .servicos ul { grid-template-columns: repeat(2, 1fr); }
+  .telefones dl { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .servicos ul { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="limite">
+    <span class="logo" role="img" aria-label="CentralEng"></span>
+    <a class="btn claro" href="/conversa">Entrar em contato</a>
+  </div>
+</header>
+<main>
+  <div class="heroi">
+    <div class="limite">
+      <h1>Engenharia aplicada a grandes projetos.</h1>
+      <p>Projeto, instalação e manutenção de climatização há 25 anos, no RS e em SC.</p>
+      <a class="btn claro" href="/conversa">Entrar em contato</a>
+    </div>
+  </div>
+  <section class="servicos" aria-labelledby="h-servicos">
+    <div class="limite">
+      <h2 id="h-servicos">Serviços</h2>
+      <ul>
+        <li>Sistema de climatização</li>
+        <li>Monitoramento e manutenção</li>
+        <li>Engenharia especializada</li>
+        <li>Soluções integradas</li>
+        <li>Elaboração e execução do PMOC</li>
+      </ul>
+    </div>
+  </section>
+  <section class="telefones" aria-labelledby="h-tel">
+    <div class="limite">
+      <h2 id="h-tel">Telefones</h2>
+      <dl>
+        <div><dt>Santa Maria</dt><dd><a href="tel:+555533077010">(55) 3307-7010</a></dd></div>
+        <div><dt>Florianópolis</dt><dd><a href="tel:+554833649840">(48) 3364-9840</a></dd></div>
+      </dl>
+    </div>
+  </section>
+  <section class="fim" aria-labelledby="h-fim">
+    <div class="limite">
+      <h2 id="h-fim">Fale com a CentralEng</h2>
+      <p>Conte o que você precisa e nossa equipe retorna.</p>
+      <a class="btn claro" href="/conversa">Entrar em contato</a>
+    </div>
+  </section>
+</main>
+<footer class="rodape"><div class="limite">CentralEng. Demonstração.</div></footer>
+</body>
+</html>

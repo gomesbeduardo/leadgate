@@ -47,7 +47,12 @@ function responder(res: ServerResponse, status: number, corpo: unknown) {
 const ehObjeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 export type OpcoesChat = {
+  /** HTML da tela de conversa, servido em /conversa. */
   chatHtml?: string
+  /** HTML da landing page, servido em /. */
+  lpHtml?: string
+  /** SVG do logo, servido em /logo.svg. */
+  logoSvg?: string
   webhookUrl?: string
   painel?: boolean
   /** Limite do corpo de /api/chat, em bytes (padrao 16 KB). */
@@ -201,9 +206,17 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
         if (req.method === 'GET' && rota === '/alertas') return responder(res, 200, alertas.json())
       }
       if (perfil === 'publico') {
-        if (req.method === 'GET' && rota === '/' && opcoes.chatHtml !== undefined) {
+        if (req.method === 'GET' && rota === '/' && opcoes.lpHtml !== undefined) {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+          return res.end(opcoes.lpHtml)
+        }
+        if (req.method === 'GET' && rota === '/conversa' && opcoes.chatHtml !== undefined) {
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
           return res.end(opcoes.chatHtml)
+        }
+        if (req.method === 'GET' && rota === '/logo.svg' && opcoes.logoSvg !== undefined) {
+          res.writeHead(200, { 'content-type': 'image/svg+xml; charset=utf-8' })
+          return res.end(opcoes.logoSvg)
         }
         if (req.method === 'GET' && rota === '/tela.json') {
           const { titulo, cor_primaria, cor_destaque } = cfg.tela
