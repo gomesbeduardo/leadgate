@@ -20,6 +20,11 @@ export const ConfigSchema = z
       limiar_confianca: z.number().min(0).max(1),
       max_regeracoes: z.number().int().min(0),
       max_tokens: z.number().int().positive(),
+      modelo_reserva: z.string(),
+      tentativas_http: z.number().int().min(1),
+      espera_ms: z.array(z.number().int().min(0)),
+      timeout_ms: z.number().int().positive(),
+      tentativas_reserva: z.number().int().min(1),
     }),
     resposta: z.object({
       max_chars: z.number().int().positive(),
@@ -35,7 +40,7 @@ export const ConfigSchema = z
       ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
-    textos: z.object({ aviso_lgpd: z.string().min(1), falha_tecnica: z.string().min(1) }),
+    textos: z.object({ aviso_lgpd: z.string().min(1) }),
     lgpd: z.object({ retencao_dias: z.number().int().positive() }),
     tela: z.object({ titulo: z.string().min(1), cor_primaria: z.string().min(1), cor_destaque: z.string().min(1) }),
   })

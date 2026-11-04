@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { Config } from '../config/schema'
-import { falhaDeApi, iniciarTurno, montarRequisicao, processarResposta, type Estado, type Passo } from '../fluxo/turno'
+import { EstadoSchema, iniciarTurno, montarRequisicao, processarResposta, type Passo } from '../fluxo/turno'
 
 const LIMITE_INTERNO = 1024 * 1024
 
@@ -85,7 +85,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     return false
   }
 
-  const falhaChat = { resposta: cfg.textos.falha_tecnica, origem: 'falha' }
+  const falhaChat = { resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' }
 
   // O navegador so recebe o necessario; violacoes e conversa nunca saem daqui.
   const publico = (j: Record<string, unknown>) => ({
@@ -113,19 +113,17 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
   }
 
   const saida = (p: Passo) =>
-    p.fim ? { fim: true, resultado: p.resultado } : { fim: false, estado: p.estado, requisicao: montarRequisicao(p.estado, cfg) }
+    p.fim
+      ? { fim: true, resultado: p.resultado }
+      : { fim: false, estado: p.estado, esperar_ms: p.esperar_ms, requisicao: montarRequisicao(p.estado, cfg), timeout_ms: cfg.ia.timeout_ms }
 
   const preparar = (corpo: unknown) => saida(iniciarTurno(corpo, modelo, cfg))
 
   const validar = (corpo: unknown) => {
-    if (!ehObjeto(corpo) || !ehObjeto(corpo.tentativa) || !ehObjeto(corpo.tentativa.estado)) {
-      throw new ErroHttp(400, 'tentativa.estado ausente ou invalido')
-    }
-    const estado = corpo.tentativa.estado as unknown as Estado
-    const h = ehObjeto(corpo.http) ? corpo.http : {}
-    const ok = typeof h.statusCode === 'number' && h.statusCode >= 200 && h.statusCode < 300
-    if (!ok) return { fim: true, resultado: falhaDeApi(estado, cfg) }
-    return saida(processarResposta(estado, h.body, cfg))
+    if (!ehObjeto(corpo)) throw new ErroHttp(400, 'estado ausente ou invalido')
+    const estado = EstadoSchema.safeParse(corpo.estado)
+    if (!estado.success) throw new ErroHttp(400, 'estado ausente ou invalido')
+    return saida(processarResposta(estado.data, corpo.resposta, cfg))
   }
 
   return createServer(async (req, res) => {

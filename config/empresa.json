@@ -27,7 +27,9 @@
     "teto_perguntas": 8,
     "perguntas_curtas": ["tamanho ou quantidade de equipamentos", "tipo de local", "prazo desejado"]
   },
-  "ia": { "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 1500 },
+  "ia": {
+    "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 1500,
+    "modelo_reserva": "claude-haiku-5-5", "tentativas_http": 3, "espera_ms": [1000, 3000], "timeout_ms": 60000, "tentativas_reserva": 2 },
   "resposta": {
     "max_chars": 400,
     "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],
@@ -37,8 +39,7 @@
   },
   "prompt": { "canario": "CFG-7Q2M" },
   "textos": {
-    "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros.",
-    "falha_tecnica": "Tivemos um problema técnico por aqui. Fale com a gente pelos telefones (55) 3307-7010 ou (48) 3364-9840."
+    "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros."
   },
   "lgpd": { "retencao_dias": 30 },
   "tela": { "titulo": "Fale com a CentralEng", "cor_primaria": "#254777", "cor_destaque": "#0f6fac" }

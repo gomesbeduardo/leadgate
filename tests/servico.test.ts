@@ -20,10 +20,8 @@ afterAll(() => new Promise<void>((r) => server.close(() => r())))
 const post = (rota: string, corpo: unknown) =>
   fetch(base + rota, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
 const corpo = { historico: [{ role: 'user', content: 'Preciso de um PMOC para um prédio comercial em Florianópolis' }] }
-const http = (statusCode: number, texto = 'isto nao e json') => ({
-  statusCode,
-  body: { stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] },
-})
+const api = (texto = 'isto nao e json') => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] })
+const resp = (status: number, texto?: string) => ({ status, corpo: api(texto) })
 
 describe('servico HTTP (porta interna)', () => {
   it('porta interna nao serve o chat', async () => {
@@ -53,51 +51,82 @@ describe('servico HTTP (porta interna)', () => {
     expect(j.resultado.origem).toBe('falha')
   })
 
-  it('T11: 3 saidas invalidas seguidas terminam em falha com 3 tentativas', async () => {
+  it('/preparar devolve timeout_ms e esperar_ms 0', async () => {
+    const j: any = await (await post('/preparar', corpo)).json()
+    expect(j.timeout_ms).toBe(cfg.ia.timeout_ms)
+    expect(j.esperar_ms).toBe(0)
+    expect(Object.keys(j.estado).sort()).toEqual(
+      ['chamadas', 'correcao', 'historico', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
+    )
+  })
+
+  it('/preparar une user,user (T24)', async () => {
+    const j: any = await (await post('/preparar', { historico: [{ role: 'user', content: 'a' }, { role: 'user', content: 'b' }] })).json()
+    expect(j.fim).toBe(false)
+    expect(j.requisicao.messages).toEqual([{ role: 'user', content: 'a\nb' }])
+  })
+
+  it('/preparar com entrada invalida devolve silencio sem roteamento', async () => {
+    const j: any = await (await post('/preparar', { historico: [{ role: 'assistant', content: 'a' }] })).json()
+    expect(j.fim).toBe(true)
+    expect(j.resultado.resposta).toBeNull()
+  })
+
+  it('503 repete com espera, depois reserva, depois silencio (T12)', async () => {
     let atual: any = await (await post('/preparar', corpo)).json()
-    for (let i = 0; i < 2; i++) {
-      atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
+    const esperas: number[] = []
+    const modelos: string[] = []
+    for (let i = 0; i < 6; i++) {
+      atual = await (await post('/validar', { estado: atual.estado, resposta: { status: 503 } })).json()
+      if (atual.fim) break
+      esperas.push(atual.esperar_ms)
+      modelos.push(atual.requisicao.model)
+    }
+    expect(esperas).toEqual([1000, 3000, 0, 1000, 3000])
+    expect(modelos.slice(-1)).toEqual([cfg.ia.modelo_reserva])
+    expect(atual.fim).toBe(true)
+    expect(atual.resultado).toMatchObject({ resposta: null, estado_conversa: 'aguardando_humano', origem: 'falha', tipo: '5xx', camada: 3 })
+    expect(atual.resultado.registros).toHaveLength(6)
+  })
+
+  it('3 saidas invalidas no primario seguem para a reserva (T11 antigo)', async () => {
+    let atual: any = await (await post('/preparar', corpo)).json()
+    for (let i = 0; i < 3; i++) {
+      atual = await (await post('/validar', { estado: atual.estado, resposta: resp(200) })).json()
       expect(atual.fim).toBe(false)
     }
-    atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
-    expect(atual.fim).toBe(true)
-    expect(atual.resultado.origem).toBe('falha')
-    expect(atual.resultado.tentativas).toBe(3)
-    expect(atual.resultado.resposta).toBe(cfg.textos.falha_tecnica)
+    expect(atual.requisicao.model).toBe(cfg.ia.modelo_reserva)
   })
 
-  it('status 500 falha na primeira tentativa', async () => {
-    const t = await (await post('/preparar', corpo)).json()
-    const r: any = await (await post('/validar', { tentativa: t, http: http(500) })).json()
-    expect(r.fim).toBe(true)
-    expect(r.resultado.origem).toBe('falha')
-    expect(r.resultado.tentativas).toBe(1)
-  })
-
-  it('falha de rede no n8n (sem statusCode nem body) vira falha de API, com ou sem http', async () => {
-    const t = await (await post('/preparar', corpo)).json()
-    // O n8n monta o corpo com JSON.stringify: chaves undefined somem.
-    const doN8n = JSON.parse(JSON.stringify({ tentativa: t, http: { statusCode: undefined, body: undefined } }))
-    for (const c of [doN8n, { tentativa: t }]) {
-      const r = await post('/validar', c)
-      expect(r.status).toBe(200)
-      const j: any = await r.json()
-      expect(j.fim).toBe(true)
-      expect(j.resultado.origem).toBe('falha')
-      expect(j.resultado.tentativas).toBe(1)
-    }
+  it('erro do n8n como texto e corpo cru da API sao aceitos', async () => {
+    const t: any = await (await post('/preparar', corpo)).json()
+    const a: any = await (await post('/validar', { estado: t.estado, resposta: { erro: 'getaddrinfo ENOTFOUND x' } })).json()
+    expect(a.fim).toBe(false)
+    expect(a.estado.registros[0].tipo).toBe('dns')
+    const b: any = await (await post('/validar', { estado: t.estado, resposta: api('lixo') })).json()
+    expect(b.estado.registros[0].tipo).toBe('schema')
   })
 
   it('saida valida do modelo encerra com origem modelo', async () => {
-    const t = await (await post('/preparar', corpo)).json()
+    const t: any = await (await post('/preparar', corpo)).json()
     const saida = {
       tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, urgencia: null,
       dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
       qualificado: false, confianca: 0.5, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
     }
-    const r: any = await (await post('/validar', { tentativa: t, http: http(200, JSON.stringify(saida)) })).json()
+    const r: any = await (await post('/validar', { estado: t.estado, resposta: resp(200, JSON.stringify(saida)) })).json()
     expect(r.fim).toBe(true)
-    expect(r.resultado.origem).toBe('modelo')
+    expect(r.resultado).toMatchObject({ origem: 'modelo', modelo_respondeu: 'primario', camada: 1 })
+  })
+
+  it('estado adulterado da 400 e contadores absurdos sao limitados', async () => {
+    const t: any = await (await post('/preparar', corpo)).json()
+    expect((await post('/validar', { estado: { ...t.estado, historico: [{ role: 'assistant', content: 'x' }] }, resposta: {} })).status).toBe(400)
+    expect((await post('/validar', { estado: { ...t.estado, modelo_atual: 'outro' }, resposta: {} })).status).toBe(400)
+    const r: any = await (await post('/validar', { estado: { ...t.estado, tentativa_http: 99999 }, resposta: { status: 503 } })).json()
+    // 99999 vira 100 (>= tentativas_http): esgota o primario em vez de repetir sem fim.
+    expect(r.fim).toBe(false)
+    expect(r.estado.modelo_atual).toBe('reserva')
   })
 
   it('JSON invalido da 400, rota desconhecida 404, e o servidor segue de pe', async () => {
@@ -105,7 +134,7 @@ describe('servico HTTP (porta interna)', () => {
     expect(ruim.status).toBe(400)
     expect(((await ruim.json()) as any).erro).toBeTruthy()
     expect((await fetch(base + '/nada')).status).toBe(404)
-    expect((await post('/validar', { tentativa: 'lixo', http: http(200) })).status).toBe(400)
+    expect((await post('/validar', { estado: 'lixo', resposta: {} })).status).toBe(400)
     expect((await post('/validar', {})).status).toBe(400)
     expect((await fetch(base + '/saude')).status).toBe(200)
   })
@@ -185,10 +214,12 @@ describe('chat', () => {
     })
   })
 
-  it('webhook fora do ar devolve 200 com a falha tecnica', async () => {
+  it('webhook fora do ar devolve 200 com silencio e aguardando_humano', async () => {
     const r = await fetch(urlSem + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
     expect(r.status).toBe(200)
-    expect(await r.json()).toEqual({ resposta: cfg.textos.falha_tecnica, origem: 'falha' })
+    expect(await r.json()).toEqual({
+      resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n',
+    })
   })
 
   it('GET / serve o HTML quando fornecido e 404 quando nao', async () => {
