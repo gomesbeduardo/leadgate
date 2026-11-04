@@ -94,6 +94,16 @@ Camada 2, validação determinística da `resposta` (no mesmo nó de validação
 - não contém frase da lista de "frases de bot" (R7);
 - não contém marcação de menu (linha começando por número ou por `-`/`*`).
 
+Emenda de 04/11/2026, aguardando a aprovação do responsável. Os testes de ataque mostraram que a lista acima deixava passar respostas erradas, e a camada 2 passou a exigir também:
+- nenhuma negação de ser IA e, na pergunta sincera, um dos termos de `resposta.marcadores_ia`;
+- nenhuma experiência humana inventada;
+- valor monetário em mais formas além de `R$` e "reais";
+- nenhum prazo, nas formas "ainda hoje", "hoje mesmo", "até amanhã" e "até sexta";
+- promessas proibidas por radical, sem contar a recusa ("não oferecemos desconto");
+- canário também invertido, em hexadecimal, em base64 ou com separadores;
+- trecho igual ao prompt a partir de 36 caracteres, em vez de 40;
+- nenhum nome de provedor (`resposta.provedores_proibidos` e `ia.modelo`).
+
 Falha na camada 2 ou no schema: o fluxo chama o modelo de novo com o mesmo histórico mais uma instrução de correção que aponta a regra violada, até `max_regeracoes` vezes (padrão 2, total de 3 tentativas). Esgotou: caminho humano de R5 (com telefone, `encaminhar_humano`; sem telefone, mensagem de falha técnica de R8 com o contato) e a tentativa conta como erro em R12.
 
 ### R11 — Revelação de IA (decisão da sessão coordenadora, não negociável)
