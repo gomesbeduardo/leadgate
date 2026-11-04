@@ -1,6 +1,6 @@
 # 006-2 — Falas e modo de interação do agente: prompt, avaliação e testes
 
-**Status:** rascunho, aguardando aprovação do responsável.
+**Status:** aprovada pelo responsável em 04/11/2026, com as suposições S5 a S9.
 **Partes:** esta é a 2ª de 2. Regras, critérios e perguntas abertas estão na [006-1](006-1-regras.md).
 
 ## Prompt (`prompts/agente.md`, versão 1.3.0)

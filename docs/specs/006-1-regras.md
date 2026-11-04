@@ -1,6 +1,6 @@
 # 006-1 — Falas e modo de interação do agente: regras
 
-**Status:** rascunho, aguardando aprovação do responsável.
+**Status:** aprovada pelo responsável em 04/11/2026, com as suposições S5 a S9.
 **Partes:** esta é a 1ª de 2, com regras, critérios e perguntas abertas. A [006-2](006-2-prompt-e-avaliacao.md) traz prompt, avaliação e testes de aceite. Leia nesta ordem.
 **Issue:** #11 "feat(prompt): alinha falas e modo de interação".
 **Pedido:** "Quero melhorar a forma de interação, escrita e afins do agente, hoje ele responde mesmo sendo algo ridículo, como pessoas apenas mandando mensagem fútil (receita de bolo, perguntando ser IA, etc...), como a ideia é agir como humano, isso não serve. Outro ponto é, escrita mal formulada ou com poucos detalhes, sempre pergunta mais, evite também mensagem genérica demais e linguagem normal, seja um pouco mais profissional sem extrapolar." / "Só não fique usando palavras no começo afirmando algo toda hora, exemplo: 'Entendido! .... , ou palavras quase não usadas por pessoas em falas assim." / Sobre os prints reais de WhatsApp: "apenas não use as risadas e coisas assim". / Sobre aberturas: "Na real nada é proibido, mas deve ser usado de forma mais natural." / Sobre o 3º desvio com telefone: "Ignora a mensagem, e se validou como bom lead antes, passa o número pra vendas." e "Nesse caso, só passa pra vendas se pelas mensagens passadas foi possível validar como bom lead." / Sobre manipulação na primeira mensagem: silêncio, "mas deixe isso escrito no readme do projeto, na real, deixe o prompt do agente lá".
