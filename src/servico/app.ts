@@ -44,7 +44,30 @@ function responder(res: ServerResponse, status: number, corpo: unknown) {
 
 const ehObjeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
-export function criarServidor(cfg: Config, modelo: string): Server {
+export type OpcoesChat = { chatHtml?: string; webhookUrl?: string }
+
+const TIMEOUT_WEBHOOK_MS = 60_000
+
+export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = {}): Server {
+  const falhaChat = { resposta: cfg.textos.falha_tecnica, origem: 'falha' }
+
+  const chat = async (corpo: unknown): Promise<unknown> => {
+    if (!opcoes.webhookUrl || !ehObjeto(corpo) || !Array.isArray(corpo.historico)) return falhaChat
+    try {
+      const r = await fetch(opcoes.webhookUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ historico: corpo.historico }),
+        signal: AbortSignal.timeout(TIMEOUT_WEBHOOK_MS),
+      })
+      if (!r.ok) return falhaChat
+      const j: unknown = await r.json()
+      return ehObjeto(j) ? j : falhaChat
+    } catch {
+      return falhaChat
+    }
+  }
+
   const saida = (p: Passo) =>
     p.fim ? { fim: true, resultado: p.resultado } : { fim: false, estado: p.estado, requisicao: montarRequisicao(p.estado, cfg) }
 
@@ -65,6 +88,23 @@ export function criarServidor(cfg: Config, modelo: string): Server {
     try {
       const rota = (req.url ?? '').split('?')[0]
       if (req.method === 'GET' && rota === '/saude') return responder(res, 200, { ok: true })
+      if (req.method === 'GET' && rota === '/' && opcoes.chatHtml !== undefined) {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+        return res.end(opcoes.chatHtml)
+      }
+      if (req.method === 'GET' && rota === '/tela.json') {
+        const { titulo, cor_primaria, cor_destaque } = cfg.tela
+        return responder(res, 200, { titulo, aviso_lgpd: cfg.textos.aviso_lgpd, cor_primaria, cor_destaque })
+      }
+      if (req.method === 'POST' && rota === '/api/chat') {
+        let corpo: unknown
+        try {
+          corpo = await lerCorpo(req)
+        } catch {
+          return responder(res, 200, falhaChat)
+        }
+        return responder(res, 200, await chat(corpo))
+      }
       if (req.method === 'POST' && (rota === '/preparar' || rota === '/validar')) {
         const corpo = await lerCorpo(req)
         return responder(res, 200, rota === '/preparar' ? preparar(corpo) : validar(corpo))

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
-import type { Server } from 'node:http'
+import { createServer as createHttpServer, type Server } from 'node:http'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
 import { criarServidor } from '../src/servico/app'
@@ -94,5 +94,73 @@ describe('servico HTTP', () => {
     const r = await fetch(base + '/preparar', { method: 'POST', body: JSON.stringify({ a: 'x'.repeat(1_100_000) }) })
     expect(r.status).toBe(400)
     expect((await fetch(base + '/saude')).status).toBe(200)
+  })
+})
+
+describe('chat', () => {
+  let web: Server
+  let comChat: Server
+  let semWebhook: Server
+  let urlChat = ''
+  let urlSem = ''
+  let recebido: any
+
+  const subir = async (s: Server) => {
+    await new Promise<void>((r) => s.listen(0, '127.0.0.1', r))
+    return `http://127.0.0.1:${(s.address() as AddressInfo).port}`
+  }
+
+  beforeAll(async () => {
+    web = createHttpServer((req, res) => {
+      const partes: Buffer[] = []
+      req.on('data', (c) => partes.push(c))
+      req.on('end', () => {
+        recebido = JSON.parse(Buffer.concat(partes).toString('utf8'))
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+      })
+    })
+    const urlWeb = await subir(web)
+    comChat = criarServidor(cfg, prompt, { chatHtml: '<!doctype html><title>x</title>', webhookUrl: urlWeb + '/webhook' })
+    urlChat = await subir(comChat)
+    semWebhook = criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/webhook' })
+    urlSem = await subir(semWebhook)
+  })
+  afterAll(async () => {
+    for (const s of [web, comChat, semWebhook]) await new Promise<void>((r) => s.close(() => r()))
+  })
+
+  it('T23: /tela.json traz o aviso LGPD com "automatizado" e "provedor de IA"', async () => {
+    const j: any = await (await fetch(urlChat + '/tela.json')).json()
+    expect(j.aviso_lgpd).toBe(cfg.textos.aviso_lgpd)
+    expect(j.aviso_lgpd).toContain('automatizado')
+    expect(j.aviso_lgpd).toContain('provedor de IA')
+  })
+
+  it('/tela.json expoe exatamente 4 chaves', async () => {
+    const j: any = await (await fetch(urlChat + '/tela.json')).json()
+    expect(Object.keys(j).sort()).toEqual(['aviso_lgpd', 'cor_destaque', 'cor_primaria', 'titulo'])
+  })
+
+  it('POST /api/chat repassa o historico e devolve o JSON do webhook', async () => {
+    const h = [{ role: 'user', content: 'Oi' }]
+    const r = await fetch(urlChat + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
+    expect(r.status).toBe(200)
+    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' })
+    expect(recebido).toEqual({ historico: h })
+  })
+
+  it('webhook fora do ar devolve 200 com a falha tecnica', async () => {
+    const r = await fetch(urlSem + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
+    expect(r.status).toBe(200)
+    expect(await r.json()).toEqual({ resposta: cfg.textos.falha_tecnica, origem: 'falha' })
+  })
+
+  it('GET / serve o HTML quando fornecido e 404 quando nao', async () => {
+    const r = await fetch(urlChat + '/')
+    expect(r.status).toBe(200)
+    expect(r.headers.get('content-type')).toContain('text/html')
+    expect(await r.text()).toContain('<title>x</title>')
+    expect((await fetch(urlSem + '/')).status).toBe(404)
   })
 })

@@ -13,11 +13,13 @@ const porta = Number(process.env.PORT ?? 3000)
 
 let cfg
 let prompt: string
+let chatHtml: string | undefined
 try {
   cfg = carregarConfig(JSON.parse(readFileSync(caminhoConfig, 'utf8')))
   prompt = readFileSync(caminhoPrompt, 'utf8')
+  if (process.env.CHAT_PATH) chatHtml = readFileSync(process.env.CHAT_PATH, 'utf8')
 } catch (e) {
   falhar(`config ou prompt invalido (${caminhoConfig}, ${caminhoPrompt}): ${e instanceof Error ? e.message : String(e)}`)
 }
 
-criarServidor(cfg, prompt).listen(porta, () => console.log(`servico ouvindo na porta ${porta}`))
+criarServidor(cfg, prompt, { chatHtml, webhookUrl: process.env.N8N_WEBHOOK_URL }).listen(porta, () => console.log(`servico ouvindo na porta ${porta}`))
