@@ -41,6 +41,11 @@ export const ConfigSchema = z
       ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
+    dataset: z.object({
+      volume: z.number().int().positive(),
+      max_chamadas: z.number().int().positive(),
+      amostra_revisao: z.number().int().positive(),
+    }),
     textos: z.object({
       aviso_lgpd: z.string().min(1),
       alerta_queda: z

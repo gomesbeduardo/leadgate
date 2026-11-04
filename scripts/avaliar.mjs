@@ -1,13 +1,14 @@
 // Executor da avaliacao: conduz cada conversa pelo webhook real e grava avaliacao/resultado-<conjunto>.json.
-// Uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao [--forcar]
+// Uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { converterValidacao } from '../src/dataset/dataset.mjs'
 
 const raiz = new URL('../', import.meta.url)
 const args = process.argv.slice(2)
 const conjunto = args[args.indexOf('--conjunto') + 1]
 const forcar = args.includes('--forcar')
-if (!['ajuste', 'reservado', 'regressao'].includes(conjunto)) {
-  console.error('uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao [--forcar]')
+if (!['ajuste', 'reservado', 'regressao', 'validacao'].includes(conjunto)) {
+  console.error('uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]')
   process.exit(2)
 }
 const url = process.env.AVALIACAO_URL ?? 'http://127.0.0.1:5678/webhook/chat'
@@ -20,8 +21,17 @@ if (conjunto === 'reservado' && existsSync(saidaArq) && !forcar) {
   process.exit(3)
 }
 
-const arquivoCasos = conjunto === 'regressao' ? 'avaliacao/regressao.json' : 'avaliacao/casos.json'
-const casos = JSON.parse(readFileSync(new URL(arquivoCasos, raiz), 'utf8')).filter((c) => c.conjunto === conjunto)
+// validacao: avaliacao/dataset/validacao.json (conversa/gabarito, spec 002) convertido para o formato de casos.
+// AVALIACAO_DATASET_DIR existe para teste.
+const datasetDir = process.env.AVALIACAO_DATASET_DIR?.replace(/\/$/, '')
+let casos
+if (conjunto === 'validacao') {
+  const arq = datasetDir ? new URL(`file://${datasetDir}/validacao.json`) : new URL('avaliacao/dataset/validacao.json', raiz)
+  casos = converterValidacao(JSON.parse(readFileSync(arq, 'utf8')))
+} else {
+  const arquivoCasos = conjunto === 'regressao' ? 'avaliacao/regressao.json' : 'avaliacao/casos.json'
+  casos = JSON.parse(readFileSync(new URL(arquivoCasos, raiz), 'utf8')).filter((c) => c.conjunto === conjunto)
+}
 const limiar = JSON.parse(readFileSync(new URL('config/empresa.json', raiz), 'utf8')).ia.limiar_confianca
 
 async function chamar(historico, tentativaRede = 0) {

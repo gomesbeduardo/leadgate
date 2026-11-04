@@ -116,13 +116,14 @@ function resumirConjunto(avaliacoes) {
   }
 }
 
-/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null, regressao?: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
+/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null, regressao?: ReturnType<typeof avaliarCaso>[]|null, validacao?: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
 export function resumir(execucoes) {
   return {
     ajuste: execucoes.ajuste ? resumirConjunto(execucoes.ajuste) : null,
     reservado: execucoes.reservado ? resumirConjunto(execucoes.reservado) : null,
     // undefined = a tabela nao mostra o bloco; null = mostra "nao rodado".
     regressao: execucoes.regressao === undefined ? undefined : execucoes.regressao ? resumirConjunto(execucoes.regressao) : null,
+    validacao: execucoes.validacao === undefined ? undefined : execucoes.validacao ? resumirConjunto(execucoes.validacao) : null,
   }
 }
 
@@ -186,6 +187,16 @@ export function tabelaMarkdown(resumo) {
         const pend = c.pendentes ? `, ${c.pendentes} pendente(s)` : ''
         L.push(`| ${c.id} | ` + ITENS.map((i) => simbolo(c.itens[i])).join(' | ') + ` | ${c.aprovados}/${c.aplicaveis}${pend} |`)
       }
+      L.push('')
+    }
+  }
+  if (resumo.validacao !== undefined) {
+    const v = resumo.validacao
+    L.push('## Validação sintética (conjunto à parte: não entra nos números acima)', '')
+    if (!v) L.push(NR, '')
+    else {
+      L.push(`Validação sintética (n=${v.n}); gabarito gerado, amostra revisada por humano só em parte.`, '', '| Campo | Acerto validação |', '|---|---|')
+      for (const c of CAMPOS) L.push(`| ${c} | ${pct(v.campos[c])} |`)
       L.push('')
     }
   }

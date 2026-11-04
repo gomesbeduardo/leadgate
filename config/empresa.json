@@ -38,6 +38,7 @@
     "provedores_proibidos": ["claude", "anthropic", "gpt", "chatgpt", "openai", "gemini", "llama", "mistral", "copilot", "deepseek", "grok"]
   },
   "prompt": { "canario": "CFG-7Q2M" },
+  "dataset": { "volume": 80, "max_chamadas": 150, "amostra_revisao": 15 },
   "textos": {
     "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros.",
     "alerta_queda": "O atendimento automático da {{empresa.nome}} parou às {{hora}} ({{tipo}}). {{efeito_no_lead}} Atue manualmente.",
