@@ -1,0 +1,52 @@
+name: Alcance
+
+on:
+  pull_request_target:
+    branches: [staging]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  alcance:
+    if: >-
+      startsWith(github.head_ref, 'claude/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Lê os arquivos e o corpo do PR
+        run: |
+          gh api --paginate "repos/$GH_REPO/pulls/$PR/files" \
+            --jq '.[] | {nome: .filename, estado: .status, anterior: .previous_filename}' \
+            | jq -s 'map(with_entries(select(.value != null)))' > arquivos.json
+          gh pr view "$PR" --json body --jq .body > corpo.md
+      - name: Decide o merge automático
+        run: |
+          set +e
+          node scripts/alcance.mjs arquivos.json corpo.md > saida.txt
+          codigo=$?
+          set -e
+          cat saida.txt
+          if [ "$codigo" -eq 0 ]; then
+            gh pr merge "$PR" --auto --squash
+            exit 0
+          fi
+          gh pr merge "$PR" --disable-auto || true
+          { echo 'Merge automático barrado:'; echo; cat saida.txt; } > comentario.md
+          gh pr comment "$PR" --body-file comentario.md
+          exit 1

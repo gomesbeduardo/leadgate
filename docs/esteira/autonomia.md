@@ -16,6 +16,17 @@ A esteira roda sozinha porque as travas ficam em hooks, fora do alcance do model
 - PR sem as seções de contexto, mudança, teste, riscos e revisão com veredito.
 - Regra de negócio nova sem spec, mudança na honestidade sobre ser IA e leitura do conjunto reservado para ajustar o prompt.
 
+## Agente no GitHub Actions
+
+O rótulo `claude-fix` numa issue aberta pelo responsável dispara um agente que implementa e abre o PR (spec 005). Os hooks ficam na máquina do responsável e não existem no runner, então a proteção muda de lugar: o ruleset de `staging`, a lista fechada de ferramentas e os checks `portoes`, `alcance` e `revisao-agente`.
+
+O PR do agente entra sozinho quando os três checks passam. Se tocar um caminho barrado, ou remover arquivo de `tests/`, ele espera uma pessoa. Para ligar em outro projeto:
+
+1. Copie os workflows de `.github/workflows/` e os scripts `scripts/alcance.mjs` e `scripts/veredito.mjs`, e ajuste a lista de caminhos barrados.
+2. Instale o app do Claude e grave o segredo `CLAUDE_CODE_OAUTH_TOKEN`, gerado com `claude setup-token`.
+3. Crie o rótulo `claude-fix` e ligue "Allow auto-merge".
+4. Crie em `staging` um ruleset sem bypass, com PR obrigatório, os três checks e bloqueio de force push.
+
 ## O que a primeira rodada ensinou
 
 - Antes de abrir um repositório, liste as referências remotas. `refs/pull/N/head` guarda o histórico antigo mesmo depois de um force push, por isso a publicação limpa foi feita num repositório novo.
