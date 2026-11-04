@@ -7,9 +7,15 @@ services:
       PORT: "3000"
       CONFIG_PATH: /dados/config/empresa.json
       PROMPT_PATH: /dados/prompts/agente.md
+      CHAT_PATH: /dados/chat/index.html
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/chat
+      DEMO_PAINEL: ${DEMO_PAINEL:-0}
+    ports:
+      - "127.0.0.1:8080:3000"
     volumes:
       - ./config:/dados/config:ro
       - ./prompts:/dados/prompts:ro
+      - ./chat:/dados/chat:ro
     mem_limit: 128m
 
   n8n:
