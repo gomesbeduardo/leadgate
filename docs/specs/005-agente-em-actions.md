@@ -80,7 +80,7 @@ O estado atual da proteção de `staging` não foi verificado. O `gh` não tem l
 
 **C11. Falha visível.** Dado que o agente falha, estoura o limite, é cancelado ou acaba sem um PR aberto ou atualizado nesta execução, na branch `claude/issue-N` e com `Closes #N` exato, então o job termina vermelho e um passo fixo comenta na issue com o link da execução. Nenhuma falha termina em verde.
 
-**C12. Logs públicos.** `show_full_output` não é ligado, e `ACTIONS_STEP_DEBUG` não é definido no repositório, porque ele liga essa saída sozinho e o log é público. Um passo fixo depois do agente imprime no log, por negação, só o nome da ferramenta e os primeiros 60 caracteres da primeira linha do comando ou do caminho: é o que permite conferir T17, T18 e T37. O filtro fica no próprio workflow, e não em arquivo do repositório, porque o agente altera o repositório antes desse passo rodar. Esse passo nunca muda o resultado do job. O arquivo completo da execução não sai do runner, nem como artefato, porque artefato de repositório público é baixável por qualquer conta do GitHub.
+**C12. Logs públicos.** `show_full_output` não é ligado, e `ACTIONS_STEP_DEBUG` não é definido no repositório, porque ele liga essa saída sozinho e o log é público. Um passo fixo depois do agente e outro depois do revisor imprimem no log, por negação, só o nome da ferramenta e os primeiros 60 caracteres da primeira linha do comando ou do caminho: é o que permite conferir T17, T18 e T37. O filtro fica no próprio workflow, e não em arquivo do repositório, porque o agente altera o repositório antes desse passo rodar. Esses passos nunca mudam o resultado do job. O arquivo completo da execução não sai do runner, nem como artefato, porque artefato de repositório público é baixável por qualquer conta do GitHub.
 
 **C13. Documentação.** A seção "Rodar sem ninguém olhando" da skill `esteira`, `docs/esteira/autonomia.md` e as seções de limites e supervisão do `README.md` passam a descrever este fluxo. O README deixa claro que PR do agente pode entrar sem leitura humana, exceto nos caminhos barrados.
 
@@ -138,7 +138,7 @@ A documentação lida não responde a estes pontos. Se algum falhar, a implement
 - **V5.** Os termos e limites de uso do token de assinatura em CI, que não apareceram nas páginas lidas.
 - **V6.** O check de `pull_request_target` aparece no commit do PR e vale como check obrigatório.
 - **V7.** A action mantém a base no revisor. O workflow confere `HEAD` depois dela e reprova se mudou.
-- **V8.** O login de quem abre o PR é `claude[bot]`, e a regra `Write(.revisao/veredito.json)` funciona. Se não funcionar, todo PR do agente fica vermelho, sem merge.
+- **V8.** O login de quem abre o PR é `claude[bot]` (confirmado na execução 41843090860), e a regra `Edit(.revisao/veredito.json)` funciona. A primeira versão usava `Write(...)`, que falhou na execução 41843283593: o Claude Code aceita regra de caminho em `Write`, mas nunca a casa. Se não funcionar, todo PR do agente fica vermelho, sem merge.
 
 ## Fora do escopo
 
