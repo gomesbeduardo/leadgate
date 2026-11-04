@@ -16,6 +16,20 @@ A esteira roda sozinha porque as travas ficam em hooks, fora do alcance do model
 - PR sem as seções de contexto, mudança, teste, riscos e revisão com veredito.
 - Regra de negócio nova sem spec, mudança na honestidade sobre ser IA e leitura do conjunto reservado para ajustar o prompt.
 
+## Agente no GitHub Actions
+
+O rótulo `claude-fix` numa issue aberta pelo responsável dispara um agente que implementa e abre o PR (spec 005). Os hooks ficam na máquina do responsável e não existem no runner, então a proteção muda de lugar: o ruleset de `staging`, a lista fechada de ferramentas e os checks `portoes`, `alcance` e `revisao-agente`.
+
+Os checks valem para todo PR cujo autor não é o responsável, porque o nome da branch é escolhido pelo agente e não prova a origem. O PR do agente entra sozinho quando os três passam. Se tocar um caminho barrado, remover arquivo de `tests/` ou for reprovado pelo revisor, ele não entra: o ruleset não tem bypass para ninguém. Para integrar, o responsável lê o diff e reabre o código numa branch dele, com um PR em seu nome, que passa só pelo `portoes`.
+
+Para ligar em outro projeto:
+
+1. Copie os workflows de `.github/workflows/` e os scripts `scripts/alcance.mjs` e `scripts/veredito.mjs`, e ajuste a lista de caminhos barrados.
+2. Instale o app do Claude e grave o segredo `CLAUDE_CODE_OAUTH_TOKEN`, gerado com `claude setup-token`.
+3. Integre os workflows antes do ruleset. Sem isso, o check `alcance` não existe na base e o PR que o traz fica preso.
+4. Crie o rótulo `claude-fix` e ligue "Allow auto-merge".
+5. Crie em `staging` um ruleset sem bypass, com PR obrigatório, os três checks e bloqueio de force push. O passo de merge confere isso e não liga o auto-merge sem os três.
+
 ## O que a primeira rodada ensinou
 
 - Antes de abrir um repositório, liste as referências remotas. `refs/pull/N/head` guarda o histórico antigo mesmo depois de um force push, por isso a publicação limpa foi feita num repositório novo.

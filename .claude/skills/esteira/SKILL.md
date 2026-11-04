@@ -90,4 +90,4 @@ O merge autônomo vale porque este repositório está em `REPOS_PESSOAIS`, no po
 
 ## Rodar sem ninguém olhando
 
-`/loop /esteira` repete o ciclo enquanto a sessão estiver aberta. Na nuvem, a tarefa agendada do Claude Code usa a conta do responsável, sem chave guardada no GitHub. O `claude-code-action` exige um segredo no repositório e só entra com o ok dele. Em todos os casos, cada ciclo respeita os limites acima.
+`/loop /esteira` repete o ciclo enquanto a sessão estiver aberta. Na nuvem, a tarefa agendada do Claude Code usa a conta do responsável, sem chave guardada no GitHub. No GitHub Actions, o rótulo `claude-fix` numa issue do responsável dispara o agente da spec 005, que não roda este ciclo inteiro: ele implementa, abre o PR e para. Os hooks locais não existem no runner, e quem barra é o ruleset de `staging` com os checks `portoes`, `alcance` e `revisao-agente`. O Pad também não chega ao runner: a sessão local seguinte registra no Pad, em `docs/esteira/metricas.md` e em `docs/aprendizados.md` o que o agente fez. Em todos os casos, cada ciclo respeita os limites acima.
