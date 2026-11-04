@@ -53,7 +53,7 @@ flowchart LR
     valid -->|"reprovou, até 2 vezes"| regen["Regeneração com instrução de correção"]
     regen --> claude
     valid -->|aprovou| rota{"Rota (proxima_acao)"}
-    valid -->|"esgotou as tentativas"| humano["Caminho humano ou mensagem de falha técnica"]
+    valid -->|"esgotou as tentativas"| humano["Modelo menor; se falhar, silêncio e humano assume"]
     rota --> perguntar["perguntar"]
     rota --> vendas["encaminhar_vendas (simulado)"]
     rota --> encerrar["responder_e_encerrar"]
@@ -137,6 +137,24 @@ node scripts/avaliar.mjs --conjunto ajuste && node scripts/tabela-avaliacao.mjs
 
 O segundo comando regenera `avaliacao/tabela.md`. Os conjuntos `reservado` e `regressao` rodam com o mesmo comando trocando o nome; o reservado recusa uma segunda rodada sem `--forcar`. O modelo não é determinístico, então uma nova rodada pode dar números diferentes.
 
+## Quando algo falha
+
+O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os valores abaixo vêm de `config/empresa.json`.
+
+1. **Repetir.** Falha de rede, de DNS, de tempo esgotado, limite de taxa (429) ou erro 5xx repete a mesma chamada até 3 vezes, esperando 1 s e depois 3 s (ou o tempo que a resposta pedir no cabeçalho `retry-after`, até 30 s). Saída reprovada pela validação é regenerada até 2 vezes, com a instrução de correção. Erro 4xx do cliente e limite de gasto da conta não repetem: vão direto para a camada 2.
+2. **Modelo menor.** Esgotada a camada 1, o fluxo troca para o modelo de reserva (`claude-haiku-5-5`), com até 2 chamadas lógicas. Se a reserva responder e passar na validação, o lead recebe a resposta normalmente.
+3. **Silêncio e humano assume.** Se a reserva também falhar, ou se não houver modelo de reserva configurado, o lead não recebe resposta automática. O turno termina com `proxima_acao = encaminhar_humano` e `estado_conversa = aguardando_humano`, tenha o lead dado telefone ou não. Não há mais mensagem de falha técnica.
+
+**Aviso ao vendedor.** O serviço acompanha os turnos: duas falhas seguidas (`alerta.turnos_para_queda`) geram um aviso de queda, e uma falha do n8n ou do próprio serviço gera o aviso na hora. Enquanto a queda durar, o aviso se repete no máximo a cada 30 minutos (`alerta.intervalo_min`). Quando um turno volta a ser respondido pelo modelo, sai um aviso de recuperação com o número de conversas afetadas. O canal padrão é **simulado**: o aviso vai para o log e para `GET /alertas`. Há também um canal de e-mail pelo Resend, ativado com `ALERTA_CANAL=resend` e `RESEND_API_KEY`; ele está pronto, mas precisa de uma conta, e sem a chave o serviço fica só no canal simulado. Os textos dos avisos ficam em `textos.alerta_queda` e `textos.alerta_recuperado` na configuração.
+
+**Contagem de falhas.** Cada tentativa que falha é registrada com o tipo (`rede`, `dns`, `timeout`, `429`, `5xx`, `cliente`, `refusal`, `max_tokens`, `schema`, `servico`), a camada, o modelo e se foi recuperada. O resumo traz o total de turnos, os turnos que terminaram em falha, a taxa de falha, as tentativas falhas por tipo, quantos turnos cada camada recuperou e qual modelo respondeu. Não é guardado texto de conversa. O resumo fica em `GET /falhas`, exposto só com `DEMO_PAINEL=1`, e a taxa entra no bloco "Taxa de falha" de `avaliacao/tabela.md`.
+
+## Dataset sintético
+
+Para ter mais conversas do que as escritas à mão, o repositório traz um dataset de **82 conversas fictícias**, geradas pelo `claude-opus-5-5` e separadas em **39 exemplos** (`avaliacao/dataset/exemplos.json`) e **43 de validação** (`avaliacao/dataset/validacao.json`). O registro da rodada está em `avaliacao/dataset/rodada.json` e a amostra para leitura humana em `avaliacao/dataset/revisao.md`. Todos os telefones seguem o padrão fictício com `99999`.
+
+O dataset **ainda não passou pela revisão humana**, e por isso `prompt_liberado` continua `false`: o prompt (`prompts/agente.md`) mantém os 3 exemplos atuais e não foi alterado a partir dele. Também não treina nem ajusta o modelo: ele alimenta exemplos para o prompt e serve de validação. O bloco "Validação sintética" de `avaliacao/tabela.md` só aparece quando existe resultado de validação, e nenhum número de acerto da validação é divulgado ainda.
+
 ## Segurança e travas
 
 As camadas, da mais interna para a mais externa:
@@ -144,7 +162,7 @@ As camadas, da mais interna para a mais externa:
 1. **Schema.** Saída com campos, tipos e valores fechados (Zod). Saída fora do contrato é reprovada.
 2. **Regras entre campos.** Qualificado exige serviço, segmento, cidade e telefone válidos; telefone é conferido (número colado sem DDD real, ou precedido de "CPF", não conta); cidade precisa ter sido citada pelo lead e o sufixo de UF precisa bater com a lista.
 3. **Checagem da resposta ao lead.** Nunca negar ser IA nem afirmar ser humano; nenhum preço inventado (valor em reais); nenhuma promessa (garantia, desconto, grátis) nem prazo; o canário do prompt não pode aparecer; nome de provedor de IA (Claude, GPT, Gemini e outros da lista) não pode aparecer; no máximo um `?`, até 400 caracteres, sem menu numerado, sem frase de robô.
-4. **Regeneração.** Reprovou, o fluxo chama o modelo de novo com uma instrução que aponta a regra violada, até 2 vezes (3 tentativas). Esgotou: caminho humano (com telefone) ou mensagem de falha técnica com o contato da empresa.
+4. **Regeneração.** Reprovou, o fluxo chama o modelo de novo com uma instrução que aponta a regra violada, até 2 vezes (3 tentativas). Esgotou: o fluxo troca para o modelo menor e, se ele também falhar, segue o caminho descrito em "Quando algo falha".
 5. **Rotas internas em porta separada.** `/preparar` e `/validar` ficam na porta 3001, não publicada no host.
 6. **Limites de uso.** Corpo de até 16 KB, 20 requisições por minuto por cliente e 4 chamadas simultâneas (configuráveis em `.env.example`). Histórico limitado a 8 mil caracteres. A porta 5678 é publicada em localhost, então um processo local pode postar direto no webhook do n8n e pular os limites da rota pública.
 
@@ -172,7 +190,8 @@ Lacuna honesta: a base legal do tratamento e a transferência internacional (as 
 - O checklist de leitura humana (itens 5 a 10) está pendente.
 - Não há autenticação.
 - Roda só em Docker local; nada está hospedado e o encaminhamento para vendas é simulado.
-- O comportamento de pior caso (modelo indisponível, recusa, limite de taxa) ainda é só a mensagem de falha técnica. A spec `docs/specs/002-dataset-e-fallbacks.md` trata de melhorar isso e de gerar um dataset maior, e ainda **não está implementada**.
+- O aviso ao vendedor é simulado por padrão; o canal de e-mail está pronto, mas só funciona com uma conta no provedor.
+- O dataset sintético ainda espera a revisão humana, e o prompt não foi alterado a partir dele.
 
 ## Como rodar
 

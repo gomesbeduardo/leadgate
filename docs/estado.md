@@ -1,8 +1,10 @@
 # Estado do projeto
 
-Atualizado em 03/11/2026.
+Atualizado em 04/11/2026.
 
-- Spec aprovada: `docs/specs/001-filtro-leads.md`. É a fonte de regra, contrato e testes de aceite.
-- Plano da prioridade 1: `docs/plano-001-p1.md`.
-- README do produto: `README.md`.
-- Integração na branch `develop`. Nada fica hospedado: a demo sobe com `docker compose up`.
+- Spec 001 (filtro de leads) integrada: `docs/specs/001-filtro-leads.md` é a fonte de regra, contrato e testes de aceite. Plano da prioridade 1: `docs/plano-001-p1.md`.
+- Spec 002 (dataset e fallbacks): `docs/specs/002-dataset-e-fallbacks.md`. Implementada na branch `feat/002-motor`, que reúne o motor de falhas (repetir, modelo menor, silêncio com humano assumindo), o aviso ao vendedor e a contagem de falhas por tipo.
+- Aviso ao vendedor: simulado por padrão. O canal de e-mail (Resend) está pronto, mas precisa de uma conta.
+- Dataset sintético: 82 conversas fictícias (39 exemplos e 43 de validação) em `avaliacao/dataset/`, geradas pelo `claude-opus-5-5`. Aguardam a revisão humana (`revisao.md`); `prompt_liberado` é `false` e o prompt tem os mesmos 3 exemplos de antes.
+- Ainda não existe número de acerto da validação sintética; ele vem depois da revisão e de uma rodada de avaliação.
+- README do produto: `README.md`. Nada fica hospedado: a demo sobe com `docker compose up`.
