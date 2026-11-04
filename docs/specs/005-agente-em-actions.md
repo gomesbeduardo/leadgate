@@ -1,7 +1,7 @@
 # Spec 005: agente de issues no GitHub Actions
 
 **Status:** aprovada pelo responsável em 04/11/2026, com as emendas das duas revisões de código.
-**Emenda em revisão:** C14, pré-requisito 5, T40 a T42 e V9 a V11 aguardam a aprovação do responsável. O motivo está na C14.
+**Emenda aprovada pelo responsável em 04/11/2026:** C14, pré-requisito 5, T40 a T42 e V9 a V11. O motivo está na C14.
 **Pedido:** "Leia e adapte para nosso uso", sobre o texto "Claude Autonomous Software Engineer Handoff": um workflow disparado pelo rótulo `claude-fix`, que lê a issue, altera o código, abre PR e, como passo opcional, revisa o PR.
 
 ## Problema
