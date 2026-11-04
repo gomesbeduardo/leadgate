@@ -91,3 +91,9 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 **Evidência:** na issue #3, a rodada de ajuste deu `segmento` 13/14 contra 14/14 da tabela, e a regra da esteira bloquearia o PR. Repetindo, a base deu 13, 14 e 13, e a branch deu 13, 13 e 14, com erro em a05 ou a06, nos dois lados.
 **Causa:** a resposta do modelo varia entre rodadas, e a tabela guarda uma rodada só.
 **Regra:** campo que piorou em uma rodada não bloqueia nem libera. Repita 3 vezes na branch e na base e compare a soma de acertos: bloqueia se a da branch ficar abaixo. A skill `esteira` já exige isso.
+
+## 04/11/2026 — Status repetido em dois lugares do README
+
+**Evidência:** ao registrar a leitura humana, a linha 211 do README foi atualizada, e a linha 128 continuou dizendo que ninguém tinha feito a leitura. A revisão apontou a contradição.
+**Causa:** o mesmo fato estava escrito em dois lugares, e a busca antes de editar não foi feita.
+**Regra:** antes de mudar um status em documento, procure o assunto no repositório inteiro e atualize todas as ocorrências.
