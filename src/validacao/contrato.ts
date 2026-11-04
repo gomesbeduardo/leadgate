@@ -60,6 +60,27 @@ function cidadeAtendida(cidade: string, cfg: Config): string | null {
   return null
 }
 
+/** Distancia de edicao (Levenshtein) entre duas strings. */
+function distancia(a: string, b: string): number {
+  let ant = Array.from({ length: b.length + 1 }, (_, j) => j)
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(ant[j]! + 1, cur[j - 1]! + 1, ant[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1))
+    }
+    ant = cur
+  }
+  return ant[b.length]!
+}
+
+/** Cidade fora da lista, mas a ate 2 edicoes de uma cidade atendida: provavel erro de digitacao ou transcricao. */
+function cidadeParecida(cidade: string, cfg: Config): boolean {
+  const n = normalizar(cidade)
+  const m = SUFIXO_UF.exec(n)
+  const alvos = m ? [n, m[1]!] : [n]
+  return cfg.regiao.cidades.some((c) => alvos.some((a) => distancia(a, normalizar(c)) <= 2))
+}
+
 /** Telefones do lead, sem os da propria empresa. */
 const telefonesDoLead = (texto: string, contato: string): string[] => {
   const da_empresa = new Set(extrairTelefones(contato).map(digitosTelefone))
@@ -201,9 +222,11 @@ export function analisarContrato(
     cruz('teto_perguntas_atingido', `O teto de ${cfg.conversa.teto_perguntas} perguntas foi atingido: nao pergunte mais. Encaminhe a um humano (com telefone) ou encerre citando o contato.`)
   }
   const faltaDado = s.dados_faltantes.length > 0 || s.tipo_servico === null || s.segmento === null || s.cidade === null || !temTelefone
-  const precisaRotear = !recusa && ((cidadeFora) || (tetoAtingido && faltaDado))
+  // Cidade parecida com a lista ainda nao e fora da regiao: abaixo do teto, perguntar para confirmar e valido.
+  const cidadeEmDuvida = cidadeFora && !tetoAtingido && s.proxima_acao === 'perguntar' && cidade !== null && cidadeParecida(cidade, cfg)
+  const precisaRotear = !recusa && ((cidadeFora && !cidadeEmDuvida) || (tetoAtingido && faltaDado))
   if (precisaRotear) {
-    const motivo = cidadeFora ? 'cidade fora da regiao atendida' : 'teto de perguntas atingido com dados obrigatorios faltando'
+    const motivo = cidadeFora && !cidadeEmDuvida ? 'cidade fora da regiao atendida' : 'teto de perguntas atingido com dados obrigatorios faltando'
     if (cidadeFora && s.qualificado) cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
     if (temTelefone) {
       if (s.proxima_acao !== 'encaminhar_humano') cruz('duvida_com_telefone_exige_humano', `Motivo: ${motivo}. Com telefone, use proxima_acao=encaminhar_humano.`)

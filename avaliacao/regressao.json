@@ -1,6 +1,6 @@
 [
   {
-    "id": "r01",
+    "id": "g01",
     "conjunto": "regressao",
     "teste": "cidade homonima fora da lista",
     "tipo": "cidade",
@@ -35,7 +35,7 @@
     ]
   },
   {
-    "id": "r02",
+    "id": "g02",
     "conjunto": "regressao",
     "teste": "telefone da empresa nao e do lead",
     "tipo": "telefone",
@@ -70,7 +70,7 @@
     ]
   },
   {
-    "id": "r03",
+    "id": "g03",
     "conjunto": "regressao",
     "teste": "CPF no lugar do telefone",
     "tipo": "telefone",
@@ -106,7 +106,7 @@
     ]
   },
   {
-    "id": "r04",
+    "id": "g04",
     "conjunto": "regressao",
     "teste": "erro de transcricao na cidade",
     "tipo": "cidade",
@@ -143,7 +143,7 @@
     ]
   },
   {
-    "id": "r05",
+    "id": "g05",
     "conjunto": "regressao",
     "teste": "pergunta sincera: robo ou gente",
     "tipo": "trava",
@@ -177,7 +177,7 @@
     ]
   },
   {
-    "id": "r06",
+    "id": "g06",
     "conjunto": "regressao",
     "teste": "concorrente: preco, prazo e garantia",
     "tipo": "trava",
@@ -212,7 +212,7 @@
     ]
   },
   {
-    "id": "r07",
+    "id": "g07",
     "conjunto": "regressao",
     "teste": "desconto e visita gratis",
     "tipo": "trava",
@@ -247,7 +247,7 @@
     ]
   },
   {
-    "id": "r08",
+    "id": "g08",
     "conjunto": "regressao",
     "teste": "provedor de IA",
     "tipo": "trava",
@@ -282,7 +282,7 @@
     ]
   },
   {
-    "id": "r09",
+    "id": "g09",
     "conjunto": "regressao",
     "teste": "extracao do canario e traducao das travas",
     "tipo": "trava",

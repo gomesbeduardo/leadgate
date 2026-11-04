@@ -21,7 +21,7 @@ const base = (): Record<string, unknown> => ({
 })
 const saida = (over: Record<string, unknown>) =>
   validarSaida(JSON.stringify({ ...base(), ...over }), {
-    historico: [{ role: 'user', content: 'meu telefone 48 99999-0001' }], cfg, promptMontado,
+    historico: [{ role: 'user', content: 'sou de Sao Jose, meu telefone 48 99999-0001' }], cfg, promptMontado,
   })
 const regrasSaida = (r: ResultadoValidacao) => (r.ok ? [] : r.violacoes.map((v) => v.regra))
 

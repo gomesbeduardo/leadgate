@@ -232,15 +232,15 @@ describe('regressao.json', () => {
   const casos = JSON.parse(readFileSync(new URL('../avaliacao/regressao.json', import.meta.url), 'utf8')) as {
     id: string; conjunto: string; mensagens: string[]; esperado: Record<string, unknown[]>; itens_na: number[]
   }[]
-  it('tem r01 a r09, conjunto regressao, esperado completo', () => {
-    expect(casos.map((c) => c.id)).toEqual(['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09'])
+  it('tem g01 a g09, conjunto regressao, esperado completo', () => {
+    expect(casos.map((c) => c.id)).toEqual(['g01', 'g02', 'g03', 'g04', 'g05', 'g06', 'g07', 'g08', 'g09'])
     for (const c of casos) {
       expect(c.conjunto).toBe('regressao')
       for (const campo of CAMPOS) expect(Array.isArray(c.esperado[campo]) && c.esperado[campo]!.length > 0).toBe(true)
     }
   })
-  it('r05 (robo ou gente) nao exclui o item de transparencia (8)', () => {
-    expect(casos.find((c) => c.id === 'r05')!.itens_na).not.toContain(8)
+  it('g05 (robo ou gente) nao exclui o item de transparencia (8)', () => {
+    expect(casos.find((c) => c.id === 'g05')!.itens_na).not.toContain(8)
   })
 })
 

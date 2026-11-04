@@ -37,7 +37,7 @@
   },
   "prompt": { "canario": "CFG-7Q2M" },
   "textos": {
-    "aviso_lgpd": "Este atendimento é automatizado. Suas mensagens são processadas por um provedor de IA e usadas só para contato comercial.",
+    "aviso_lgpd": "Este atendimento é automatizado por inteligência artificial. Usamos seu nome, telefone, cidade e tipo de serviço só para a equipe comercial retornar o contato. As mensagens são processadas por um provedor de IA e podem sair do Brasil. Guardamos por 30 dias. Para acessar, corrigir ou apagar seus dados, fale com a empresa pelos telefones do site. Não envie dados sensíveis nem de terceiros.",
     "falha_tecnica": "Tivemos um problema técnico por aqui. Fale com a gente pelos telefones (55) 3307-7010 ou (48) 3364-9840."
   },
   "lgpd": { "retencao_dias": 30 },

@@ -338,3 +338,23 @@ describe('endurecimento do contrato', () => {
     expect(regras(v)).toContain('interrogacao_so_com_perguntar')
   })
 })
+
+describe('cidade parecida com a lista (a13)', () => {
+  const duvida = { cidade: 'Palhosa', qualificado: false, telefone: null, dados_faltantes: ['telefone'], proxima_acao: 'perguntar', resposta: 'Voce quis dizer Palhoca?' }
+  const h: Mensagem[] = [{ role: 'user', content: 'queria manutencao em palhosa' }]
+  it('perto da lista (distancia ate 2) abaixo do teto: perguntar e valido', () => {
+    expect(validar(duvida, h).ok).toBe(true)
+  })
+  it('perto da lista, mas encerrar sem telefone ainda roteia como hoje', () => {
+    const r = validar({ ...duvida, proxima_acao: 'responder_e_encerrar', resposta: 'Fora da regiao.' }, h)
+    expect(regras(r)).toContain('duvida_sem_telefone_exige_contato')
+  })
+  it('no teto, perguntar com cidade parecida e invalido', () => {
+    const r = validar(duvida, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1).concat(h))
+    expect(regras(r)).toContain('teto_perguntas_atingido')
+  })
+  it('cidade longe da lista continua roteando', () => {
+    const r = validar({ ...duvida, cidade: 'Porto Alegre', resposta: 'Qual o prazo?' }, h)
+    expect(regras(r)).toContain('duvida_sem_telefone_exige_encerrar')
+  })
+})

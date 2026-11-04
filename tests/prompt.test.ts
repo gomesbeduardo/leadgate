@@ -32,7 +32,7 @@ describe('arquivo do prompt', () => {
   })
 
   it('G: orienta a nao citar prazo e a usar "atendimento automatizado"', () => {
-    expect(modelo).toMatch(/versao:\s*1\.1\.0/)
+    expect(modelo).toMatch(/versao:\s*1.2.0/)
     expect(modelo).toMatch(/nunca cite prazo/i)
     expect(modelo).toContain('atendimento automatizado')
     expect(modelo).toMatch(/palavras "atendimento automatizado"/)
