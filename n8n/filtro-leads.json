@@ -25,7 +25,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SERVICO_URL }}/preparar",
+        "url": "__SERVICO_URL__/preparar",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
@@ -39,7 +39,8 @@
       "position": [
         240,
         300
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -88,15 +89,62 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "esperar-maior-zero",
+              "leftValue": "={{ $json.esperar_ms }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n-precisa-esperar",
+      "name": "Precisa esperar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.esperar_ms / 1000 }}",
+        "unit": "seconds"
+      },
+      "id": "n-esperar",
+      "name": "Esperar",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        40
+      ],
+      "webhookId": "filtro-leads-espera-0001"
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "={{ $env.ANTHROPIC_BASE_URL }}/v1/messages",
+        "url": "__ANTHROPIC_BASE_URL__/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "={{ $env.ANTHROPIC_API_KEY }}"
-            },
             {
               "name": "anthropic-version",
               "value": "2026-10-21"
@@ -118,7 +166,7 @@
               "responseFormat": "json"
             }
           },
-          "timeout": 60000
+          "timeout": "={{ $json.timeout_ms }}"
         }
       },
       "id": "n-ia",
@@ -126,22 +174,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        960,
+        1320,
         160
       ],
       "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 1000
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "claudeApiChave001",
+          "name": "Claude API"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SERVICO_URL }}/validar",
+        "url": "__SERVICO_URL__/validar",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ tentativa: $('Tentativa').last().json, http: { statusCode: $json.statusCode, body: $json.body } }) }}",
+        "jsonBody": "={{ JSON.stringify({ estado: $('Tentativa').last().json.estado, resposta: { status: $json.statusCode, cabecalhos: $json.headers, corpo: $json.body, erro: $json.error ? (typeof $json.error === 'string' ? $json.error : ($json.error.message || String($json.error))) : undefined } }) }}",
         "options": {}
       },
       "id": "n-validar",
@@ -149,9 +200,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
+        1520,
         160
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -183,8 +235,23 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1440,
+        1760,
         160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\"resultado\":{\"resposta\":null,\"estado\":\"aguardando_humano\",\"estado_conversa\":\"aguardando_humano\",\"proxima_acao\":\"encaminhar_humano\",\"origem\":\"falha\",\"tipo\":\"servico\"}}",
+        "options": {}
+      },
+      "id": "n-falha",
+      "name": "Falha do serviço",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        560
       ]
     },
     {
@@ -296,7 +363,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        1680,
+        2000,
         440
       ]
     },
@@ -307,7 +374,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1920,
+        2240,
         200
       ]
     },
@@ -318,7 +385,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1920,
+        2240,
         360
       ]
     },
@@ -329,7 +396,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1920,
+        2240,
         520
       ]
     },
@@ -340,7 +407,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1920,
+        2240,
         680
       ]
     },
@@ -355,7 +422,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2160,
+        2480,
         360
       ]
     }
@@ -377,6 +444,13 @@
         [
           {
             "node": "Precisa do modelo?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Falha do serviço",
             "type": "main",
             "index": 0
           }
@@ -405,7 +479,47 @@
       "main": [
         [
           {
+            "node": "Precisa esperar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa esperar?": {
+      "main": [
+        [
+          {
+            "node": "Esperar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Nó de IA (Claude)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar": {
+      "main": [
+        [
+          {
+            "node": "Nó de IA (Claude)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Falha do serviço": {
+      "main": [
+        [
+          {
+            "node": "Rota",
             "type": "main",
             "index": 0
           }
@@ -428,6 +542,13 @@
         [
           {
             "node": "Regenerar?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Falha do serviço",
             "type": "main",
             "index": 0
           }

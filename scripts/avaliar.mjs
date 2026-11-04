@@ -1,16 +1,18 @@
-// Executor da avaliacao: conduz cada conversa pelo webhook real e grava avaliacao/resultado-<conjunto>.json.
-// Uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao [--forcar]
+// Executor da avaliacao: conduz cada conversa pelo proxy /api/chat (so ele conta falhas; precisa de DEMO_PAINEL=1) e grava avaliacao/resultado-<conjunto>.json.
+// Uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { converterValidacao } from '../src/dataset/dataset.mjs'
+import { falhasMarkdown } from '../src/avaliacao/metricas.mjs'
 
 const raiz = new URL('../', import.meta.url)
 const args = process.argv.slice(2)
 const conjunto = args[args.indexOf('--conjunto') + 1]
 const forcar = args.includes('--forcar')
-if (!['ajuste', 'reservado', 'regressao'].includes(conjunto)) {
-  console.error('uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao [--forcar]')
+if (!['ajuste', 'reservado', 'regressao', 'validacao'].includes(conjunto)) {
+  console.error('uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]')
   process.exit(2)
 }
-const url = process.env.AVALIACAO_URL ?? 'http://127.0.0.1:5678/webhook/chat'
+const url = process.env.AVALIACAO_URL ?? 'http://127.0.0.1:8080/api/chat'
 // AVALIACAO_SAIDA_DIR e AVALIACAO_ESPERA_MS existem para teste; o padrao e avaliacao/ e 60 s.
 const saidaDir = process.env.AVALIACAO_SAIDA_DIR
 const saidaArq = saidaDir ? new URL(`file://${saidaDir.replace(/\/$/, '')}/resultado-${conjunto}.json`) : new URL(`avaliacao/resultado-${conjunto}.json`, raiz)
@@ -20,8 +22,17 @@ if (conjunto === 'reservado' && existsSync(saidaArq) && !forcar) {
   process.exit(3)
 }
 
-const arquivoCasos = conjunto === 'regressao' ? 'avaliacao/regressao.json' : 'avaliacao/casos.json'
-const casos = JSON.parse(readFileSync(new URL(arquivoCasos, raiz), 'utf8')).filter((c) => c.conjunto === conjunto)
+// validacao: avaliacao/dataset/validacao.json (conversa/gabarito, spec 002) convertido para o formato de casos.
+// AVALIACAO_DATASET_DIR existe para teste.
+const datasetDir = process.env.AVALIACAO_DATASET_DIR?.replace(/\/$/, '')
+let casos
+if (conjunto === 'validacao') {
+  const arq = datasetDir ? new URL(`file://${datasetDir}/validacao.json`) : new URL('avaliacao/dataset/validacao.json', raiz)
+  casos = converterValidacao(JSON.parse(readFileSync(arq, 'utf8')))
+} else {
+  const arquivoCasos = conjunto === 'regressao' ? 'avaliacao/regressao.json' : 'avaliacao/casos.json'
+  casos = JSON.parse(readFileSync(new URL(arquivoCasos, raiz), 'utf8')).filter((c) => c.conjunto === conjunto)
+}
 const limiar = JSON.parse(readFileSync(new URL('config/empresa.json', raiz), 'utf8')).ia.limiar_confianca
 
 async function chamar(historico, tentativaRede = 0) {
@@ -41,7 +52,7 @@ async function chamar(historico, tentativaRede = 0) {
   }
 }
 
-// O n8n responde 404 enquanto o workflow nao esta ativo: espera ate esperaMs, repetindo enquanto 404 ou sem conexao.
+// O n8n responde 404 enquanto o workflow nao esta ativo: espera ate esperaMs, repetindo enquanto 404, falha n8n ou sem conexao.
 async function esperarWebhook() {
   const fim = Date.now() + esperaMs
   let ultimo = 'sem resposta'
@@ -53,8 +64,13 @@ async function esperarWebhook() {
         body: JSON.stringify({ historico: [] }),
         signal: AbortSignal.timeout(10_000),
       })
-      if (r.status !== 404) return
-      ultimo = 'HTTP 404'
+      if (r.status === 404) ultimo = 'HTTP 404'
+      else {
+        // Pelo proxy a sonda volta 200 mesmo com o n8n fora: so conta como pronto sem tipo `n8n`.
+        const j = await r.json().catch(() => null)
+        if (j?.tipo !== 'n8n') return
+        ultimo = 'o fluxo respondeu falha n8n'
+      }
     } catch (e) {
       ultimo = String(e?.cause?.code ?? e?.message ?? e)
     }
@@ -66,6 +82,26 @@ async function esperarWebhook() {
   }
 }
 await esperarWebhook()
+
+// Contagem de falhas (R17): le /falhas na porta publica, que so responde com DEMO_PAINEL=1.
+// AVALIACAO_FALHAS_URL e o endereco de /falhas; o reset (DELETE) so ocorre com DEMO_PAINEL=1.
+const falhasUrl = process.env.AVALIACAO_FALHAS_URL ?? 'http://127.0.0.1:8080/falhas'
+const painel = process.env.DEMO_PAINEL === '1'
+const lerFalhas = async () => {
+  try {
+    const r = await fetch(falhasUrl, { signal: AbortSignal.timeout(5000) })
+    return r.ok ? await r.json() : null
+  } catch {
+    return null
+  }
+}
+let falhasAtivas = false
+if (painel) {
+  try {
+    falhasAtivas = (await fetch(falhasUrl, { method: 'DELETE', signal: AbortSignal.timeout(5000) })).ok
+  } catch {}
+}
+if (!falhasAtivas) console.warn(`aviso: contagem de falhas desligada (${falhasUrl} inacessivel ou DEMO_PAINEL != 1); avaliacao/falhas-<conjunto>.md nao sera gerado.`)
 
 const execucoes = []
 for (const caso of casos) {
@@ -107,6 +143,14 @@ if (turnosTotal === 0 || turnosFalhos === turnosTotal) {
 mkdirSync(new URL('.', saidaArq), { recursive: true })
 writeFileSync(saidaArq, JSON.stringify({ gerado_em: new Date().toISOString(), limiar, conjunto, execucoes }, null, 2) + '\n')
 console.log(`gravado em ${saidaArq.pathname}`)
+if (falhasAtivas) {
+  const f = await lerFalhas()
+  if (f) {
+    const arq = new URL(`falhas-${conjunto}.md`, new URL('.', saidaArq))
+    writeFileSync(arq, falhasMarkdown(conjunto, f))
+    console.log(`gravado em ${arq.pathname}`)
+  }
+}
 if (falhas.length) {
   console.error(`${falhas.length} de ${execucoes.length} caso(s) com falha HTTP: ${falhas.map((e) => `${e.id} (${e.falha_execucao})`).join(', ')}`)
   process.exit(1)

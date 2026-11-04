@@ -28,7 +28,7 @@ export type ResumoConjunto = {
   aberturasRepetidas: number
   tentativasMedia: number
 }
-export type Resumo = { ajuste: ResumoConjunto | null; reservado: ResumoConjunto | null; regressao?: ResumoConjunto | null }
+export type Resumo = { ajuste: ResumoConjunto | null; reservado: ResumoConjunto | null; regressao?: ResumoConjunto | null; validacao?: ResumoConjunto | null }
 
 export const CAMPOS: string[]
 export const ITENS: number[]
@@ -41,5 +41,7 @@ export function avaliarCaso(
   leitura: Record<string, boolean | null | undefined> | undefined,
   verificar: Verificador,
 ): Avaliacao
-export function resumir(execucoes: { ajuste: Avaliacao[] | null; reservado: Avaliacao[] | null; regressao?: Avaliacao[] | null }): Resumo
+export function resumir(execucoes: { ajuste: Avaliacao[] | null; reservado: Avaliacao[] | null; regressao?: Avaliacao[] | null; validacao?: Avaliacao[] | null }): Resumo
 export function tabelaMarkdown(resumo: Resumo): string
+export function falhasMarkdown(conjunto: string, f: Record<string, any>): string
+export function blocoFalhas(arquivos: { conjunto: string; md: string }[]): string

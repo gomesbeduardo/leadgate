@@ -11,12 +11,21 @@ services:
       CHAT_PATH: /dados/chat/index.html
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/chat
       DEMO_PAINEL: ${DEMO_PAINEL:-0}
+      LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-20}
+      DADOS_DIR: /dados/estado
+      ALERTA_CANAL: ${ALERTA_CANAL:-simulado}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_BASE_URL: ${RESEND_BASE_URL:-}
+      ALERTA_EMAIL_DE: ${ALERTA_EMAIL_DE:-}
+      ALERTA_EMAIL_PARA: ${ALERTA_EMAIL_PARA:-}
     ports:
       - "127.0.0.1:8080:3000"
     volumes:
       - ./config:/dados/config:ro
       - ./prompts:/dados/prompts:ro
       - ./chat:/dados/chat:ro
+      # Contagem de falhas e alertas, sem texto de conversa.
+      - dados-servico:/dados/estado
     mem_limit: 128m
 
   n8n:
@@ -28,11 +37,14 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?preencha a chave no arquivo .env}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
       SERVICO_URL: http://servico:3001
-      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_SECURE_COOKIE: "false"
       # Retenção da spec 001 (30 dias). Sem volume, derrubar o Compose apaga tudo.
       EXECUTIONS_DATA_MAX_AGE: "720"
+      # Acima do orçamento do turno, ia.timeout_turno_ms (180 s), para o serviço decidir antes do n8n cortar.
+      EXECUTIONS_TIMEOUT: "240"
+      EXECUTIONS_TIMEOUT_MAX: "300"
     ports:
       - "127.0.0.1:5678:5678"
     volumes:
@@ -49,6 +61,11 @@ services:
     image: node:24-alpine
     profiles: ["teste"]
     command: ["node", "/stub/stub-api.mjs"]
+    environment:
+      STUB_CENARIO: ${STUB_CENARIO:-padrao}
     volumes:
       - ./scripts/stub-api.mjs:/stub/stub-api.mjs:ro
     mem_limit: 64m
+
+volumes:
+  dados-servico:

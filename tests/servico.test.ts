@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { createServer as createHttpServer, type Server } from 'node:http'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
+import { AlertasStore } from '../src/servico/alertas'
 import { criarServidor, criarServidorInterno } from '../src/servico/app'
+import { FalhasStore } from '../src/servico/falhas'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
 const prompt = readFileSync('prompts/agente.md', 'utf8')
@@ -20,10 +22,8 @@ afterAll(() => new Promise<void>((r) => server.close(() => r())))
 const post = (rota: string, corpo: unknown) =>
   fetch(base + rota, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpo) })
 const corpo = { historico: [{ role: 'user', content: 'Preciso de um PMOC para um prédio comercial em Florianópolis' }] }
-const http = (statusCode: number, texto = 'isto nao e json') => ({
-  statusCode,
-  body: { stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] },
-})
+const api = (texto = 'isto nao e json') => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: texto }] })
+const resp = (status: number, texto?: string) => ({ status, corpo: api(texto) })
 
 describe('servico HTTP (porta interna)', () => {
   it('porta interna nao serve o chat', async () => {
@@ -53,51 +53,82 @@ describe('servico HTTP (porta interna)', () => {
     expect(j.resultado.origem).toBe('falha')
   })
 
-  it('T11: 3 saidas invalidas seguidas terminam em falha com 3 tentativas', async () => {
+  it('/preparar devolve timeout_ms e esperar_ms 0', async () => {
+    const j: any = await (await post('/preparar', corpo)).json()
+    expect(j.timeout_ms).toBe(cfg.ia.timeout_ms)
+    expect(j.esperar_ms).toBe(0)
+    expect(Object.keys(j.estado).sort()).toEqual(
+      ['chamadas', 'correcao', 'historico', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
+    )
+  })
+
+  it('/preparar une user,user (T24)', async () => {
+    const j: any = await (await post('/preparar', { historico: [{ role: 'user', content: 'a' }, { role: 'user', content: 'b' }] })).json()
+    expect(j.fim).toBe(false)
+    expect(j.requisicao.messages).toEqual([{ role: 'user', content: 'a\nb' }])
+  })
+
+  it('/preparar com entrada invalida devolve silencio sem roteamento', async () => {
+    const j: any = await (await post('/preparar', { historico: [{ role: 'assistant', content: 'a' }] })).json()
+    expect(j.fim).toBe(true)
+    expect(j.resultado.resposta).toBeNull()
+  })
+
+  it('503 repete com espera, depois reserva, depois silencio (T12)', async () => {
     let atual: any = await (await post('/preparar', corpo)).json()
-    for (let i = 0; i < 2; i++) {
-      atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
+    const esperas: number[] = []
+    const modelos: string[] = []
+    for (let i = 0; i < 6; i++) {
+      atual = await (await post('/validar', { estado: atual.estado, resposta: { status: 503 } })).json()
+      if (atual.fim) break
+      esperas.push(atual.esperar_ms)
+      modelos.push(atual.requisicao.model)
+    }
+    expect(esperas).toEqual([1000, 3000, 0, 1000, 3000])
+    expect(modelos.slice(-1)).toEqual([cfg.ia.modelo_reserva])
+    expect(atual.fim).toBe(true)
+    expect(atual.resultado).toMatchObject({ resposta: null, estado_conversa: 'aguardando_humano', origem: 'falha', tipo: '5xx', camada: 3 })
+    expect(atual.resultado.registros).toHaveLength(6)
+  })
+
+  it('3 saidas invalidas no primario seguem para a reserva (T11 antigo)', async () => {
+    let atual: any = await (await post('/preparar', corpo)).json()
+    for (let i = 0; i < 3; i++) {
+      atual = await (await post('/validar', { estado: atual.estado, resposta: resp(200) })).json()
       expect(atual.fim).toBe(false)
     }
-    atual = await (await post('/validar', { tentativa: atual, http: http(200) })).json()
-    expect(atual.fim).toBe(true)
-    expect(atual.resultado.origem).toBe('falha')
-    expect(atual.resultado.tentativas).toBe(3)
-    expect(atual.resultado.resposta).toBe(cfg.textos.falha_tecnica)
+    expect(atual.requisicao.model).toBe(cfg.ia.modelo_reserva)
   })
 
-  it('status 500 falha na primeira tentativa', async () => {
-    const t = await (await post('/preparar', corpo)).json()
-    const r: any = await (await post('/validar', { tentativa: t, http: http(500) })).json()
-    expect(r.fim).toBe(true)
-    expect(r.resultado.origem).toBe('falha')
-    expect(r.resultado.tentativas).toBe(1)
-  })
-
-  it('falha de rede no n8n (sem statusCode nem body) vira falha de API, com ou sem http', async () => {
-    const t = await (await post('/preparar', corpo)).json()
-    // O n8n monta o corpo com JSON.stringify: chaves undefined somem.
-    const doN8n = JSON.parse(JSON.stringify({ tentativa: t, http: { statusCode: undefined, body: undefined } }))
-    for (const c of [doN8n, { tentativa: t }]) {
-      const r = await post('/validar', c)
-      expect(r.status).toBe(200)
-      const j: any = await r.json()
-      expect(j.fim).toBe(true)
-      expect(j.resultado.origem).toBe('falha')
-      expect(j.resultado.tentativas).toBe(1)
-    }
+  it('erro do n8n como texto e corpo cru da API sao aceitos', async () => {
+    const t: any = await (await post('/preparar', corpo)).json()
+    const a: any = await (await post('/validar', { estado: t.estado, resposta: { erro: 'getaddrinfo ENOTFOUND x' } })).json()
+    expect(a.fim).toBe(false)
+    expect(a.estado.registros[0].tipo).toBe('dns')
+    const b: any = await (await post('/validar', { estado: t.estado, resposta: api('lixo') })).json()
+    expect(b.estado.registros[0].tipo).toBe('schema')
   })
 
   it('saida valida do modelo encerra com origem modelo', async () => {
-    const t = await (await post('/preparar', corpo)).json()
+    const t: any = await (await post('/preparar', corpo)).json()
     const saida = {
       tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, urgencia: null,
       dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
       qualificado: false, confianca: 0.5, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
     }
-    const r: any = await (await post('/validar', { tentativa: t, http: http(200, JSON.stringify(saida)) })).json()
+    const r: any = await (await post('/validar', { estado: t.estado, resposta: resp(200, JSON.stringify(saida)) })).json()
     expect(r.fim).toBe(true)
-    expect(r.resultado.origem).toBe('modelo')
+    expect(r.resultado).toMatchObject({ origem: 'modelo', modelo_respondeu: 'primario', camada: 1 })
+  })
+
+  it('estado adulterado da 400 e contadores absurdos sao limitados', async () => {
+    const t: any = await (await post('/preparar', corpo)).json()
+    expect((await post('/validar', { estado: { ...t.estado, historico: [{ role: 'assistant', content: 'x' }] }, resposta: {} })).status).toBe(400)
+    expect((await post('/validar', { estado: { ...t.estado, modelo_atual: 'outro' }, resposta: {} })).status).toBe(400)
+    const r: any = await (await post('/validar', { estado: { ...t.estado, tentativa_http: 99999 }, resposta: { status: 503 } })).json()
+    // 99999 vira 100 (>= tentativas_http): esgota o primario em vez de repetir sem fim.
+    expect(r.fim).toBe(false)
+    expect(r.estado.modelo_atual).toBe('reserva')
   })
 
   it('JSON invalido da 400, rota desconhecida 404, e o servidor segue de pe', async () => {
@@ -105,7 +136,7 @@ describe('servico HTTP (porta interna)', () => {
     expect(ruim.status).toBe(400)
     expect(((await ruim.json()) as any).erro).toBeTruthy()
     expect((await fetch(base + '/nada')).status).toBe(404)
-    expect((await post('/validar', { tentativa: 'lixo', http: http(200) })).status).toBe(400)
+    expect((await post('/validar', { estado: 'lixo', resposta: {} })).status).toBe(400)
     expect((await post('/validar', {})).status).toBe(400)
     expect((await fetch(base + '/saude')).status).toBe(200)
   })
@@ -140,7 +171,8 @@ describe('chat', () => {
         recebido = JSON.parse(Buffer.concat(partes).toString('utf8'))
         res.writeHead(200, { 'content-type': 'application/json' })
         res.end(JSON.stringify({
-          resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+          resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+          estado_conversa: 'em_andamento', tipo: 'nenhum', registros: [{ tipo: '5xx' }], erro: false,
           violacoes: [{ regra: 'segredo' }], conversa: [{ role: 'user', content: 'Oi' }],
         }))
       })
@@ -173,22 +205,76 @@ describe('chat', () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlChat + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(r.status).toBe(200)
-    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' })
+    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum' })
     expect(recebido).toEqual({ historico: h })
   })
 
-  it('com painel liga, /api/chat inclui saida e tentativas, nunca violacoes nem conversa', async () => {
+  it('com painel ligado, /api/chat inclui tudo que a avaliacao le (saida, tentativas, erro, violacoes), nunca conversa', async () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(await r.json()).toEqual({
-      resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+      resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum', saida: { cidade: 'X' }, tentativas: 2,
+      erro: false, violacoes: [{ regra: 'segredo' }],
     })
   })
 
-  it('webhook fora do ar devolve 200 com a falha tecnica', async () => {
+  it('webhook fora do ar devolve 200 com silencio e aguardando_humano', async () => {
     const r = await fetch(urlSem + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
     expect(r.status).toBe(200)
-    expect(await r.json()).toEqual({ resposta: cfg.textos.falha_tecnica, origem: 'falha' })
+    expect(await r.json()).toEqual({
+      resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n',
+    })
+  })
+
+  it('T24: n8n com status nao 200, corpo nao JSON ou timeout devolve 200 em silencio', async () => {
+    const silencio = { resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' }
+    const falsos: Array<[string, (res: import('node:http').ServerResponse) => void]> = [
+      ['500', (res) => { res.writeHead(500).end('{"resposta":"vaza"}') }],
+      ['nao json', (res) => { res.writeHead(200).end('<html>') }],
+      ['lento', () => {}],
+    ]
+    for (const [nome, h] of falsos) {
+      const fake = createHttpServer((req, res) => { req.resume(); req.on('end', () => h(res)) })
+      const urlFake = await subir(fake)
+      const cfgRapido = { ...cfg, ia: { ...cfg.ia, timeout_turno_ms: 300 } }
+      const s = criarServidor(cfgRapido, prompt, { webhookUrl: urlFake, folgaProxyMs: 0 })
+      const url = await subir(s)
+      try {
+        const r = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
+        expect(r.status, nome).toBe(200)
+        expect(await r.json(), nome).toEqual(silencio)
+      } finally {
+        fake.closeAllConnections()
+        await new Promise<void>((r) => s.close(() => r()))
+        await new Promise<void>((r) => fake.close(() => r()))
+      }
+    }
+  })
+
+  it('o proxy aborta so depois do prazo do turno: ia.timeout_turno_ms + 10000', async () => {
+    // webhook responde depois de timeout_turno_ms (300) mas antes do abort do proxy (10300)
+    const fake = createHttpServer((req, res) => {
+      req.resume()
+      req.on('end', () => setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
+      }, 450))
+    })
+    const urlFake = await subir(fake)
+    const s = criarServidor({ ...cfg, ia: { ...cfg.ia, timeout_turno_ms: 300 } }, prompt, { webhookUrl: urlFake })
+    const url = await subir(s)
+    try {
+      const r = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
+      expect(await r.json()).toMatchObject({ resposta: 'ola', origem: 'modelo' })
+    } finally {
+      fake.closeAllConnections()
+      await new Promise<void>((r) => s.close(() => r()))
+      await new Promise<void>((r) => fake.close(() => r()))
+    }
+  })
+
+  it('config: ia.timeout_turno_ms e 180000', () => {
+    expect(cfg.ia.timeout_turno_ms).toBe(180000)
   })
 
   it('GET / serve o HTML quando fornecido e 404 quando nao', async () => {
@@ -234,7 +320,7 @@ describe('limites publicas em /api/chat', () => {
       req.resume()
       const responder = () => {
         res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
       }
       responder()
     })
@@ -283,12 +369,41 @@ describe('limites publicas em /api/chat', () => {
     }
   })
 
+  it('503 de concorrencia registra o tipo sobrecarga (nao servico) e nao dispara alerta', async () => {
+    const lento = createHttpServer((req, res) => {
+      req.resume()
+      soltar.push(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
+      })
+    })
+    const urlLento = await subir(lento)
+    const falhas = new FalhasStore({ retencaoDias: 30 })
+    const alertas = new AlertasStore({ retencaoDias: 30 })
+    const s = criarServidor(cfg, prompt, { webhookUrl: urlLento, limitePorMinuto: 100, falhas, alertas, log: () => {} })
+    const url = await subir(s)
+    soltar = []
+    try {
+      const em_voo = [1, 2, 3, 4].map(() => chat(url))
+      while (soltar.length < 4) await new Promise((r) => setTimeout(r, 10))
+      expect((await chat(url)).status).toBe(503)
+      expect(falhas.resumo().tentativas_falhas_por_tipo).toEqual({ sobrecarga: 1 })
+      expect(alertas.json().eventos).toHaveLength(0)
+      soltar.forEach((f) => f())
+      await Promise.all(em_voo)
+    } finally {
+      for (const f of soltar) try { f() } catch { /* ja respondido */ }
+      await new Promise<void>((r) => s.close(() => r()))
+      await new Promise<void>((r) => lento.close(() => r()))
+    }
+  })
+
   it('5o turno simultaneo da 503 e libera quando um termina', async () => {
     const lento = createHttpServer((req, res) => {
       req.resume()
       soltar.push(() => {
         res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
       })
     })
     const urlLento = await subir(lento)
@@ -308,6 +423,113 @@ describe('limites publicas em /api/chat', () => {
     } finally {
       await new Promise<void>((r) => s.close(() => r()))
       await new Promise<void>((r) => lento.close(() => r()))
+    }
+  })
+})
+
+describe('falhas e alertas nas rotas', () => {
+  const abertos: Server[] = []
+  const subir = async (s: Server) => {
+    abertos.push(s)
+    await new Promise<void>((r) => s.listen(0, '127.0.0.1', r))
+    return `http://127.0.0.1:${(s.address() as AddressInfo).port}`
+  }
+  afterAll(async () => {
+    for (const s of abertos) {
+      s.closeAllConnections?.()
+      await new Promise<void>((r) => s.close(() => r()))
+    }
+  })
+  const lojas = () => {
+    const falhas = new FalhasStore({ retencaoDias: 30 })
+    const alertas = new AlertasStore({ retencaoDias: 30 })
+    return { falhas, alertas }
+  }
+  const webhook = async (corpo: unknown) =>
+    subir(createHttpServer((req, res) => { req.resume(); req.on('end', () => res.writeHead(200).end(JSON.stringify(corpo))) }))
+  const chatar = (url: string) => fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [{ role: 'user', content: 'Oi 99999' }] }) })
+
+  it('o proxy registra o resultado do workflow e /falhas (interno) devolve o resumo', async () => {
+    const { falhas, alertas } = lojas()
+    const wh = await webhook({
+      resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado_conversa: 'em_andamento', tipo: 'nenhum',
+      modelo_respondeu: 'primario', camada: 1, registros: [{ ts: '2026-11-04T10:00:00Z', tipo: '429', modelo: cfg.ia.modelo, tentativa: 1, camada: 1 }],
+    })
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
+    const int = await subir(criarServidorInterno(cfg, prompt, { falhas, alertas }))
+    await chatar(pub)
+    const j: any = await (await fetch(int + '/falhas')).json()
+    expect(j.turnos_totais).toBe(1)
+    expect(j.taxa_falha).toBe('0,0 %')
+    expect(j.tentativas_falhas_por_tipo['429']).toBe(1)
+    expect(j.recuperados_por_camada['1']).toBe(1)
+    expect(j.modelo_respondeu).toEqual({ primario: 1, reserva: 0 })
+    expect(JSON.stringify(falhas.tentativas())).not.toContain('99999')
+    expect((await fetch(int + '/falhas', { method: 'DELETE' })).status).toBe(200)
+    expect(((await (await fetch(int + '/falhas')).json()) as any).turnos_totais).toBe(0)
+    expect(((await (await fetch(int + '/alertas')).json()) as any)).toEqual({ eventos: [], alerta_nao_entregue: 0 })
+  })
+
+  it('n8n fora do ar registra tipo n8n e abre a queda em /alertas', async () => {
+    const { falhas, alertas } = lojas()
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/w', falhas, alertas }))
+    await chatar(pub)
+    expect(falhas.resumo().tentativas_falhas_por_tipo).toEqual({ n8n: 1 })
+    expect(alertas.json().eventos[0]).toMatchObject({ tipo_evento: 'queda', tipo_falha: 'n8n', turnos_afetados: 1 })
+  })
+
+  it('entrada invalida (falha sem tipo) nao conta como falha nem queda', async () => {
+    const { falhas, alertas } = lojas()
+    const wh = await webhook({ resposta: null, origem: 'falha', tipo: null, estado_conversa: 'aguardando_humano', proxima_acao: 'encaminhar_humano' })
+    const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: wh + '/w', falhas, alertas }))
+    await chatar(pub)
+    await chatar(pub)
+    expect(falhas.resumo().turnos_falha).toBe(0)
+    expect(alertas.json().eventos).toEqual([])
+  })
+
+  it('porta publica sem DEMO_PAINEL: /falhas e /alertas dao 404', async () => {
+    const { falhas, alertas } = lojas()
+    const pub = await subir(criarServidor(cfg, prompt, { falhas, alertas }))
+    expect((await fetch(pub + '/falhas')).status).toBe(404)
+    expect((await fetch(pub + '/alertas')).status).toBe(404)
+    expect((await fetch(pub + '/falhas', { method: 'DELETE' })).status).toBe(404)
+  })
+
+  it('porta publica com DEMO_PAINEL=1: GET /falhas, GET /alertas e DELETE /falhas', async () => {
+    const { falhas, alertas } = lojas()
+    falhas.registrarTurno({ origem: 'falha', tipo: 'n8n' })
+    const pub = await subir(criarServidor(cfg, prompt, { falhas, alertas, painel: true }))
+    expect(((await (await fetch(pub + '/falhas')).json()) as any).turnos_falha).toBe(1)
+    expect((await fetch(pub + '/alertas')).status).toBe(200)
+    expect((await fetch(pub + '/falhas', { method: 'DELETE' })).status).toBe(200)
+    expect(falhas.resumo().turnos_totais).toBe(0)
+  })
+
+  it('porta interna nao aceita POST em /falhas', async () => {
+    const int = await subir(criarServidorInterno(cfg, prompt, lojas()))
+    expect((await fetch(int + '/falhas', { method: 'POST', body: '{}' })).status).toBe(404)
+  })
+
+  it('T20/T21: resend recebe o POST na queda; receptor 500 vira alerta_nao_entregue e o turno e igual', async () => {
+    for (const status of [200, 500]) {
+      const recebidos: any[] = []
+      const rec = await subir(createHttpServer((req, res) => {
+        const p: Buffer[] = []
+        req.on('data', (c) => p.push(c))
+        req.on('end', () => { recebidos.push({ url: req.url, auth: req.headers.authorization, corpo: JSON.parse(Buffer.concat(p).toString()) }); res.writeHead(status).end('{}') })
+      }))
+      const { falhas, alertas } = lojas()
+      const env = { ALERTA_CANAL: 'resend', RESEND_API_KEY: 'k', RESEND_BASE_URL: rec, ALERTA_EMAIL_DE: 'a@x.com', ALERTA_EMAIL_PARA: 'b@x.com' }
+      const pub = await subir(criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/w', falhas, alertas, env, log: () => {} }))
+      const r = await chatar(pub)
+      expect(await r.json()).toEqual({ resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' })
+      await vi.waitFor(() => expect(recebidos).toHaveLength(1))
+      expect(recebidos[0].url).toBe('/emails')
+      expect(recebidos[0].corpo.text).toContain('CentralEng')
+      expect(recebidos[0].corpo.text).toContain('Os leads estão sem resposta.')
+      if (status === 500) await vi.waitFor(() => expect(alertas.json().alerta_nao_entregue).toBe(1))
+      else expect(alertas.json().alerta_nao_entregue).toBe(0)
     }
   })
 })

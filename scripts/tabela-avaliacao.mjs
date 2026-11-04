@@ -3,7 +3,8 @@
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { avaliarCaso, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
+import { converterValidacao } from '../src/dataset/dataset.mjs'
+import { avaliarCaso, blocoFalhas, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
 
 const raiz = new URL('../', import.meta.url)
 const ler = (rel) => JSON.parse(readFileSync(new URL(rel, raiz), 'utf8'))
@@ -46,6 +47,25 @@ function avaliar(conjunto) {
     })
 }
 
-const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao') }))
+// Bloco de taxa de falha (C13): uma conta por conjunto, em avaliacao/falhas-<conjunto>.md, gravado por avaliar.mjs.
+const blocoDeFalhas = blocoFalhas(
+  ['ajuste', 'reservado', 'regressao', 'validacao']
+    .filter((c) => existsSync(new URL(`avaliacao/falhas-${c}.md`, raiz)))
+    .map((c) => ({ conjunto: c, md: readFileSync(new URL(`avaliacao/falhas-${c}.md`, raiz), 'utf8') })),
+)
+
+// Validacao sintetica: so entra se o dataset existir; o bloco some da tabela caso contrario.
+function avaliarValidacao() {
+  const dsRel = 'avaliacao/dataset/validacao.json'
+  if (!existsSync(new URL(dsRel, raiz))) return undefined
+  const rel = 'avaliacao/resultado-validacao.json'
+  if (!existsSync(new URL(rel, raiz))) return null
+  const res = ler(rel)
+  return converterValidacao(ler(dsRel))
+    .filter((c) => res.execucoes.some((e) => e.id === c.id))
+    .map((c) => avaliarCaso(c, res.execucoes.find((e) => e.id === c.id), res.limiar, {}, verificar))
+}
+
+const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao'), validacao: avaliarValidacao() })) + blocoDeFalhas
 writeFileSync(new URL('avaliacao/tabela.md', raiz), md)
 console.log(md)

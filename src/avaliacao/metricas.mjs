@@ -116,13 +116,14 @@ function resumirConjunto(avaliacoes) {
   }
 }
 
-/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null, regressao?: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
+/** @param {{ ajuste: ReturnType<typeof avaliarCaso>[]|null, reservado: ReturnType<typeof avaliarCaso>[]|null, regressao?: ReturnType<typeof avaliarCaso>[]|null, validacao?: ReturnType<typeof avaliarCaso>[]|null }} execucoes */
 export function resumir(execucoes) {
   return {
     ajuste: execucoes.ajuste ? resumirConjunto(execucoes.ajuste) : null,
     reservado: execucoes.reservado ? resumirConjunto(execucoes.reservado) : null,
     // undefined = a tabela nao mostra o bloco; null = mostra "nao rodado".
     regressao: execucoes.regressao === undefined ? undefined : execucoes.regressao ? resumirConjunto(execucoes.regressao) : null,
+    validacao: execucoes.validacao === undefined ? undefined : execucoes.validacao ? resumirConjunto(execucoes.validacao) : null,
   }
 }
 
@@ -189,5 +190,56 @@ export function tabelaMarkdown(resumo) {
       L.push('')
     }
   }
+  if (resumo.validacao !== undefined) {
+    const v = resumo.validacao
+    L.push('## Validação sintética (conjunto à parte: não entra nos números acima)', '')
+    if (!v) L.push(NR, '')
+    else {
+      L.push(`Validação sintética (n=${v.n}); gabarito gerado por modelo, ainda sem revisão humana.`, '', '| Campo | Acerto validação |', '|---|---|')
+      for (const c of CAMPOS) L.push(`| ${c} | ${pct(v.campos[c])} |`)
+      L.push('')
+    }
+  }
   return L.join('\n')
+}
+
+/**
+ * Conteudo de avaliacao/falhas-<conjunto>.md a partir do resumo de GET /falhas.
+ * Sem turno nenhum a taxa nao foi medida: nunca imprime 0,0 %.
+ * @param {string} conjunto
+ * @param {any} f
+ */
+export function falhasMarkdown(conjunto, f) {
+  const total = f.turnos_totais ?? 0
+  const tipos = Object.entries(f.tentativas_falhas_por_tipo ?? {}).map(([t, n]) => `- ${t}: ${n}`).join('\n') || '- nenhuma'
+  const taxa = total === 0 ? 'não medida (nenhum turno passou pelo proxy)' : `${f.turnos_falha}/${total} = ${f.taxa_falha}`
+  return `# Taxa de falha (conjunto ${conjunto})
+
+- turnos = ${total}
+- falhas = ${f.turnos_falha}
+- taxa_falha = ${taxa}
+- recuperados na camada 1 = ${f.recuperados_por_camada?.['1']}; na camada 2 = ${f.recuperados_por_camada?.['2']}
+- respondeu o modelo primario = ${f.modelo_respondeu?.primario}; o reserva = ${f.modelo_respondeu?.reserva}
+- entradas invalidas (fora da conta) = ${f.entradas_invalidas ?? 0}
+
+Tentativas falhas por tipo:
+
+${tipos}
+
+Conta: taxa_falha = turnos com origem falha / turnos totais; turno recuperado na camada 1 ou 2 nao entra. A taxa e por conjunto.
+`
+}
+
+/**
+ * Bloco "Taxa de falha" da tabela: uma linha por arquivo falhas-<conjunto>.md encontrado.
+ * @param {{ conjunto: string, md: string }[]} arquivos
+ */
+export function blocoFalhas(arquivos) {
+  if (arquivos.length === 0) return '\n## Taxa de falha\n\nnão medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver avaliacao/falhas-<conjunto>.md).\n'
+  const linhas = arquivos.map(({ conjunto, md }) => {
+    const turnos = Number(/^- turnos = (\d+)/m.exec(md)?.[1] ?? 0)
+    const taxa = /^- taxa_falha = (.*)$/m.exec(md)?.[1] ?? ''
+    return `- ${conjunto}: ${turnos === 0 ? 'não medida' : taxa} ([falhas-${conjunto}.md](falhas-${conjunto}.md))`
+  })
+  return `\n## Taxa de falha\n\nA taxa é por conjunto.\n\n${linhas.join('\n')}\n`
 }

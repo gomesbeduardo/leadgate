@@ -8,11 +8,11 @@ type No = { name: string; type: string; parameters: { url?: string; jsonBody?: s
 const no = (nome: string): No => wf.nodes.find((n: No) => n.name === nome)
 
 describe('workflow n8n gerado', () => {
-  it('tem id e os 13 nos', () => {
+  it('tem id e os 16 nos', () => {
     expect(wf.id).toBe('filtroLeadsIA0001')
     const nomes = wf.nodes.map((n: No) => n.name)
-    expect(nomes).toHaveLength(13)
-    for (const n of ['Webhook', 'Preparar turno', 'Precisa do modelo?', 'Tentativa', 'Nó de IA (Claude)', 'Validar saída', 'Regenerar?', 'Rota', 'Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar', 'Responder']) {
+    expect(nomes).toHaveLength(16)
+    for (const n of ['Webhook', 'Preparar turno', 'Precisa do modelo?', 'Tentativa', 'Precisa esperar?', 'Esperar', 'Nó de IA (Claude)', 'Validar saída', 'Regenerar?', 'Falha do serviço', 'Rota', 'Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)', 'Encerrar', 'Responder']) {
       expect(nomes).toContain(n)
     }
   })
@@ -29,17 +29,57 @@ describe('workflow n8n gerado', () => {
   it('Preparar turno e Validar saída chamam o servico por SERVICO_URL', () => {
     expect(no('Preparar turno').type).toBe('n8n-nodes-base.httpRequest')
     expect(no('Validar saída').type).toBe('n8n-nodes-base.httpRequest')
-    expect(no('Preparar turno').parameters.url).toBe('={{ $env.SERVICO_URL }}/preparar')
-    expect(no('Validar saída').parameters.url).toBe('={{ $env.SERVICO_URL }}/validar')
-    expect(no('Validar saída').parameters.jsonBody).toContain("$('Tentativa').last().json")
+    expect(no('Preparar turno').parameters.url).toBe('__SERVICO_URL__/preparar')
+    expect(no('Validar saída').parameters.url).toBe('__SERVICO_URL__/validar')
+    const corpoValidar = no('Validar saída').parameters.jsonBody as string
+    expect(corpoValidar).toContain("$('Tentativa').last().json.estado")
+    for (const campo of ['status:', 'cabecalhos:', 'corpo:', 'erro:']) expect(corpoValidar).toContain(campo)
   })
 
-  it('falha de rede no no de IA segue o fluxo com tentativas', () => {
-    const ia = no('Nó de IA (Claude)')
+  it('no de IA: sem retry, resposta completa, nunca erro, erro de rede segue o fluxo', () => {
+    const ia = no('Nó de IA (Claude)') as any
+    expect(ia.retryOnFail).toBeUndefined()
+    expect(ia.maxTries).toBeUndefined()
+    expect(ia.waitBetweenTries).toBeUndefined()
     expect(ia.onError).toBe('continueRegularOutput')
-    expect(ia.retryOnFail).toBe(true)
-    expect(ia.maxTries).toBe(3)
-    expect(ia.waitBetweenTries).toBe(1000)
+    expect(ia.parameters.jsonBody).toBe('={{ JSON.stringify($json.requisicao) }}')
+    expect(ia.parameters.url).toBe('__ANTHROPIC_BASE_URL__/v1/messages')
+    expect(ia.parameters.options.response.response).toMatchObject({ fullResponse: true, neverError: true })
+    expect(ia.parameters.options.timeout).toBe('={{ $json.timeout_ms }}')
+    const cab = ia.parameters.headerParameters.parameters.map((h: any) => h.name)
+    expect(cab).toContain('anthropic-version')
+    expect(cab).not.toContain('x-api-key')
+    expect(ia.parameters.genericAuthType).toBe('httpHeaderAuth')
+    expect(ia.credentials.httpHeaderAuth.name).toBe('Claude API')
+  })
+
+  it('Esperar e um no Wait em ms e fica no laco Tentativa -> IA -> Validar -> Regenerar? -> Tentativa', () => {
+    const w = no('Esperar') as any
+    expect(w.type).toBe('n8n-nodes-base.wait')
+    expect(JSON.stringify(w.parameters)).toContain('esperar_ms')
+    const destino = (n: string, saida = 0) => wf.connections[n].main[saida].map((c: any) => c.node)
+    expect(destino('Tentativa')).toEqual(['Precisa esperar?'])
+    expect(destino('Precisa esperar?', 0)).toEqual(['Esperar'])
+    expect(destino('Precisa esperar?', 1)).toEqual(['Nó de IA (Claude)'])
+    expect(destino('Esperar')).toEqual(['Nó de IA (Claude)'])
+    expect(destino('Nó de IA (Claude)')).toEqual(['Validar saída'])
+    expect(destino('Validar saída', 0)).toEqual(['Regenerar?'])
+  })
+
+  it('/preparar e /validar tem ramo de erro que responde silencio de servico', () => {
+    for (const n of ['Preparar turno', 'Validar saída']) {
+      expect(no(n).onError).toBe('continueErrorOutput')
+      expect(wf.connections[n].main[1].map((c: any) => c.node)).toEqual(['Falha do serviço'])
+    }
+    const f = JSON.stringify(no('Falha do serviço').parameters)
+    for (const t of ['servico', 'falha', 'aguardando_humano', 'encaminhar_humano']) expect(f).toContain(t)
+    expect(f).toContain('null')
+    expect(wf.connections['Falha do serviço'].main[0][0].node).toBe('Rota')
+  })
+
+  it('o workflow nao decide: so If de fim e Switch de proxima_acao', () => {
+    const ifs = wf.nodes.filter((n: No) => n.type === 'n8n-nodes-base.if').map((n: No) => JSON.stringify(n.parameters))
+    expect(ifs.every((p: string) => p.includes('$json.fim') || p.includes('$json.esperar_ms'))).toBe(true)
   })
 
   it('o webhook so aceita a origem do chat local', () => {
@@ -48,7 +88,7 @@ describe('workflow n8n gerado', () => {
 
   it('nao vaza chave de API nem nome de empresa', () => {
     expect(bruto).not.toContain('sk-ant')
-    expect(bruto).toContain('$env.ANTHROPIC_API_KEY')
+    expect(bruto).not.toContain('$env')
     expect(bruto.toLowerCase()).not.toContain(['central', 'eng'].join(''))
   })
 

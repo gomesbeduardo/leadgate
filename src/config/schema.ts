@@ -20,6 +20,12 @@ export const ConfigSchema = z
       limiar_confianca: z.number().min(0).max(1),
       max_regeracoes: z.number().int().min(0),
       max_tokens: z.number().int().positive(),
+      modelo_reserva: z.string(),
+      tentativas_http: z.number().int().min(1),
+      espera_ms: z.array(z.number().int().min(0)),
+      timeout_ms: z.number().int().positive(),
+      timeout_turno_ms: z.number().int().positive(),
+      tentativas_reserva: z.number().int().min(1),
     }),
     resposta: z.object({
       max_chars: z.number().int().positive(),
@@ -35,7 +41,23 @@ export const ConfigSchema = z
       ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
-    textos: z.object({ aviso_lgpd: z.string().min(1), falha_tecnica: z.string().min(1) }),
+    dataset: z.object({
+      volume: z.number().int().positive(),
+      max_chamadas: z.number().int().positive(),
+      amostra_revisao: z.number().int().positive(),
+    }),
+    textos: z.object({
+      aviso_lgpd: z.string().min(1),
+      alerta_queda: z
+        .string()
+        .default('O atendimento automático da {{empresa.nome}} parou às {{hora}} ({{tipo}}). {{efeito_no_lead}} Atue manualmente.'),
+      alerta_recuperado: z
+        .string()
+        .default('O atendimento automático da {{empresa.nome}} voltou às {{hora}}; {{n}} conversas afetadas.'),
+    }),
+    alerta: z
+      .object({ turnos_para_queda: z.number().int().min(1), intervalo_min: z.number().positive() })
+      .default({ turnos_para_queda: 2, intervalo_min: 30 }),
     lgpd: z.object({ retencao_dias: z.number().int().positive() }),
     tela: z.object({ titulo: z.string().min(1), cor_primaria: z.string().min(1), cor_destaque: z.string().min(1) }),
   })

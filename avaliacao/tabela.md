@@ -85,3 +85,22 @@ Confiança: acerto alta 3, acerto baixa 6, erro alta 0, erro baixa 0.
 | g07 | ok | ok | ok | ok | pendente | pendente | n/a | n/a | pendente | pendente | 4/4, 4 pendente(s) |
 | g08 | ok | ok | ok | n/a | pendente | pendente | pendente | n/a | pendente | pendente | 3/3, 5 pendente(s) |
 | g09 | ok | ok | ok | n/a | pendente | pendente | pendente | n/a | pendente | pendente | 3/3, 5 pendente(s) |
+
+## Validação sintética (conjunto à parte: não entra nos números acima)
+
+Validação sintética (n=42); gabarito gerado por modelo, ainda sem revisão humana.
+
+| Campo | Acerto validação |
+|---|---|
+| tipo_servico | 37/42 (88%) |
+| segmento | 41/42 (98%) |
+| cidade | 32/42 (76%) |
+| urgencia | 28/42 (67%) |
+| qualificado | 40/42 (95%) |
+| proxima_acao | 35/42 (83%) |
+
+## Taxa de falha
+
+A taxa é por conjunto.
+
+- validacao: 1/90 = 1,1 % ([falhas-validacao.md](falhas-validacao.md))
