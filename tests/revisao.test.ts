@@ -48,6 +48,12 @@ describe('achado 1: taxa de falha medida pelo proxy', () => {
     expect(readFileSync('README.md', 'utf8')).toContain('DEMO_PAINEL=1 LIMITE_POR_MINUTO=600 docker compose up')
   })
 
+  it('README aponta para o guia de autonomia no fim da secao da esteira', () => {
+    const readme = readFileSync('README.md', 'utf8')
+    const secao = readme.slice(readme.indexOf('## A esteira de desenvolvimento'))
+    expect(secao).toContain('docs/esteira/autonomia.md')
+  })
+
   it('turnos = 0 imprime "nao medida", nunca 0,0 %', () => {
     const vazio = falhasMarkdown('ajuste', { turnos_totais: 0, turnos_falha: 0, taxa_falha: '0,0 %', tentativas_falhas_por_tipo: {} })
     expect(vazio).toContain('não medida')
