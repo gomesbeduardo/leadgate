@@ -401,6 +401,12 @@ describe('falas: ignorar, desvios e vagos (spec 006)', () => {
     it('qualificado: encaminhar_vendas e rejeitado', () => {
       expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, depois))).toContain('limite_exige_encerrar')
     })
+    it('orienta com uma instrucao so: ignorar, sem citar encaminhar_vendas com resposta vazia', () => {
+      const r = validar({ ...q, proxima_acao: 'encaminhar_vendas' }, depois)
+      const d = r.ok ? '' : r.violacoes.find((x) => x.regra === 'limite_exige_encerrar')?.detalhe ?? ''
+      expect(d).toContain('proxima_acao=ignorar')
+      expect(d).not.toContain('encaminhar_vendas com resposta vazia')
+    })
     it('primeiro fim silencioso: encaminhar_vendas continua valido', () => {
       expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, primeiro))).toEqual([])
     })

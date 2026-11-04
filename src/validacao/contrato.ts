@@ -276,7 +276,14 @@ export function analisarContrato(
         ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
         : s.proxima_acao === 'ignorar'
     if (!esperada) {
-      cruz('limite_exige_encerrar', 'desvios=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone e nao qualificado, ignorar; com telefone e qualificado, encaminhar_vendas com resposta vazia; se o fim silencioso ja ocorreu, ignorar com resposta vazia.')
+      const detalhe = !temTelefone
+        ? 'desvios=3 sem telefone encerra: use proxima_acao=responder_e_encerrar e cite o contato da empresa na resposta.'
+        : silencioJaOcorreu
+          ? 'O encerramento silencioso ja ocorreu: o lead fora do assunto nao recebe nada e nao vai a vendas de novo. Use proxima_acao=ignorar, resposta vazia, desvios=3, mantendo os demais campos.'
+          : s.qualificado
+            ? 'desvios=3 com telefone e lead qualificado encerra em silencio: use proxima_acao=encaminhar_vendas com resposta vazia.'
+            : 'desvios=3 com telefone e lead nao qualificado encerra em silencio: use proxima_acao=ignorar com resposta vazia.'
+      cruz('limite_exige_encerrar', detalhe)
     }
   }
   if (s.vagos === 3 && s.proxima_acao !== (temTelefone ? 'encaminhar_humano' : 'responder_e_encerrar')) {
