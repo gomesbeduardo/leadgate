@@ -181,7 +181,7 @@ describe('resumir e tabelaMarkdown', () => {
   })
   it('markdown tem as tres colunas da T25 e marca nao rodado', () => {
     const md = tabelaMarkdown(resumir({ ajuste: [aval('a', 'um')], reservado: null }))
-    expect(md).toContain('| Campo | Acerto ajuste (n=14) | Acerto reservado (n=6) |')
+    expect(md).toContain('| Campo | Acerto ajuste (n=1) | Acerto reservado (n=0) |')
     expect(md).toContain('não rodado')
     expect(md).toContain('pendente')
     for (const c of CAMPOS) expect(md).toContain(c)
@@ -287,9 +287,9 @@ describe('tabela com regressao', () => {
     const base = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null }))
     const com = tabelaMarkdown(resumir({ ajuste: [a as any], reservado: null, regressao: [a as any] }))
     expect(com).toContain('Regressão')
-    expect(com).toContain('Acerto ajuste (n=14)')
+    expect(com).toContain('Acerto ajuste (n=1)')
     expect(base).not.toContain('Regressão (n=')
-    expect(base).toContain('Acerto ajuste (n=14)')
+    expect(base).toContain('Acerto ajuste (n=1)')
   })
 })
 
@@ -301,7 +301,7 @@ describe('validacao sintetica na tabela', () => {
     expect(base).not.toContain('Validação')
     expect(com).toContain('Validação sintética (n=2)')
     expect(com).toContain('| cidade | 1/2 (50%) |')
-    expect(com).toContain('Acerto ajuste (n=14)')
+    expect(com).toContain('Acerto ajuste (n=1)')
     expect(tabelaMarkdown(resumir({ ajuste: null, reservado: null, validacao: null }))).toMatch(/Validação sintética[\s\S]*não rodado/)
   })
 })
@@ -518,4 +518,15 @@ describe('scripts/avaliar.mjs: silencio deliberado', () => {
     const r = await conduzir([mk('s7', ['m1'], { historico_inicial: [u('oi'), a('ola')] })], [perg('r')])
     expect(r.corpos[0]).toEqual([u('oi'), a('ola'), u('m1')])
   }, 30_000)
+})
+
+describe('cabecalho da tabela usa o numero real de casos', () => {
+  const a = (id: string) => ({ id, campos: Object.fromEntries(CAMPOS.map((c) => [c, true])), acertou: true, erro: false, confianca: 0.9, quadrante: 'acerto_alta', itens: {}, abertura: id, tentativas: [1] }) as any
+  it('31 de ajuste e 6 reservados aparecem como n=31 e n=6', () => {
+    const lote = (n: number, p: string) => Array.from({ length: n }, (_, i) => a(`${p}${i}`))
+    const md = tabelaMarkdown(resumir({ ajuste: lote(31, 'a'), reservado: lote(6, 'r') }))
+    expect(md).toContain('| Campo | Acerto ajuste (n=31) | Acerto reservado (n=6) |')
+    expect(md).toContain('31 casos de ajuste e 6 reservados')
+    expect(md).not.toContain('n=14')
+  })
 })

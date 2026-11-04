@@ -144,9 +144,11 @@ export function tabelaMarkdown(resumo) {
   const { ajuste, reservado } = resumo
   const L = []
   L.push('## Acerto por campo', '')
-  L.push('| Campo | Acerto ajuste (n=14) | Acerto reservado (n=6) |', '|---|---|---|')
+  const nAj = ajuste?.n ?? 0
+  const nRe = reservado?.n ?? 0
+  L.push(`| Campo | Acerto ajuste (n=${nAj}) | Acerto reservado (n=${nRe}) |`, '|---|---|---|')
   for (const c of CAMPOS) L.push(`| ${c} | ${ajuste ? pct(ajuste.campos[c]) : NR} | ${reservado ? pct(reservado.campos[c]) : NR} |`)
-  L.push('', 'Amostra pequena: 14 casos de ajuste e 6 reservados; os percentuais variam muito com um caso a mais ou a menos.', '')
+  L.push('', `Amostra pequena: ${nAj} casos de ajuste e ${nRe} reservados; os percentuais variam muito com um caso a mais ou a menos.`, '')
 
   L.push('## Confianca contra o limiar', '')
   L.push('| Conjunto | acerto com confianca >= limiar | acerto com confianca < limiar | erro com confianca >= limiar | erro com confianca < limiar | limiar separa (acerto alto + erro baixo) |', '|---|---|---|---|---|---|')
