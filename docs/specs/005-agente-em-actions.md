@@ -41,7 +41,7 @@ Só o responsável faz estes passos, antes da primeira execução:
 2. Instalar o app do Claude no repositório e gravar `CLAUDE_CODE_OAUTH_TOKEN`.
 3. Criar o rótulo `claude-fix`.
 4. Depois de integrar os workflows desta spec, ligar "Allow auto-merge" e criar em `staging` um ruleset sem lista de bypass: PR obrigatório, os três checks de C7 e bloqueio de force push. Sem aprovação obrigatória, porque ela travaria o merge automático. A ordem importa: antes da integração, o check `alcance` não existe na base e o PR que o traz ficaria preso.
-5. Criar um GitHub App privado, instalado só neste repositório, com `Contents`, `Pull requests` e `Issues` em escrita e sem `Workflows`. Gravar `ESTEIRA_APP_ID` e `ESTEIRA_APP_KEY`. O app não entra em nenhuma lista de bypass.
+5. Criar um GitHub App privado, instalado só neste repositório, com `Contents`, `Pull requests` e `Issues` em escrita e sem `Workflows`. Gravar o Client ID em `ESTEIRA_APP_CLIENT_ID` e a chave privada em `ESTEIRA_APP_KEY`. O app não entra em nenhuma lista de bypass.
 
 O estado atual da proteção de `staging` não foi verificado. O `gh` não tem login dentro do sandbox da sessão que escreveu esta spec.
 
