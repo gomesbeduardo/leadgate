@@ -52,19 +52,22 @@ export function somar(json, esperadas = LINHAS_ESPERADAS) {
     const branch = lados.branch.acertos[c]
     return { campo: c, base, branch, bloqueia: branch < base }
   })
-  const bloqueado = campos.some((c) => c.bloqueia)
   const valido = problemas.length === 0
+  // Comparacao invalida nunca bloqueia: falha tecnica nao e piora de campo.
+  const bloqueado = valido && campos.some((c) => c.bloqueia)
   return { valido, problemas, lados, campos, bloqueado, aprovado: valido && !bloqueado }
 }
 
-const pct = (a, n, erros) => (n === 0 || erros === n ? 'não medida' : `${a}/${n} (${((100 * a) / n).toFixed(1).replace('.', ',')} %)`)
+// Lado sem linha medida (n - erros - invalidas = 0) ou sem nenhum acerto: "nao medida", nunca 0,0 % (docs/aprendizados.md).
+const naoMedido = (l) => l.n - l.erros - l.invalidas === 0 || CAMPOS.every((c) => l.acertos[c] === 0)
+const pct = (a, l) => (naoMedido(l) ? 'não medida' : `${a}/${l.n} (${((100 * a) / l.n).toFixed(1).replace('.', ',')} %)`)
 
 /** @param {ReturnType<typeof somar>} r */
 export function tabelaMarkdown(r) {
   const linhas = ['| campo | base | branch | situação |', '|---|---|---|---|']
   for (const c of r.campos) {
     const situacao = !r.valido ? 'inválida' : c.bloqueia ? 'bloqueia' : 'ok'
-    linhas.push(`| ${c.campo} | ${pct(c.base, r.lados.base.n, r.lados.base.erros)} | ${pct(c.branch, r.lados.branch.n, r.lados.branch.erros)} | ${situacao} |`)
+    linhas.push(`| ${c.campo} | ${pct(c.base, r.lados.base)} | ${pct(c.branch, r.lados.branch)} | ${situacao} |`)
   }
   return linhas.join('\n')
 }

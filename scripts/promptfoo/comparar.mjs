@@ -1,6 +1,7 @@
 // Compara duas versoes do sistema (base e branch) com o promptfoo: 3 rodadas, conjunto de ajuste.
 // Antes: npm ci --prefix scripts/promptfoo --ignore-scripts (o promptfoo vive num pacote proprio, fora da raiz).
 // Uso: npm run comparar:prompt [-- --saida arquivo.json]. Sobe antes as duas pilhas (README) e ajuste COMPARAR_URL_BASE / COMPARAR_URL_BRANCH.
+// Codigos de saida: 0 aprovado, 1 bloqueado, 2 comparacao invalida.
 // O veredito sai do JSON e de somar.mjs; o codigo de saida do promptfoo (nao zero quando uma asserção falha) e ignorado.
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
@@ -39,15 +40,34 @@ export function montarEnv(dir, herdado = process.env, proxy = PROXY_MORTO) {
   }
 }
 
+/** Forma comparavel de uma URL: host em minusculas, localhost = 127.0.0.1, sem barra final. */
+export function normalizarUrl(u) {
+  try {
+    const x = new URL(u)
+    const host = x.hostname === 'localhost' ? '127.0.0.1' : x.hostname
+    return `${x.protocol}//${host}:${x.port || (x.protocol === 'https:' ? '443' : '80')}${x.pathname.replace(/\/+$/, '')}${x.search}`
+  } catch {
+    return String(u).trim().toLowerCase().replace(/\/+$/, '')
+  }
+}
+
+/** Codigos de saida: 0 aprovado, 1 bloqueado (branch abaixo da base), 2 comparacao invalida. */
 /** @returns {Promise<{ codigo: number, saida: string }>} */
 export async function comparar({ saida, env = process.env, log = console.log, silencioso = false, proxy, bin = resolve(aqui, 'node_modules/.bin/promptfoo') } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'comparar-prompt-'))
   const arquivo = resolve(saida ?? join(dir, 'resultado.json'))
   const args = ['eval', '-c', join(aqui, 'promptfooconfig.yaml'), '-o', arquivo, '--no-cache', '--no-write']
+  // Mesma URL nos dois lados: uma pilha mediria as duas e a branch nunca seria medida.
+  const urlBase = env.COMPARAR_URL_BASE ?? 'http://127.0.0.1:8080/api/chat'
+  const urlBranch = env.COMPARAR_URL_BRANCH ?? 'http://127.0.0.1:8081/api/chat'
+  if (normalizarUrl(urlBase) === normalizarUrl(urlBranch)) {
+    log(`comparação inválida: base e branch usam a mesma URL (${urlBase}); suba duas pilhas e ajuste COMPARAR_URL_BASE e COMPARAR_URL_BRANCH`)
+    return { codigo: 2, saida: arquivo }
+  }
   // O promptfoo mora num pacote isolado (scripts/promptfoo); sem ele nada roda e o --saida existente fica como esta.
   if (!existsSync(bin)) {
     log(`comparação inválida: promptfoo não instalado em ${bin}. Instale com: npm ci --prefix scripts/promptfoo --ignore-scripts`)
-    return { codigo: 1, saida: arquivo }
+    return { codigo: 2, saida: arquivo }
   }
   // Resultado de uma rodada anterior nunca pode virar veredito desta.
   rmSync(arquivo, { force: true })
@@ -60,20 +80,20 @@ export async function comparar({ saida, env = process.env, log = console.log, si
   }).catch((e) => `falha ao executar o promptfoo: ${e.message}`)
   if (morreu) {
     log(`comparação inválida: ${morreu}`)
-    return { codigo: 1, saida: arquivo }
+    return { codigo: 2, saida: arquivo }
   }
   let r
   try {
     r = somar(JSON.parse(readFileSync(arquivo, 'utf8')))
   } catch (e) {
     log(`comparação inválida: ${e.message}`)
-    return { codigo: 1, saida: arquivo }
+    return { codigo: 2, saida: arquivo }
   }
   log(tabelaMarkdown(r))
   for (const p of r.problemas) log(`comparação inválida: ${p}`)
   if (r.valido && r.bloqueado) log('bloqueado: a soma da branch ficou abaixo da base em algum campo')
   if (r.aprovado) log('aprovado: nenhum campo da branch ficou abaixo da base')
-  return { codigo: r.aprovado ? 0 : 1, saida: arquivo }
+  return { codigo: r.aprovado ? 0 : r.valido ? 1 : 2, saida: arquivo }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

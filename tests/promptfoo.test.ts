@@ -135,7 +135,7 @@ describe('somar', () => {
     const r = somar(json([...rep(42, () => linha('base', tudo(1))), ...rep(41, () => linha('branch', tudo(1))), linha('branch', null)]))
     expect(r.lados.branch.n).toBe(42)
     expect(r.lados.branch.acertos.tipo_servico).toBe(41)
-    expect(r.bloqueado).toBe(true)
+    expect(r.bloqueado).toBe(false) // falha técnica invalida, nunca bloqueia
   })
   it('linha com asserção reprovada tem error preenchido, mas conta pelos namedScores', () => {
     const reprovada = { ...linha('branch', tudo(1, { segmento: 0 })), error: '5/6 campos' }
@@ -174,7 +174,7 @@ describe('somar', () => {
       expect(r.problemas.join('\n'), lado).toContain(`${lado}: 12 de 42 linhas sem saída válida`)
     }
     const soBranchPior = somar(json([...rep(42, () => lin('base')), ...rep(30, () => lin('branch')), ...rep(12, () => semSaida('branch'))]))
-    expect(soBranchPior.bloqueado).toBe(true)
+    expect(soBranchPior.bloqueado).toBe(false)
     expect(soBranchPior.aprovado).toBe(false)
     expect(tabelaMarkdown(soBranchPior)).toContain('inválida')
   })
@@ -183,6 +183,20 @@ describe('somar', () => {
     expect(r.valido).toBe(false)
     expect(r.aprovado).toBe(false)
     expect(r.problemas.join('\n')).toMatch(/branch: não medida \(zero acertos/)
+  })
+  it('tabela: lado sem linha medida ou com zero acertos imprime "não medida", nunca 0,0 %', () => {
+    const tab1 = tabelaMarkdown(somar(json([...rep(42, () => semSaida('base')), ...rep(42, () => semSaida('branch'))])))
+    expect(tab1).not.toMatch(/0,0 %|0\/42/)
+    for (const l of tab1.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x) => x.trim())).toEqual(['não medida', 'não medida'])
+    const tab2 = tabelaMarkdown(somar(json([...rep(42, () => lin('base')), ...rep(42, () => linha('branch', tudo(0)))])))
+    expect(tab2).not.toMatch(/(^|[^\d,])0,0 %/)
+    for (const l of tab2.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x) => x.trim())).toEqual(['42/42 (100,0 %)', 'não medida'])
+  })
+  it('falha técnica nunca bloqueia: base melhor e branch com erro de provider é inválida, não bloqueada', () => {
+    const r = somar(json([...rep(42, () => lin('base')), ...rep(30, () => lin('branch')), ...rep(12, () => linha('branch', null))]))
+    expect(r.valido).toBe(false)
+    expect(r.bloqueado).toBe(false)
+    expect(r.aprovado).toBe(false)
   })
   it('um campo melhora e outro piora: bloqueia', () => {
     const r = somar(json([...rep(42, () => lin('base')), ...rep(41, () => lin('branch')), linha('branch', tudo(1, { segmento: 0, cidade: 1 }))]))
@@ -257,6 +271,55 @@ function servidor(modo: 'certo' | 'segmento_errado' | '500' | 'falha' | 'sem_sai
 }
 const url = (s: Server) => `http://127.0.0.1:${(s.address() as AddressInfo).port}/api/chat`
 
+// Servidor falso que grava cada historico recebido e responde pelo roteiro; 'rede' derruba o socket na 1a conexao.
+function roteiro(respostas: any[], derrubar = 0): Promise<{ s: Server; recebidos: any[]; conexoes: () => number }> {
+  const recebidos: any[] = []
+  let conexoes = 0
+  const s = createServer((req, res) => {
+    conexoes += 1
+    if (conexoes <= derrubar) return void req.socket.destroy()
+    let corpo = ''
+    req.on('data', (d) => (corpo += d))
+    req.on('end', () => {
+      const { historico } = JSON.parse(corpo)
+      recebidos.push(historico)
+      const r = respostas[Math.min(recebidos.length - 1, respostas.length - 1)]
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify(r))
+    })
+  })
+  return new Promise((ok) => s.listen(0, '127.0.0.1', () => ok({ s, recebidos, conexoes: () => conexoes })))
+}
+
+describe('provider (servidor falso local, sem o binário do promptfoo)', () => {
+  it('manda o historico exato a cada turno (user e assistant em ordem) e para quando proxima_acao não é perguntar', async () => {
+    const { s, recebidos } = await roteiro([
+      { resposta: 'r1', proxima_acao: 'perguntar', saida: { n: 1 } },
+      { resposta: 'r2', proxima_acao: 'encaminhar', saida: { n: 2 } },
+    ])
+    const p = new ProviderChat({ config: { url: url(s) } })
+    const r: any = await p.callApi('', { vars: { mensagens: JSON.stringify(['m1', 'm2', 'm3', 'm4']) } })
+    s.close()
+    expect(recebidos).toEqual([
+      [{ role: 'user', content: 'm1' }],
+      [{ role: 'user', content: 'm1' }, { role: 'assistant', content: 'r1' }, { role: 'user', content: 'm2' }],
+    ])
+    expect(r.output.saida).toEqual({ n: 2 })
+  })
+  it('uma tentativa a mais em erro de rede, e só uma', async () => {
+    const ok = await roteiro([{ resposta: 'r', proxima_acao: 'encaminhar', saida: {} }], 1)
+    const r1: any = await new ProviderChat({ config: { url: url(ok.s) } }).callApi('', { vars: { mensagens: ['oi'] } })
+    ok.s.close()
+    expect(r1.error).toBeUndefined()
+    expect(ok.conexoes()).toBe(2)
+    const morto = await roteiro([{ resposta: 'r', proxima_acao: 'encaminhar' }], 5)
+    const r2: any = await new ProviderChat({ config: { url: url(morto.s) } }).callApi('', { vars: { mensagens: ['oi'] } })
+    morto.s.close()
+    expect(r2.error).toBeTruthy()
+    expect(morto.conexoes()).toBe(2)
+  })
+})
+
 describe('provider', () => {
   it('devolve { error } em HTTP 500, sem output', async () => {
     const s = await servidor('500')
@@ -288,35 +351,55 @@ describe('resultado antigo e processo morto', () => {
   }
   it('JSON antigo em --saida não vira veredito quando o promptfoo não escreve nada', async () => {
     const { r, texto } = await rodar('exit 0')
-    expect(r.codigo).toBe(1)
+    expect(r.codigo).toBe(2)
     expect(texto).not.toContain('aprovado:')
   })
   it('promptfoo que cai sem escrever, com código diferente de zero, também é inválido', async () => {
     const { r, texto } = await rodar('exit 3')
-    expect(r.codigo).toBe(1)
+    expect(r.codigo).toBe(2)
     expect(texto).not.toContain('aprovado:')
   })
   it('processo morto por sinal é inválido mesmo com JSON bom no arquivo', async () => {
     const { r, texto } = await rodar('cp "$APROVADO" "$5"\nkill -9 $$')
-    expect(r.codigo).toBe(1)
+    expect(r.codigo).toBe(2)
     expect(texto).not.toContain('aprovado:')
   })
   it('erro ao iniciar o processo é inválido mesmo com JSON bom no arquivo', async () => {
     const { dir, saida } = preparar('exit 0')
     const linhas: string[] = []
     const r = await comparar({ saida, bin: join(dir, 'nao-existe'), log: (l: string) => linhas.push(l), silencioso: true })
-    expect(r.codigo).toBe(1)
+    expect(r.codigo).toBe(2)
     expect(linhas.join('\n')).not.toContain('aprovado:')
   })
-  it('promptfoo isolado ausente: mensagem com o comando de instalação, código 1 e o --saida existente intocado', async () => {
+  it('promptfoo isolado ausente: mensagem com o comando de instalação, código 2 e o --saida existente intocado', async () => {
     const { dir, saida } = preparar('exit 0')
     const antes = readFileSync(saida, 'utf8')
     const linhas: string[] = []
     const r = await comparar({ saida, bin: join(dir, 'nao-existe'), log: (l: string) => linhas.push(l), silencioso: true })
-    expect(r.codigo).toBe(1)
+    expect(r.codigo).toBe(2)
     expect(linhas.join('\n')).toContain('npm ci --prefix scripts/promptfoo --ignore-scripts')
     expect(existsSync(saida)).toBe(true)
     expect(readFileSync(saida, 'utf8')).toBe(antes)
+  })
+  it('URLs de base e branch iguais (barra final, caixa do host, localhost = 127.0.0.1): inválido, código 2, sem rodar e sem tocar o --saida', async () => {
+    const { dir, saida } = preparar('cp "$APROVADO" "$5"')
+    const antes = readFileSync(saida, 'utf8')
+    for (const [b, c] of [['http://127.0.0.1:8080/api/chat', 'http://127.0.0.1:8080/api/chat/'], ['http://LocalHost:8080/api/chat', 'http://127.0.0.1:8080/api/chat'], ['http://Exemplo.com/api/chat', 'http://exemplo.COM/api/chat']]) {
+      const linhas: string[] = []
+      const r = await comparar({ saida, bin: join(dir, 'falso-promptfoo.sh'), env: { ...process.env, COMPARAR_URL_BASE: b, COMPARAR_URL_BRANCH: c, APROVADO: join(dir, 'aprovado.json') }, log: (l: string) => linhas.push(l), silencioso: true })
+      expect(r.codigo, `${b} x ${c}`).toBe(2)
+      expect(linhas.join('\n')).toContain('mesma URL')
+      expect(readFileSync(saida, 'utf8')).toBe(antes)
+    }
+  })
+  it('sem COMPARAR_URL_* (padrões 8080 e 8081) e com URLs diferentes a comparação segue válida', async () => {
+    const { dir, saida, bin } = preparar('cp "$APROVADO" "$5"')
+    const limpo: any = { ...process.env, APROVADO: join(dir, 'aprovado.json') }
+    delete limpo.COMPARAR_URL_BASE
+    delete limpo.COMPARAR_URL_BRANCH
+    expect((await comparar({ saida, bin, env: limpo, log: () => {}, silencioso: true })).codigo).toBe(0)
+    const dif = { ...limpo, COMPARAR_URL_BASE: 'http://127.0.0.1:8080/api/chat', COMPARAR_URL_BRANCH: 'http://127.0.0.1:8081/api/chat' }
+    expect((await comparar({ saida, bin, env: dif, log: () => {}, silencioso: true })).codigo).toBe(0)
   })
   it('exit diferente de zero do promptfoo com JSON novo e bom segue decidido pelo JSON', async () => {
     const { r, texto } = await rodar('cp "$APROVADO" "$5"\nexit 1')
@@ -375,7 +458,7 @@ describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo
       expect(c.branch).toBe(c.campo === 'segmento' ? 0 : 42)
     }
     expect(resumo.bloqueado).toBe(true)
-    expect(r.codigo).not.toBe(0)
+    expect(r.codigo).toBe(1)
   }, 240_000)
   it('o único destino externo que o promptfoo tenta alcançar é o da lista permitida', () => {
     const hosts = [...new Set(conexoes.map((l) => l.replace(/^CONNECT\s+/, '').replace(/\s+HTTP.*$/, '').replace(/:\d+$/, '')))]
@@ -389,7 +472,7 @@ describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo
     expect(resumo.valido).toBe(false)
     expect(resumo.aprovado).toBe(false)
     expect(resumo.problemas.join('\n')).toMatch(/branch: 42 de 42 linhas sem saída válida/)
-    expect(r.codigo).not.toBe(0)
+    expect(r.codigo).toBe(2)
   }, 240_000)
   it('branch com HTTP 500: linhas contam em n e nenhum acerto', async () => {
     const { r, resumo } = await rodar('500')
@@ -397,7 +480,7 @@ describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo
     for (const c of resumo.campos as any[]) expect(c.branch).toBe(0)
     expect(resumo.lados.branch.erros).toBe(42)
     expect(resumo.valido).toBe(false)
-    expect(resumo.bloqueado).toBe(true)
-    expect(r.codigo).not.toBe(0)
+    expect(resumo.bloqueado).toBe(false)
+    expect(r.codigo).toBe(2)
   }, 240_000)
 })
