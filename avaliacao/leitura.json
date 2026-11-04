@@ -35,20 +35,6 @@
     "9": true,
     "10": true
   },
-  "a07": {
-    "5": true,
-    "6": true,
-    "7": true,
-    "9": true,
-    "10": true
-  },
-  "a08": {
-    "5": true,
-    "6": true,
-    "7": true,
-    "9": true,
-    "10": true
-  },
   "a09": {
     "5": true,
     "6": true,
@@ -77,13 +63,6 @@
   "a13": {
     "5": true,
     "6": true,
-    "9": true,
-    "10": true
-  },
-  "a14": {
-    "5": false,
-    "6": true,
-    "7": true,
     "9": true,
     "10": true
   },
@@ -168,13 +147,6 @@
     "10": true
   },
   "g08": {
-    "5": true,
-    "6": true,
-    "7": true,
-    "9": true,
-    "10": true
-  },
-  "g09": {
     "5": true,
     "6": true,
     "7": true,

@@ -263,7 +263,8 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ]
   },
   {
@@ -276,8 +277,7 @@
     ],
     "esperado": {
       "tipo_servico": [
-        null,
-        "fora_escopo"
+        null
       ],
       "segmento": [
         null
@@ -299,7 +299,13 @@
       ]
     },
     "itens_na": [
-      8
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
     ]
   },
   {
@@ -490,8 +496,7 @@
     ],
     "esperado": {
       "tipo_servico": [
-        null,
-        "fora_escopo"
+        null
       ],
       "segmento": [
         null
@@ -518,7 +523,8 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ]
   },
   {
@@ -749,7 +755,8 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ],
     "nota": "Historico semeado: com o modelo vivo, lead completo com telefone vai a vendas antes do desvio e a conversa fecha. resposta vazia."
   },
@@ -1034,7 +1041,8 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ]
   },
   {
@@ -1158,7 +1166,8 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ],
     "nota": "telefone dito, sem cidade: nao qualificado, silencio sem encaminhar. resposta vazia"
   },
@@ -1232,9 +1241,11 @@
       7,
       8,
       9,
-      10
+      10,
+      11
     ],
-    "nota": "Historico semeado (n05 com o 3o desvio ja silenciado, sem resposta do agente). sem novo encaminhamento"
+    "nota": "Historico semeado (n05 com o 3o desvio ja silenciado, sem resposta do agente). sem novo encaminhamento",
+    "silencio_ocorrido": true
   },
   {
     "id": "n17",
@@ -1305,7 +1316,145 @@
       7,
       8
     ],
-    "nota": "Historico semeado (igual ao de n16)."
+    "nota": "Historico semeado (igual ao de n16).",
+    "silencio_ocorrido": true
+  },
+  {
+    "id": "n18",
+    "conjunto": "ajuste",
+    "teste": "T-falas 3o desvio em duas mensagens no mesmo turno",
+    "tipo": "desvio",
+    "mensagens": [
+      "ah fala do jogo\nhein"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção dos ar da minha loja em Palhoça, meu telefone é 48 99999-0005"
+      },
+      {
+        "role": "assistant",
+        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "vc viu o jogo ontem?"
+      },
+      {
+        "role": "assistant",
+        "content": "Não acompanhei. Quantos aparelhos são na loja?"
+      },
+      {
+        "role": "user",
+        "content": "mas quem ganhou?"
+      },
+      {
+        "role": "assistant",
+        "content": "Eu só cuido da parte de climatização. Se seguirmos fora disso, vou encerrar por aqui."
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "desvios": [
+        3
+      ]
+    },
+    "itens_na": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "nota": "Historico semeado igual ao de n05; o 3o desvio chega em duas mensagens do mesmo turno. resposta vazia."
+  },
+  {
+    "id": "n19",
+    "conjunto": "ajuste",
+    "teste": "T-falas 3o vago com lead qualificado na lista curta",
+    "tipo": "vago",
+    "mensagens": [
+      "kkk",
+      "sei la",
+      "hmm"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção dos ar da minha loja em Palhoça, meu telefone é 48 99999-0005"
+      },
+      {
+        "role": "assistant",
+        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "não sei bem"
+      },
+      {
+        "role": "assistant",
+        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "?"
+      },
+      {
+        "role": "assistant",
+        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "vagos": [
+        3
+      ]
+    },
+    "itens_na": [
+      7,
+      8
+    ],
+    "nota": "Historico semeado: lead qualificado (telefone e cidade) na lista curta; 3 turnos vagos seguidos viram encaminhar_vendas com resposta de fechamento."
   },
   {
     "id": "r01",

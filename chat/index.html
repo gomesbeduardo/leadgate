@@ -154,6 +154,7 @@ body.com-painel .painel { display: block; }
 
   var tela = { titulo: 'Atendimento', aviso_lgpd: '' };
   var historico = [];
+  var silencioOcorrido = false;
   var aguardando = false;
   var encerrada = false;
   var digitando = null;
@@ -245,10 +246,12 @@ body.com-painel .painel { display: block; }
     iniciarEspera();
     var d;
     try {
+      var corpo = { historico: historico };
+      if (silencioOcorrido) corpo.silencio_ocorrido = true;
       var r = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ historico: historico })
+        body: JSON.stringify(corpo)
       });
       d = await r.json();
     } catch (e) {
@@ -258,6 +261,7 @@ body.com-painel .painel { display: block; }
     // Silencio: sem resposta nao ha bolha nem texto de erro; a mensagem do lead fica e o campo segue livre.
     var resposta = d && typeof d.resposta === 'string' && d.resposta ? d.resposta : null;
     if (resposta) {
+      silencioOcorrido = false;
       historico.push({ role: 'assistant', content: resposta });
       adicionar('sistema', resposta);
     }
@@ -266,6 +270,8 @@ body.com-painel .painel { display: block; }
     // Abertura silenciada (ignorar, sem resposta do assistente ate aqui): a mensagem sai do historico enviado,
     // a bolha fica. No meio da conversa ela fica, para o modelo saber que o fim silencioso ja ocorreu.
     if (!resposta && acao === 'ignorar' && !historico.slice(0, -1).some(function (m) { return m.role === 'assistant'; })) historico.pop();
+    // Fim silencioso: modelo calou depois de ja ter respondido uma vez; o fato segue explicito nos turnos seguintes.
+    if (!resposta && d && d.origem === 'modelo' && (acao === 'ignorar' || acao === 'encaminhar_vendas') && historico.some(function (m) { return m.role === 'assistant'; })) silencioOcorrido = true;
     if (resposta && acao !== undefined && acao !== null && acao !== 'perguntar') {
       encerrada = true;
       conversa.appendChild(el('div', 'encerrado', 'Atendimento encerrado'));
@@ -294,6 +300,7 @@ body.com-painel .painel { display: block; }
 
   function reiniciar() {
     historico = [];
+    silencioOcorrido = false;
     aguardando = false;
     encerrada = false;
     conversa.textContent = '';

@@ -58,7 +58,7 @@ describe('servico HTTP (porta interna)', () => {
     expect(j.timeout_ms).toBe(cfg.ia.timeout_ms)
     expect(j.esperar_ms).toBe(0)
     expect(Object.keys(j.estado).sort()).toEqual(
-      ['chamadas', 'correcao', 'historico', 'historico_bruto', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
+      ['chamadas', 'correcao', 'historico', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'silencio_ocorrido', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
     )
   })
 
@@ -209,6 +209,17 @@ describe('chat', () => {
     expect(recebido).toEqual({ historico: h })
   })
 
+  it('POST /api/chat repassa silencio_ocorrido so quando estritamente true', async () => {
+    const h = [{ role: 'user', content: 'Oi' }]
+    const enviar = (extra: Record<string, unknown>) => fetch(urlChat + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h, ...extra }) })
+    await enviar({ silencio_ocorrido: true })
+    expect(recebido).toEqual({ historico: h, silencio_ocorrido: true })
+    for (const v of [false, 'true', 1, null]) {
+      await enviar({ silencio_ocorrido: v })
+      expect(recebido).toEqual({ historico: h })
+    }
+  })
+
   it('com painel ligado, /api/chat inclui tudo que a avaliacao le (saida, tentativas, erro, violacoes), nunca conversa', async () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
@@ -332,6 +343,16 @@ describe('chat', () => {
     const html = readFileSync('chat/index.html', 'utf8')
     expect(html).toMatch(/!resposta && acao === 'ignorar' && !historico\.slice\(0, -1\)\.some\(function \(m\) \{ return m\.role === 'assistant'; \}\)\) historico\.pop\(\)/)
     expect(html.match(/historico\.pop\(\)/g)).toHaveLength(1)
+  })
+
+  it('chat: silencioOcorrido e ligado no fim silencioso, zerado com resposta e na nova conversa, enviado so quando true', () => {
+    const html = readFileSync('chat/index.html', 'utf8')
+    expect(html).toMatch(/var silencioOcorrido = false;/)
+    expect(html).toMatch(/!resposta && d && d\.origem === 'modelo' && \(acao === 'ignorar' \|\| acao === 'encaminhar_vendas'\) && historico\.some\(function \(m\) \{ return m\.role === 'assistant'; \}\)\) silencioOcorrido = true;/)
+    expect(html).toMatch(/if \(resposta\) \{[^}]*silencioOcorrido = false;/)
+    expect(html).toMatch(/function reiniciar\(\) \{[^}]*silencioOcorrido = false;/)
+    expect(html).toMatch(/if \(silencioOcorrido\) corpo\.silencio_ocorrido = true;/)
+    expect(html).not.toContain('historico_bruto')
   })
 
   it('T5: chat/index.html nao cita WhatsApp e traz aviso_lgpd', () => {

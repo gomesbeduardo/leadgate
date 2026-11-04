@@ -197,11 +197,11 @@ describe('casos.json', () => {
     mensagens: string[]
     esperado: Record<string, unknown[]>
   }[]
-  it('tem 37 casos, 31 + 6 (a01-a14 e n01-n17 no ajuste), ids unicos', () => {
-    expect(casos).toHaveLength(37)
-    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(31)
+  it('tem 39 casos, 33 + 6 (a01-a14 e n01-n19 no ajuste), ids unicos', () => {
+    expect(casos).toHaveLength(39)
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(33)
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
-    expect(new Set(casos.map((c) => c.id)).size).toBe(37)
+    expect(new Set(casos.map((c) => c.id)).size).toBe(39)
   })
   it('cobre multi-mensagem e travas', () => {
     expect(casos.filter((c) => c.mensagens.length > 1).length).toBeGreaterThanOrEqual(3)
@@ -354,8 +354,8 @@ describe('falas e interacao (spec 006): casos', () => {
     for (const id of ['a14', 'a07']) expect(por(id).itens_na).toEqual(expect.arrayContaining([5, 6, 7, 8, 9, 10]))
     for (const id of ['a10', 'a13', 'g05']) expect(por(id).esperado.proxima_acao).toEqual(['perguntar'])
   })
-  it('n01 a n17 no ajuste e g10 na regressao, com proxima_acao, desvios e vagos esperados', () => {
-    const ids = Array.from({ length: 17 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
+  it('n01 a n19 no ajuste e g10 na regressao, com proxima_acao, desvios e vagos esperados', () => {
+    const ids = Array.from({ length: 19 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
     expect(casos.filter((c) => /^n\d\d$/.test(c.id)).map((c) => c.id)).toEqual(ids)
     for (const id of ids) expect(por(id).conjunto).toBe('ajuste')
     expect(por('g10').conjunto).toBe('regressao')
@@ -522,11 +522,143 @@ describe('scripts/avaliar.mjs: silencio deliberado', () => {
 
 describe('cabecalho da tabela usa o numero real de casos', () => {
   const a = (id: string) => ({ id, campos: Object.fromEntries(CAMPOS.map((c) => [c, true])), acertou: true, erro: false, confianca: 0.9, quadrante: 'acerto_alta', itens: {}, abertura: id, tentativas: [1] }) as any
-  it('31 de ajuste e 6 reservados aparecem como n=31 e n=6', () => {
+  it('33 de ajuste e 6 reservados aparecem como n=33 e n=6', () => {
     const lote = (n: number, p: string) => Array.from({ length: n }, (_, i) => a(`${p}${i}`))
-    const md = tabelaMarkdown(resumir({ ajuste: lote(31, 'a'), reservado: lote(6, 'r') }))
-    expect(md).toContain('| Campo | Acerto ajuste (n=31) | Acerto reservado (n=6) |')
-    expect(md).toContain('31 casos de ajuste e 6 reservados')
+    const md = tabelaMarkdown(resumir({ ajuste: lote(33, 'a'), reservado: lote(6, 'r') }))
+    expect(md).toContain('| Campo | Acerto ajuste (n=33) | Acerto reservado (n=6) |')
+    expect(md).toContain('33 casos de ajuste e 6 reservados')
     expect(md).not.toContain('n=14')
   })
+})
+
+describe('review: item 11, aberturas, desvios/vagos na tabela, dados', () => {
+  const T = (over = {}) => turno(over)
+  const caso11 = { ...caso, itens_na: [7, 8] }
+  const ok = (id: string, extra: any = {}) => ({ id, campos: Object.fromEntries(CAMPOS.map((c) => [c, true])), acertou: true, erro: false, confianca: 0.9, quadrante: 'acerto_alta', itens: {}, abertura: id, tentativas: [1], ...extra }) as any
+
+  it('item 11 existe: leitura false reprova, true aprova, ausente fica pendente, itens_na vira n/a', () => {
+    const exec = { turnos: [T()] }
+    expect(avaliarCaso(caso11, exec, 0.7, { '11': false }).itens[11]).toBe(false)
+    expect(avaliarCaso(caso11, exec, 0.7, { '11': true }).itens[11]).toBe(true)
+    expect(avaliarCaso(caso11, exec, 0.7, {}).itens[11]).toBe('pendente')
+    expect(avaliarCaso(caso11, exec, 0.7, { '11': null }).itens[11]).toBe('na')
+    expect(avaliarCaso({ ...caso11, itens_na: [7, 8, 11] }, exec, 0.7, { '11': false }).itens[11]).toBe('na')
+  })
+  it('item 11 entra na contagem e ganha coluna na tabela', () => {
+    const av = avaliarCaso(caso11, { turnos: [T()] }, 0.7, { '5': true, '6': true, '9': true, '10': true, '11': false })
+    const r = resumir({ ajuste: [av], reservado: null })
+    expect(r.ajuste!.casos[0].aplicaveis).toBe(8)
+    expect(r.ajuste!.casos[0].aprovados).toBe(7)
+    const md = tabelaMarkdown(r)
+    expect(md).toContain('| Caso | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | Aprovados |')
+    expect(md).toContain('| falhou | 7/8 |')
+  })
+  it('abertura silenciosa ou vazia nao forma par: 7 silenciosos dao zero; duas iguais nao vazias dao 1', () => {
+    const mudos = Array.from({ length: 7 }, (_, i) => ok(`m${i}`, { abertura: '' }))
+    expect(resumir({ ajuste: mudos, reservado: null }).ajuste!.aberturasRepetidas).toBe(0)
+    const nulos = Array.from({ length: 3 }, (_, i) => ok(`z${i}`, { abertura: null }))
+    expect(resumir({ ajuste: nulos, reservado: null }).ajuste!.aberturasRepetidas).toBe(0)
+    const iguais = [ok('i1', { abertura: 'Oi, tudo bem?' }), ok('i2', { abertura: 'Oi, tudo bem?' }), ...mudos]
+    expect(resumir({ ajuste: iguais, reservado: null }).ajuste!.aberturasRepetidas).toBe(1)
+  })
+  it('desvios e vagos aparecem na tabela com n proprio; ausente mostra n=0', () => {
+    const base = { ...caso, esperado: { ...caso.esperado, desvios: [1] } }
+    const exec = { turnos: [T({ saida: { ...saidaOk, desvios: 0 } })] }
+    const errado = avaliarCaso(base, exec, 0.7)
+    expect(errado.campos.proxima_acao).toBe(true)
+    expect(errado.acertou).toBe(false)
+    const certo = avaliarCaso(base, { turnos: [T({ saida: { ...saidaOk, desvios: 1 } })] }, 0.7)
+    const comVagos = avaliarCaso({ ...caso, esperado: { ...caso.esperado, vagos: [0] } }, { turnos: [T({ saida: { ...saidaOk, vagos: 0 } })] }, 0.7)
+    const semFalas = avaliarCaso(caso, { turnos: [T()] }, 0.7)
+    const r = resumir({ ajuste: [errado, certo, comVagos, semFalas], reservado: [semFalas] })
+    expect(r.ajuste!.campos.desvios).toEqual({ acertos: 1, n: 2 })
+    expect(r.ajuste!.campos.vagos).toEqual({ acertos: 1, n: 1 })
+    expect(r.reservado!.campos.desvios).toEqual({ acertos: 0, n: 0 })
+    const md = tabelaMarkdown(r)
+    expect(md).toContain('| desvios | 1/2 (50%) | n=0 |')
+    expect(md).toContain('| vagos | 1/1 (100%) | n=0 |')
+  })
+
+  const lerJson = (rel: string) => JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8'))
+  const todos = [...lerJson('../avaliacao/casos.json'), ...lerJson('../avaliacao/regressao.json')] as any[]
+  const mudos = todos.filter((c) => (c.esperado.proxima_acao ?? []).join() === 'ignorar')
+  it('casos de silencio: itens_na 5-11 e tipo_servico sem fora_escopo; sem leitura velha', () => {
+    expect(mudos.map((c) => c.id).sort()).toEqual(['a07', 'a08', 'a14', 'g09', 'n12', 'n15', 'n16'])
+    const leitura = lerJson('../avaliacao/leitura.json')
+    for (const c of mudos) {
+      for (const i of [5, 6, 7, 8, 9, 10, 11]) expect(c.itens_na, c.id).toContain(i)
+      expect(c.esperado.tipo_servico, c.id).not.toContain('fora_escopo')
+    }
+    for (const id of ['a07', 'a08', 'a14', 'g09']) expect(leitura[id], id).toBeUndefined()
+  })
+  it('n05 tambem tem resposta vazia: item 11 n/a', () => {
+    expect(todos.find((c) => c.id === 'n05').itens_na).toContain(11)
+  })
+  it('n16 e n17 semeiam silencio_ocorrido; n18 e n19 existem no ajuste', () => {
+    for (const id of ['n16', 'n17']) expect(todos.find((c) => c.id === id).silencio_ocorrido, id).toBe(true)
+    const n18 = todos.find((c) => c.id === 'n18')
+    expect(n18.conjunto).toBe('ajuste')
+    expect(n18.mensagens).toEqual(['ah fala do jogo\nhein'])
+    expect(n18.historico_inicial).toEqual(todos.find((c) => c.id === 'n05').historico_inicial)
+    expect(n18.silencio_ocorrido).toBeUndefined()
+    expect(n18.esperado).toMatchObject({ proxima_acao: ['encaminhar_vendas'], desvios: [3], qualificado: [true] })
+    const n19 = todos.find((c) => c.id === 'n19')
+    expect(n19.conjunto).toBe('ajuste')
+    expect(n19.historico_inicial.length).toBeGreaterThan(0)
+    expect(n19.mensagens).toHaveLength(3)
+    expect(n19.esperado).toMatchObject({ proxima_acao: ['encaminhar_vendas'], vagos: [3] })
+    expect(n19.itens_na).not.toContain(5)
+  })
+})
+
+describe('scripts/avaliar.mjs: sinal silencio_ocorrido', () => {
+  const script = fileURLToPath(new URL('../scripts/avaliar.mjs', import.meta.url))
+  const fala = (resposta: string | null, proxima_acao: string) => ({ resposta, origem: 'modelo', proxima_acao, tentativas: 1, saida: { cidade: null, confianca: 0.9, proxima_acao } })
+  const perg = (r: string) => fala(r, 'perguntar')
+  const mudo = () => fala(null, 'ignorar')
+  const u = (content: string) => ({ role: 'user', content })
+  const a = (content: string) => ({ role: 'assistant', content })
+  async function conduzir(casos: any[], respostas: any[]) {
+    const corpos: any[] = []
+    const dir = mkdtempSync(join(tmpdir(), 'aval-sin-'))
+    const arq = join(dir, 'casos.json')
+    writeFileSync(arq, JSON.stringify(casos))
+    const srv = createServer((req, res) => {
+      let b = ''
+      req.on('data', (d) => (b += d))
+      req.on('end', () => {
+        const corpo = JSON.parse(b)
+        res.writeHead(200, { 'content-type': 'application/json' })
+        if ((corpo.historico ?? []).length === 0) return res.end('{}')
+        corpos.push(corpo)
+        res.end(JSON.stringify(respostas[corpos.length - 1] ?? perg('sobra')))
+      })
+    })
+    await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+    const env = { ...process.env, AVALIACAO_URL: `http://127.0.0.1:${(srv.address() as AddressInfo).port}/webhook/chat`, AVALIACAO_SAIDA_DIR: dir, AVALIACAO_CASOS_ARQ: arq, AVALIACAO_ESPERA_MS: '1500' }
+    try {
+      await new Promise<void>((resolve) => execFile('node', [script, '--conjunto', 'ajuste'], { env }, () => resolve()))
+      return corpos
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()))
+    }
+  }
+  const mk = (id: string, mensagens: string[], extra = {}) => ({ id, conjunto: 'ajuste', mensagens, esperado: {}, itens_na: [], ...extra })
+
+  it('vai true so depois de um turno silencioso com assistant no historico, e some na resposta seguinte', async () => {
+    const c = await conduzir([mk('s1', ['m1', 'm2', 'm3', 'm4'])], [perg('r1'), mudo(), perg('r3'), perg('r4')])
+    expect(c[0]).not.toHaveProperty('silencio_ocorrido')
+    expect(c[1]).not.toHaveProperty('silencio_ocorrido')
+    expect(c[2].silencio_ocorrido).toBe(true)
+    expect(c[3]).not.toHaveProperty('silencio_ocorrido')
+  }, 30_000)
+  it('silencio na abertura (sem assistant) nao liga o sinal', async () => {
+    const c = await conduzir([mk('s2', ['bolo', 'quero ar'])], [mudo(), perg('r2')])
+    expect(c[1]).not.toHaveProperty('silencio_ocorrido')
+  }, 30_000)
+  it('caso semeado com silencio_ocorrido manda true na primeira chamada e limpa na resposta', async () => {
+    const c = await conduzir([mk('s3', ['m1', 'm2'], { historico_inicial: [u('oi'), a('ola'), u('x')], silencio_ocorrido: true })], [perg('r1'), perg('r2')])
+    expect(c[0].silencio_ocorrido).toBe(true)
+    expect(c[1]).not.toHaveProperty('silencio_ocorrido')
+  }, 30_000)
 })

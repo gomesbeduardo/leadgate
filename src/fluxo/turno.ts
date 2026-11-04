@@ -10,8 +10,8 @@ export type Registro = { ts: string; tipo: Tipo; modelo: ModeloAtual; tentativa:
 
 export type Estado = {
   historico: Mensagem[]
-  /** Historico como veio, sem a uniao de mensagens do lead; o validador conta o fim silencioso nele. */
-  historico_bruto?: Mensagem[]
+  /** Sinal do chat: o encerramento silencioso ja ocorreu nesta conversa. */
+  silencio_ocorrido: boolean
   promptMontado: string
   /** Chamadas logicas do turno (sobe a cada regeneracao e na troca para a reserva). */
   tentativa: number
@@ -57,12 +57,12 @@ const HistoricoSchema = z
   .refine((h) => h.at(-1)?.role === 'user', 'a ultima mensagem deve ser do user')
   .refine((h) => h.every((m, i) => m.role === (i % 2 === 0 ? 'user' : 'assistant')), 'o historico deve alternar user/assistant, comecando por user')
 
-const EntradaSchema = z.object({ historico: HistoricoSchema })
+const EntradaSchema = z.object({ historico: HistoricoSchema, silencio_ocorrido: z.unknown().optional() })
 
 /** O estado volta do cliente de uma rota interna: forma validada e contadores limitados. */
 export const EstadoSchema = z.object({
   historico: HistoricoSchema,
-  historico_bruto: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(4000) })).max(1000).optional(),
+  silencio_ocorrido: z.boolean(),
   promptMontado: z.string().min(1).max(200_000),
   tentativa: clamp(100),
   correcao: z.string().max(4000).nullable(),
@@ -131,15 +131,13 @@ export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config, agor
     return { fim: true, resultado: silencio([], 0, null, [], [], false) }
   }
   const historico = parsed.data.historico as Mensagem[]
-  const brutoH = (entrada as { historico?: unknown } | null)?.historico
-  const bruto = Array.isArray(brutoH) ? (brutoH as Mensagem[]) : historico
   try {
     const promptMontado = montarPrompt(modelo, cfg)
     return {
       fim: false,
       esperar_ms: 0,
       estado: {
-        historico, historico_bruto: bruto, promptMontado, tentativa: 1, correcao: null, modelo_atual: 'primario',
+        historico, silencio_ocorrido: parsed.data.silencio_ocorrido === true, promptMontado, tentativa: 1, correcao: null, modelo_atual: 'primario',
         tentativa_modelo: 1, tentativa_http: 1, chamadas: 0, registros: [], inicio_ms: agora(),
       },
     }
@@ -170,8 +168,11 @@ export function schemaSaida(cfg: Config): object {
   return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false }
 }
 
+const FATO_SILENCIO = 'Fato deste turno: o encerramento silencioso já ocorreu nesta conversa.'
+
 export function montarRequisicao(estado: Estado, cfg: Config): object {
   const messages: { role: string; content: string }[] = [...estado.historico]
+  if (estado.silencio_ocorrido) messages.push({ role: 'system', content: FATO_SILENCIO })
   if (estado.correcao !== null) messages.push({ role: 'system', content: estado.correcao })
   return {
     model: estado.modelo_atual === 'reserva' ? cfg.ia.modelo_reserva : cfg.ia.modelo,
@@ -239,7 +240,7 @@ export function classificar(estado: Estado, resposta: unknown, cfg: Config): Cla
   const blocos = Array.isArray(c?.content) ? (c!.content as { type?: unknown; text?: unknown }[]) : []
   const bloco = blocos.find((b) => b?.type === 'text' && typeof b.text === 'string')
   if (!bloco) return { tipo: 'schema', violacoes: viol('A resposta anterior veio sem texto. Responda somente com o JSON do contrato.', 'sem_texto') }
-  const v = validarSaida(bloco.text as string, { historico: estado.historico, cfg, promptMontado: estado.promptMontado, historicoBruto: estado.historico_bruto })
+  const v = validarSaida(bloco.text as string, { historico: estado.historico, cfg, promptMontado: estado.promptMontado, silencioOcorrido: estado.silencio_ocorrido })
   if (v.ok) return { tipo: null, saida: v.saida }
   return { tipo: 'schema', violacoes: v.violacoes }
 }

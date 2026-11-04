@@ -37,19 +37,19 @@ if (conjunto === 'validacao') {
 }
 const limiar = JSON.parse(readFileSync(new URL('config/empresa.json', raiz), 'utf8')).ia.limiar_confianca
 
-async function chamar(historico, tentativaRede = 0) {
+async function chamar(historico, silencio, tentativaRede = 0) {
   try {
     const r = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ historico }),
+      body: JSON.stringify(silencio ? { historico, silencio_ocorrido: true } : { historico }),
       signal: AbortSignal.timeout(90_000),
     })
     if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), { http: true })
     return await r.json()
   } catch (e) {
     const rede = !e.http && e.name !== 'TimeoutError' && e.name !== 'SyntaxError'
-    if (rede && tentativaRede === 0) return chamar(historico, 1)
+    if (rede && tentativaRede === 0) return chamar(historico, silencio, 1)
     throw e
   }
 }
@@ -110,11 +110,13 @@ for (const caso of casos) {
   const turnos = []
   // historico_inicial semeia conversas que o modelo vivo nao deixaria abertas (ex.: lead ja qualificado).
   const historico = [...(caso.historico_inicial ?? [])]
+  // Espelha o chat: true depois de um fim silencioso com fala anterior do agente; o caso pode semear.
+  let silencioOcorrido = caso.silencio_ocorrido === true
   let falhou = null
   for (const msg of caso.mensagens) {
     historico.push({ role: 'user', content: msg })
     try {
-      const r = await chamar(historico)
+      const r = await chamar(historico, silencioOcorrido)
       turnos.push({
         resposta: r.resposta ?? '',
         resposta_nula: r.resposta == null,
@@ -126,10 +128,13 @@ for (const caso of casos) {
         proxima_acao: r.proxima_acao ?? null,
       })
       // Silencio deliberado do modelo (ignorar, resposta nula): nenhuma fala do agente entra no historico.
-      const silencio = r.origem === 'modelo' && r.resposta == null && r.proxima_acao === 'ignorar'
-      if (silencio) {
+      const nulo = r.origem === 'modelo' && r.resposta == null
+      const temAssistant = () => historico.some((m) => m.role === 'assistant')
+      if (!nulo) silencioOcorrido = false
+      else if ((r.proxima_acao === 'ignorar' || r.proxima_acao === 'encaminhar_vendas') && temAssistant()) silencioOcorrido = true
+      if (nulo && r.proxima_acao === 'ignorar') {
         // Como o chat: na abertura (sem assistant) a mensagem silenciada sai do historico; depois dela, fica.
-        if (!historico.some((m) => m.role === 'assistant')) historico.pop()
+        if (!temAssistant()) historico.pop()
         continue
       }
       historico.push({ role: 'assistant', content: r.resposta ?? '' })

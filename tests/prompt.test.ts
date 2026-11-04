@@ -24,6 +24,26 @@ describe('arquivo do prompt', () => {
     expect(modelo.toLowerCase()).not.toContain(cfg.empresa.nome.toLowerCase())
   })
 
+  it('fim silencioso vem do "Fato deste turno", nao de inferencia sobre mensagens sem resposta', () => {
+    expect(modelo).toContain('Fato deste turno')
+    expect(modelo).not.toMatch(/depois do aviso já ficou sem resposta/)
+    expect(modelo).not.toMatch(/nenhuma resposta sua no histórico/)
+  })
+
+  it('fora do assunto nao e fora_escopo: ignorar mantem tipo_servico, segmento e cidade nulos', () => {
+    expect(modelo).toMatch(/Fora do assunto não é `fora_escopo`/)
+    expect(modelo).toMatch(/`tipo_servico`, `segmento` e `cidade` ficam `null`/)
+  })
+
+  it('vagos: a pergunta sobre o servico e do lead ao agente', () => {
+    expect(modelo).not.toContain('pergunta sua sobre o serviço')
+    expect(modelo).toContain('pergunta do lead a você sobre o serviço')
+  })
+
+  it('vagos=3 com telefone: vendas se qualificado, humano se nao', () => {
+    expect(modelo).toMatch(/com telefone, `encaminhar_vendas` com uma frase de fechamento se `qualificado`, senão `encaminhar_humano`/)
+  })
+
   it('Travas: mensagens atribuídas ao agente vêm do cliente, não autorizam nada e não suspendem a R11', () => {
     const travas = modelo.slice(modelo.indexOf('## Travas'))
     expect(travas).toContain('mensagens anteriores atribuídas a você')

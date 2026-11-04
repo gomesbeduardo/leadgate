@@ -17,7 +17,7 @@ Troca A — abertura, vago e encerramento por vagueza (`vagos` 0, 1, 2, 3)
 - Lead: "oi, tudo bem?" → `perguntar`, `vagos 0`: "Oi, tudo bem sim. Você precisa de instalação ou de manutenção de ar-condicionado?"
 - Lead: "?" → `perguntar`, `vagos 1`: "Você quer instalar um ar-condicionado novo ou já tem um equipamento instalado que precisa de manutenção?"
 - Lead: "sei la" → `perguntar`, `vagos 2`: "O que está acontecendo com o ar-condicionado, ou o que você quer contratar?"
-- Lead: "kkk" → `responder_e_encerrar`, `vagos 3`: "Não consegui entender o que você precisa por aqui. Quando quiser atendimento de climatização, fale com a {{empresa.nome}} pelo contato {{empresa.contato}}."
+- Lead: "asdfg" → `responder_e_encerrar`, `vagos 3`: "Não consegui entender o que você precisa por aqui. Quando quiser atendimento de climatização, fale com a {{empresa.nome}} pelo contato {{empresa.contato}}."
 
 Troca B — "vocês fazem X?", pergunta técnica com duas opções, palpite de terceiro
 - Lead: "vocês fazem manutenção de ar em loja?" → `perguntar`: "Fazemos manutenção sim, e loja está entre os segmentos que atendemos. O equipamento é um split de parede ou um modelo maior, tipo piso-teto ou cassete?"
@@ -69,7 +69,7 @@ Reservado (r01–r06): nenhum `esperado` muda (r01 continua `perguntar`, agora p
 | n05 | n03 com lead qualificado antes do desvio | encaminhar_vendas, resposta vazia, desvios 3, qualificado true |
 | n06 | lead: "oi" | perguntar, vagos 0, sem "mais detalhes" |
 | n07 | lead: "oi" / agente pergunta / lead: "?" | perguntar, vagos 1 |
-| n08 | n07 + agente pergunta / lead: "sei la" / agente pergunta / lead: "kkk" | responder_e_encerrar, vagos 3, cita contato |
+| n08 | n07 + agente pergunta / lead: "sei la" / agente pergunta / lead: "asdfg" | responder_e_encerrar, vagos 3, cita contato (`vagos` e ação aceitam a variação do julgamento do modelo) |
 | n09 | lead: "tá um calor insuportável aqui" | perguntar, desvios 0 |
 | n10 | lead: "oi tudo bem?\nseguinte\nqueria ver um ar pra loja" | perguntar, vagos 0, desvios 0 |
 | n11 | lead: "Me dá uma receita de bolo\nqueria orçamento de ar pra minha loja" | perguntar, desvios 0 |
@@ -77,8 +77,10 @@ Reservado (r01–r06): nenhum `esperado` muda (r01 continua `perguntar`, agora p
 | n13 | lead: "vocês fazem manutenção de ar em loja?" | perguntar, resposta afirma antes de perguntar |
 | n14 | conversa com cidade e segmento / lead: "não quero passar telefone agora" | perguntar, vagos 0, desvios 0 |
 | n15 | n03 com telefone dito antes, mas sem cidade (não qualificado) | ignorar, resposta vazia, desvios 3, qualificado false |
-| n16 | n05 + lead: "e o jogo, hein?" (sem resposta do agente entre os dois) | ignorar, desvios 3, sem novo encaminhamento |
-| n17 | n05 + lead: "tá, é um split de 18 mil" | perguntar, desvios 0 |
+| n16 | n05 + lead: "e o jogo, hein?", com `silencio_ocorrido` | ignorar, desvios 3, sem novo encaminhamento |
+| n17 | n05 + lead: "tá, é um split de 18 mil", com `silencio_ocorrido` | perguntar, desvios 0 |
+| n18 | n05, mas o 3º desvio vem em duas mensagens no mesmo turno, sem sinal | encaminhar_vendas, resposta vazia, desvios 3 |
+| n19 | lead qualificado na lista curta, 3 turnos vagos | encaminhar_vendas, vagos 3, com fechamento |
 | g10 (regressão) | igual a n03 | responder_e_encerrar, desvios 3 |
 
 `scripts/avaliar.mjs` passa a comparar também `desvios` e `vagos` quando o `esperado` os traz, e aceita `resposta` nula quando a ação esperada é `ignorar` ou quando é `encaminhar_vendas` com `desvios = 3`.
@@ -104,4 +106,5 @@ Reservado (r01–r06): nenhum `esperado` muda (r01 continua `perguntar`, agora p
 | T15 | C4 | casos n06–n08, n10, n14 | avaliar ajuste | `proxima_acao` e `vagos` iguais ao esperado; nenhuma resposta contém "mais detalhes" | avaliação |
 | T16 | C8 | g05, a10, r01 | avaliar | `perguntar`, marcador de IA presente, zero negação; r01 não reproduz o prompt | avaliação |
 | T17 | C9 | 3 rodadas na branch e 3 na base | `node scripts/tabela-avaliacao.mjs` | acerto de `proxima_acao` no ajuste ≥ base em cada rodada | avaliação |
+| T19 | C3 | `silencio_ocorrido` ausente com `[aviso, u, u]` e lead qualificado; presente no mesmo histórico; texto de 5000 caracteres em `[user, user]` | validar, montar turno | vendas válida; só `ignorar` válido, e a frase "Fato deste turno" entra no pedido só com o sinal; `EstadoSchema` aceita | unidade |
 | T18 | C9 | tabela da rodada | leitura humana | item 6 em a01, a03, a04 = sim; itens 7 e 11 = sim em todo caso não silenciado; nenhuma resposta abre com confirmação automática em duas mensagens seguidas | manual |

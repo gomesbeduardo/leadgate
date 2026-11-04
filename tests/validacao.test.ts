@@ -26,6 +26,9 @@ const FALA_TEL: Mensagem = { role: 'user', content: 'sou de Sao Jose, meu telefo
 const validar = (over: Record<string, unknown>, historico: Mensagem[] = [FALA_TEL]) =>
   validarContrato(JSON.stringify({ ...base(), ...over }), { historico, cfg })
 
+const validarS = (over: Record<string, unknown>, historico: Mensagem[], silencioOcorrido?: boolean) =>
+  validarContrato(JSON.stringify({ ...base(), ...over }), { historico, cfg, silencioOcorrido })
+
 const regras = (r: ResultadoValidacao) => (r.ok ? [] : r.violacoes.map((v) => v.regra))
 // n turnos do assistant intercalados com turnos do user; o ultimo user traz o telefone.
 const historicoComPerguntas = (n: number): Mensagem[] => [
@@ -395,23 +398,72 @@ describe('falas: ignorar, desvios e vagos (spec 006)', () => {
     const depois: Mensagem[] = [FALA_TEL, a('aviso'), u('3o desvio'), u('novo desvio')]
     const primeiro: Mensagem[] = [FALA_TEL, a('aviso'), u('3o desvio')]
 
-    it('qualificado: ignorar com resposta vazia e valido', () => {
-      expect(regras(validar(q, depois))).toEqual([])
+    it('com o sinal, qualificado: ignorar com resposta vazia e valido', () => {
+      expect(regras(validarS(q, depois, true))).toEqual([])
     })
-    it('qualificado: encaminhar_vendas e rejeitado', () => {
-      expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, depois))).toContain('limite_exige_encerrar')
+    it('com o sinal, qualificado: encaminhar_vendas e rejeitado', () => {
+      expect(regras(validarS({ ...q, proxima_acao: 'encaminhar_vendas' }, depois, true))).toContain('limite_exige_encerrar')
     })
     it('orienta com uma instrucao so: ignorar, sem citar encaminhar_vendas com resposta vazia', () => {
-      const r = validar({ ...q, proxima_acao: 'encaminhar_vendas' }, depois)
+      const r = validarS({ ...q, proxima_acao: 'encaminhar_vendas' }, depois, true)
       const d = r.ok ? '' : r.violacoes.find((x) => x.regra === 'limite_exige_encerrar')?.detalhe ?? ''
       expect(d).toContain('proxima_acao=ignorar')
       expect(d).not.toContain('encaminhar_vendas com resposta vazia')
+    })
+    it('sem o sinal, historico [aviso, u, u] com lead qualificado permite encaminhar_vendas vazio (achado 3)', () => {
+      expect(regras(validarS({ ...q, proxima_acao: 'encaminhar_vendas' }, depois))).toEqual([])
+      expect(regras(validarS({ ...q, proxima_acao: 'encaminhar_vendas' }, depois, false))).toEqual([])
     })
     it('primeiro fim silencioso: encaminhar_vendas continua valido', () => {
       expect(regras(validar({ ...q, proxima_acao: 'encaminhar_vendas' }, primeiro))).toEqual([])
     })
     it('primeiro fim silencioso: ignorar qualificado continua fora do permitido', () => {
       expect(regras(validar(q, primeiro))).toContain('ignorar_fora_do_permitido')
+    })
+  })
+
+  describe('limite governa sobre o roteamento do teto (achado 1)', () => {
+    const faltaCidade = { cidade: null, dados_faltantes: ['cidade'], qualificado: false }
+    it('desvios=3, telefone, cidade faltando, 8 turnos: ignorar vazio e valido', () => {
+      expect(regras(validar({ ...faltaCidade, desvios: 3, proxima_acao: 'ignorar', resposta: '' }, historicoComPerguntas(8)))).toEqual([])
+    })
+    it('vagos=3, telefone, cidade faltando, 8 turnos: encaminhar_humano e valido', () => {
+      expect(regras(validar({ ...faltaCidade, vagos: 3, proxima_acao: 'encaminhar_humano', resposta: 'Um atendente vai falar com voce.' }, historicoComPerguntas(8)))).toEqual([])
+    })
+  })
+
+  describe('vagos=3 com telefone (achado 2)', () => {
+    const v3 = { vagos: 3, resposta: 'Vou passar para o time comercial, que entra em contato.' }
+    it('qualificado: encaminhar_vendas com frase de fechamento e valido', () => {
+      expect(regras(validar({ ...v3, proxima_acao: 'encaminhar_vendas' }))).toEqual([])
+    })
+    it('qualificado: encaminhar_humano e rejeitado, com instrucao unica', () => {
+      const r = validar({ ...v3, proxima_acao: 'encaminhar_humano' })
+      const d = r.ok ? '' : r.violacoes.find((x) => x.regra === 'limite_exige_encerrar')?.detalhe ?? ''
+      expect(d).toContain('encaminhar_vendas')
+    })
+    it('nao qualificado: encaminhar_humano e valido; encaminhar_vendas e rejeitado', () => {
+      const nq = { ...v3, qualificado: false, cidade: null, dados_faltantes: ['cidade'] }
+      expect(regras(validar({ ...nq, proxima_acao: 'encaminhar_humano' }))).toEqual([])
+      expect(regras(validar({ ...nq, proxima_acao: 'encaminhar_vendas' }))).toContain('limite_exige_encerrar')
+    })
+    it('sem telefone: responder_e_encerrar citando o contato', () => {
+      const sem = { ...vazio, vagos: 3, proxima_acao: 'responder_e_encerrar' }
+      expect(regras(validar({ ...sem, resposta: 'Ate logo.' }, [{ role: 'user', content: 'x' }]))).toContain('encerrar_sem_telefone_exige_contato')
+      expect(regras(validar({ ...sem, resposta: `Fale com a equipe: ${cfg.empresa.contato}.` }, [{ role: 'user', content: 'x' }]))).toEqual([])
+    })
+  })
+
+  describe('urgencia alta com desvios (achado 13)', () => {
+    it('desvios=1: perguntar e valido', () => {
+      expect(regras(validar({ urgencia: 'alta', desvios: 1 }))).toEqual([])
+    })
+    it('fim silencioso ja ocorrido, urgencia alta: ignorar e valido', () => {
+      const h: Mensagem[] = [FALA_TEL, { role: 'assistant', content: 'aviso' }, { role: 'user', content: 'x' }]
+      expect(regras(validarS({ urgencia: 'alta', desvios: 3, proxima_acao: 'ignorar', resposta: '' }, h, true))).toEqual([])
+    })
+    it('desvios=0: continua exigindo encaminhar_vendas', () => {
+      expect(regras(validar({ urgencia: 'alta' }))).toContain('urgencia_alta_exige_vendas')
     })
   })
 

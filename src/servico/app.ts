@@ -153,7 +153,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
       const r = await fetch(opcoes.webhookUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ historico: corpo.historico }),
+        body: JSON.stringify(corpo.silencio_ocorrido === true ? { historico: corpo.historico, silencio_ocorrido: true } : { historico: corpo.historico }),
         signal: AbortSignal.timeout(cfg.ia.timeout_turno_ms + (opcoes.folgaProxyMs ?? FOLGA_PROXY_MS)),
       })
       if (!r.ok) {

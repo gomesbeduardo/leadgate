@@ -4,6 +4,7 @@ import { carregarConfig, type Config } from '../src/config/schema'
 import type { Mensagem } from '../src/validacao/contrato'
 import {
   classificar,
+  EstadoSchema,
   iniciarTurno,
   montarRequisicao,
   processarResposta,
@@ -56,15 +57,30 @@ const semReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: '' } }
 const oi: Mensagem[] = [{ role: 'user', content: 'Oi, preciso de um orcamento' }]
 
 describe('iniciarTurno', () => {
-  it('guarda o historico bruto: a uniao dos users nao apaga a contagem do fim silencioso', () => {
-    const h: Mensagem[] = [
-      { role: 'user', content: 'a' }, { role: 'assistant', content: 'aviso' },
-      { role: 'user', content: 'b' }, { role: 'user', content: 'c' },
-    ]
+  it('Estado nao tem historico_bruto; user longo + user curto passa pelo EstadoSchema (achado 4)', () => {
+    const h: Mensagem[] = [{ role: 'user', content: 'x'.repeat(5000) }, { role: 'user', content: 'ok' }]
     const p = iniciarTurno({ historico: h }, modelo, cfg)
     if (p.fim) throw new Error('esperava passo')
-    expect(p.estado.historico).toHaveLength(3)
-    expect(p.estado.historico_bruto).toHaveLength(4)
+    expect(Object.keys(p.estado)).not.toContain('historico_bruto')
+    expect(p.estado.silencio_ocorrido).toBe(false)
+    expect(EstadoSchema.safeParse(p.estado).success).toBe(true)
+  })
+
+  it('silencio_ocorrido so vale com true estrito e entra na requisicao so entao', () => {
+    const f = (v: unknown) => {
+      const p = iniciarTurno({ historico: oi, silencio_ocorrido: v }, modelo, cfg)
+      if (p.fim) throw new Error('esperava passo')
+      return p.estado
+    }
+    const fato = 'Fato deste turno: o encerramento silencioso já ocorreu nesta conversa.'
+    expect(f(true).silencio_ocorrido).toBe(true)
+    expect(JSON.stringify((montarRequisicao(f(true), cfg) as any).messages)).toContain(fato)
+    expect((montarRequisicao(f(true), cfg) as any).system).toBe((montarRequisicao(f(false), cfg) as any).system)
+    for (const v of [false, undefined, 'true', 1]) {
+      expect(f(v).silencio_ocorrido).toBe(false)
+      expect(JSON.stringify((montarRequisicao(f(v), cfg) as any).messages)).not.toContain('Fato deste turno')
+    }
+    expect(EstadoSchema.safeParse(f(true)).success).toBe(true)
   })
 
   it('entrada valida comeca na tentativa 1', () => {

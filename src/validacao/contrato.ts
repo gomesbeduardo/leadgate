@@ -108,7 +108,7 @@ function schemaViol(regra: string, detalhe: string): Violacao {
 
 export function validarContrato(
   textoModelo: string,
-  ctx: { historico: Mensagem[]; cfg: Config },
+  ctx: { historico: Mensagem[]; cfg: Config; silencioOcorrido?: boolean },
 ): ResultadoValidacao {
   const { saida, violacoes } = analisarContrato(textoModelo, ctx)
   return violacoes.length > 0 || !saida ? { ok: false, violacoes } : { ok: true, saida }
@@ -117,7 +117,7 @@ export function validarContrato(
 /** Schema + regras cruzadas; `saida` vem preenchida sempre que o JSON passou no schema. */
 export function analisarContrato(
   textoModelo: string,
-  ctx: { historico: Mensagem[]; cfg: Config; historicoBruto?: Mensagem[] },
+  ctx: { historico: Mensagem[]; cfg: Config; silencioOcorrido?: boolean },
 ): { saida?: Saida; violacoes: Violacao[] } {
   const { cfg, historico } = ctx
 
@@ -170,10 +170,8 @@ export function analisarContrato(
   }
 
   // qualificado = true
-  // Fim silencioso ja ocorrido: depois da ultima fala do agente ha 2+ mensagens do lead (historico sem a uniao).
-  const histCru = ctx.historicoBruto ?? historico
-  const ultimoAgente = histCru.map((m) => m.role).lastIndexOf('assistant')
-  const silencioJaOcorreu = histCru.slice(ultimoAgente + 1).filter((m) => m.role === 'user').length >= 2
+  // Fim silencioso ja ocorrido: sinal explicito do chat, nao inferencia sobre o historico.
+  const silencioJaOcorreu = ctx.silencioOcorrido === true
   if (s.qualificado) {
     if (!servido) cruz('qualificado_exige_servico', 'qualificado=true exige tipo_servico atendido pela empresa. Marque qualificado=false.')
     if (!aceito) cruz('qualificado_exige_segmento_aceito', 'qualificado=true exige segmento aceito. Marque qualificado=false.')
@@ -216,7 +214,7 @@ export function analisarContrato(
   }
 
   // R4
-  if (s.urgencia === 'alta' && s.qualificado && s.proxima_acao !== 'encaminhar_vendas') {
+  if (s.urgencia === 'alta' && s.qualificado && s.desvios === 0 && s.proxima_acao !== 'encaminhar_vendas') {
     cruz('urgencia_alta_exige_vendas', 'urgencia alta com lead qualificado exige proxima_acao=encaminhar_vendas.')
   }
 
@@ -232,7 +230,8 @@ export function analisarContrato(
   const faltaDado = s.dados_faltantes.length > 0 || s.tipo_servico === null || s.segmento === null || s.cidade === null || !temTelefone
   // Cidade parecida com a lista ainda nao e fora da regiao: abaixo do teto, perguntar para confirmar e valido.
   const cidadeEmDuvida = cidadeFora && !tetoAtingido && s.proxima_acao === 'perguntar' && cidade !== null && cidadeParecida(cidade, cfg)
-  const precisaRotear = !recusa && ((cidadeFora && !cidadeEmDuvida) || (tetoAtingido && faltaDado))
+  const limiteGoverna = s.desvios === 3 || s.vagos === 3
+  const precisaRotear = !recusa && !limiteGoverna && ((cidadeFora && !cidadeEmDuvida) || (tetoAtingido && faltaDado))
   if (precisaRotear) {
     const motivo = cidadeFora && !cidadeEmDuvida ? 'cidade fora da regiao atendida' : 'teto de perguntas atingido com dados obrigatorios faltando'
     if (cidadeFora && s.qualificado) cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
@@ -286,8 +285,16 @@ export function analisarContrato(
       cruz('limite_exige_encerrar', detalhe)
     }
   }
-  if (s.vagos === 3 && s.proxima_acao !== (temTelefone ? 'encaminhar_humano' : 'responder_e_encerrar')) {
-    cruz('limite_exige_encerrar', 'vagos=3 encerra: sem telefone, responder_e_encerrar citando o contato; com telefone, encaminhar_humano.')
+  if (s.vagos === 3) {
+    const esperada = !temTelefone ? 'responder_e_encerrar' : s.qualificado ? 'encaminhar_vendas' : 'encaminhar_humano'
+    if (s.proxima_acao !== esperada) {
+      const detalhe = !temTelefone
+        ? 'vagos=3 sem telefone encerra: use proxima_acao=responder_e_encerrar e cite o contato da empresa na resposta.'
+        : s.qualificado
+          ? 'vagos=3 com telefone e lead qualificado: use proxima_acao=encaminhar_vendas com uma frase de fechamento na resposta.'
+          : 'vagos=3 com telefone e lead nao qualificado: use proxima_acao=encaminhar_humano com uma frase de fechamento na resposta.'
+      cruz('limite_exige_encerrar', detalhe)
+    }
   }
 
   return { saida: s, violacoes: v }

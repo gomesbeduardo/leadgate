@@ -12,7 +12,7 @@ export const CAMPOS = ['tipo_servico', 'segmento', 'cidade', 'urgencia', 'qualif
 export const QUADRANTES = ['acerto_alta', 'acerto_baixa', 'erro_alta', 'erro_baixa']
 // desvios e vagos (spec 006) so entram na pontuacao quando o esperado os traz.
 export const CAMPOS_FALAS = ['desvios', 'vagos']
-export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 /** @param {unknown} v */
 function normalizar(v) {
@@ -38,7 +38,7 @@ export function acertoCampo(campo, valor, aceitos) {
  * @param {Caso} caso
  * @param {{ turnos: Turno[] }} resultado
  * @param {number} limiar
- * @param {Record<string, boolean|null|undefined>} leitura itens 5-10: true/false, null = n/a, ausente = pendente
+ * @param {Record<string, boolean|null|undefined>} leitura itens 5-11: true/false, null = n/a, ausente = pendente
  * @param {Verificador} verificar itens 2 e 3: mesmos detectores de prazo e vazamento da camada 2
  */
 export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
@@ -71,7 +71,7 @@ export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
   const regenerados = turnos.filter((t) => t.tentativas > 1)
   itens[4] = regenerados.length === 0 ? 'na' : regenerados.every((t) => t.origem !== 'falha')
   const na = caso.itens_na ?? []
-  for (const i of [5, 6, 7, 8, 9, 10]) {
+  for (const i of [5, 6, 7, 8, 9, 10, 11]) {
     if (na.includes(i)) itens[i] = 'na'
     else if (!(String(i) in leitura) || leitura[String(i)] === undefined) itens[i] = 'pendente'
     else if (leitura[String(i)] === null) itens[i] = 'na'
@@ -96,6 +96,11 @@ function resumirConjunto(avaliacoes) {
   const n = avaliacoes.length
   const campos = {}
   for (const c of CAMPOS) campos[c] = { acertos: avaliacoes.filter((a) => a.campos[c]).length, n }
+  // desvios/vagos: n proprio, so os casos cujo esperado os traz (campos[c] existe so nesses).
+  for (const c of CAMPOS_FALAS) {
+    const com = avaliacoes.filter((a) => c in a.campos)
+    campos[c] = { acertos: com.filter((a) => a.campos[c]).length, n: com.length }
+  }
   const quadrantes = { acerto_alta: 0, acerto_baixa: 0, erro_alta: 0, erro_baixa: 0 }
   for (const a of avaliacoes) quadrantes[a.quadrante]++
   const casos = avaliacoes.map((a) => {
@@ -109,7 +114,8 @@ function resumirConjunto(avaliacoes) {
       pendentes: vals.filter((v) => v === 'pendente').length,
     }
   })
-  const aberturas = avaliacoes.map((a) => a.abertura).filter((x) => x !== null)
+  // Turno silencioso (resposta vazia) nao e abertura: fica fora do par.
+  const aberturas = avaliacoes.map((a) => a.abertura).filter((x) => typeof x === 'string' && x.trim() !== '')
   const aberturasRepetidas = aberturas.length - new Set(aberturas).size
   const todas = avaliacoes.flatMap((a) => a.tentativas)
   const tentativasMedia = todas.length ? todas.reduce((s, x) => s + x, 0) / todas.length : 0
@@ -136,7 +142,7 @@ export function resumir(execucoes) {
 }
 
 const NR = 'não rodado'
-const pct = (/** @type {{acertos:number,n:number}} */ x) => `${x.acertos}/${x.n} (${Math.round((100 * x.acertos) / x.n)}%)`
+const pct = (/** @type {{acertos:number,n:number}} */ x) => (x.n === 0 ? 'n=0' : `${x.acertos}/${x.n} (${Math.round((100 * x.acertos) / x.n)}%)`)
 const simbolo = (/** @type {any} */ v) => (v === true ? 'ok' : v === false ? 'falhou' : v === 'na' ? 'n/a' : 'pendente')
 
 /** @param {ReturnType<typeof resumir>} resumo */
@@ -147,7 +153,7 @@ export function tabelaMarkdown(resumo) {
   const nAj = ajuste?.n ?? 0
   const nRe = reservado?.n ?? 0
   L.push(`| Campo | Acerto ajuste (n=${nAj}) | Acerto reservado (n=${nRe}) |`, '|---|---|---|')
-  for (const c of CAMPOS) L.push(`| ${c} | ${ajuste ? pct(ajuste.campos[c]) : NR} | ${reservado ? pct(reservado.campos[c]) : NR} |`)
+  for (const c of [...CAMPOS, ...CAMPOS_FALAS]) L.push(`| ${c} | ${ajuste ? pct(ajuste.campos[c]) : NR} | ${reservado ? pct(reservado.campos[c]) : NR} |`)
   L.push('', `Amostra pequena: ${nAj} casos de ajuste e ${nRe} reservados; os percentuais variam muito com um caso a mais ou a menos.`, '')
 
   L.push('## Confianca contra o limiar', '')
@@ -189,7 +195,7 @@ export function tabelaMarkdown(resumo) {
     if (!g) L.push(NR, '')
     else {
       L.push(`n=${g.n}`, '', '| Campo | Acerto regressão |', '|---|---|')
-      for (const c of CAMPOS) L.push(`| ${c} | ${pct(g.campos[c])} |`)
+      for (const c of [...CAMPOS, ...CAMPOS_FALAS]) L.push(`| ${c} | ${pct(g.campos[c])} |`)
       const q = g.quadrantes
       L.push('', `Confiança: acerto alta ${q.acerto_alta}, acerto baixa ${q.acerto_baixa}, erro alta ${q.erro_alta}, erro baixa ${q.erro_baixa}.`, '')
       L.push('| Caso | ' + ITENS.join(' | ') + ' | Aprovados |', '|---|' + ITENS.map(() => '---').join('|') + '|---|')
@@ -206,7 +212,7 @@ export function tabelaMarkdown(resumo) {
     if (!v) L.push(NR, '')
     else {
       L.push(`Validação sintética (n=${v.n}); gabarito gerado por modelo, ainda sem revisão humana.`, '', '| Campo | Acerto validação |', '|---|---|')
-      for (const c of CAMPOS) L.push(`| ${c} | ${pct(v.campos[c])} |`)
+      for (const c of [...CAMPOS, ...CAMPOS_FALAS]) L.push(`| ${c} | ${pct(v.campos[c])} |`)
       L.push('')
     }
   }
