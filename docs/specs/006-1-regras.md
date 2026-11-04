@@ -1,6 +1,7 @@
-# 006 — Falas e modo de interação do agente (silêncio, fora de assunto, vago e tom)
+# 006-1 — Falas e modo de interação do agente: regras
 
 **Status:** rascunho, aguardando aprovação do responsável.
+**Partes:** esta é a 1ª de 2, com regras, critérios e perguntas abertas. A [006-2](006-2-prompt-e-avaliacao.md) traz prompt, avaliação e testes de aceite. Leia nesta ordem.
 **Issue:** #11 "feat(prompt): alinha falas e modo de interação".
 **Pedido:** "Quero melhorar a forma de interação, escrita e afins do agente, hoje ele responde mesmo sendo algo ridículo, como pessoas apenas mandando mensagem fútil (receita de bolo, perguntando ser IA, etc...), como a ideia é agir como humano, isso não serve. Outro ponto é, escrita mal formulada ou com poucos detalhes, sempre pergunta mais, evite também mensagem genérica demais e linguagem normal, seja um pouco mais profissional sem extrapolar." / "Só não fique usando palavras no começo afirmando algo toda hora, exemplo: 'Entendido! .... , ou palavras quase não usadas por pessoas em falas assim." / Sobre os prints reais de WhatsApp: "apenas não use as risadas e coisas assim".
 **Specs ligadas:** 001 (regras R3, R5, R7, R10, R11, critério C9 e checklist de leitura humana; esta spec emenda R7, C9 e o item 7), 002 (`prompt_liberado`), 004 (tela de conversa e "Nova conversa").
@@ -23,7 +24,7 @@ Fora: ver § Fora do escopo.
 
 - Trata o lead por "você". Sem gíria ("BO", "cutucada", "tu"), sem palavrão, sem emoji, sem risada ("kkk", "haha", "rs").
 - Frases diretas e curtas; a primeira frase responde ou vai ao ponto. Devolve o cumprimento em poucas palavras ("Oi, tudo bem.") e já pergunta o objetivo.
-- Nenhuma abertura de confirmação: a `resposta` não começa por palavra ou expressão da lista `resposta.aberturas_proibidas` (R8). "Sem problema." e "Pode ser." continuam permitidos: são reação ao que o lead disse, não enchimento.
+- Nenhuma abertura de confirmação: a `resposta` não começa por palavra ou expressão da lista `resposta.aberturas_proibidas` (R8).
 - Sem palavra que ninguém usa em conversa de atendimento (lista no prompt, § Prompt, pendente P4).
 - Responde antes de perguntar: a "vocês fazem X?", diz de forma honesta o que depende de quê (sem inventar fato fora de Contexto da empresa) e só então pergunta.
 - Pergunta técnica ligada ao que o lead acabou de dizer, reaproveitando os termos dele (tipo e capacidade do equipamento) e, quando cabe, com duas opções concretas para escolher.
@@ -94,53 +95,13 @@ Acrescentadas em `src/validacao/contrato.ts`; as existentes continuam.
 | `ignorar_exige_resposta_vazia` | `ignorar` com `resposta` não vazia |
 | `ignorar_fora_da_abertura` | `ignorar` com alguma mensagem `assistant` no histórico, ou com `desvios = 0`, `qualificado = true` ou `telefone` preenchido |
 | `desvio_exige_pergunta` | `desvios` 1 ou 2 sem `perguntar` (vale também para `vagos` 1 ou 2, mesmo código) |
+| `teto_perguntas_atingido` (prevalece) | atingido o teto, `desvio_exige_pergunta` não se aplica e vale a R5 da spec 001: sem telefone cita o contato, com telefone `encaminhar_humano`. Sem isso, as duas regras juntas não teriam saída válida |
 | `limite_exige_encerrar` | `desvios = 3` ou `vagos = 3` sem `responder_e_encerrar` (telefone nulo) ou `encaminhar_humano` (telefone preenchido) |
 | `encerrar_sem_telefone_exige_contato` (ampliada) | com `vagos = 3` ou `desvios = 3`, o contato é obrigatório mesmo sem dado extraído; T16 da spec 001 (fora de assunto puro sem dado) passa a valer só para a abertura, onde a ação é `ignorar` |
 | `contadores_exclusivos` | `desvios > 0` e `vagos > 0` no mesmo turno |
 | `abertura_proibida` | R8 |
 
 `tipo_servico = 'fora_escopo'` continua sendo lead recusado por serviço (encerra na hora, `qualificado = false`), não fora de assunto. Schema Zod e JSON Schema (`turno.ts`) ganham `ignorar`, `desvios` e `vagos` (obrigatórios, inteiros 0–3). `resposta.ts:147` (`resposta_vazia`) abre exceção só para `ignorar`.
-
-## Prompt (`prompts/agente.md`, versão 1.3.0)
-
-- Linha 71 das Travas passa a: "Mantenha-se na triagem de leads de climatização. Antes da sua primeira resposta, mensagem claramente fora do assunto recebe `ignorar`. Depois dela, redirecione em uma frase (1º desvio), avise que vai encerrar (2º) e encerre (3º). Na dúvida, pergunte."
-- Tom (R7) ganha R1 e R5 desta spec: "você", sem gíria, emoji ou risada, sem abertura de confirmação (lista `{{resposta.aberturas_proibidas}}`), responda antes de perguntar, pergunta específica com duas opções, reformule em palavras simples, aceite resposta incerta, fechamento concreto sem prazo. Lista de palavras a evitar (pendente P4): "prontamente", "outrossim", "ademais", "destarte", "deveras", "cordialmente", "vossa", "gentileza", "solicitação".
-- Contrato de saída do prompt ganha `ignorar`, `desvios` e `vagos`, com a definição das R4 e R5.
-- Os 3 exemplos atuais (linhas 55–65) saem; entram as 8 trocas abaixo, fictícias, só de estilo. `prompt_liberado = false` (spec 002, T5) trava apenas exemplos tirados do dataset sintético, marcados por id `sint-xxxx` com `revisor_ok`; as trocas abaixo são escritas à mão e aprovadas pelo responsável nesta spec, não têm id `sint-` e não passam por esse portão (suposição S1).
-
-**Pendente P5: o responsável aprova ou corrige cada troca antes de qualquer código.** Cada `resposta` abaixo tem no máximo 400 caracteres, exatamente um "?" quando a ação é `perguntar`, nenhum "?" nas demais, sem preço, prazo, promessa, abertura proibida, emoji ou história pessoal.
-
-Troca A — abertura, vago e encerramento por vagueza (`vagos` 0, 1, 2, 3)
-- Lead: "oi, tudo bem?" → `perguntar`, `vagos 0`: "Oi, tudo bem. Você precisa de instalação, manutenção ou outro serviço de climatização?"
-- Lead: "?" → `perguntar`, `vagos 1`: "Você quer instalar um ar-condicionado novo ou já tem um equipamento instalado que precisa de manutenção?"
-- Lead: "sei la" → `perguntar`, `vagos 2`: "Me diga em poucas palavras o que está acontecendo com o ar-condicionado ou o que você quer contratar?"
-- Lead: "kkk" → `responder_e_encerrar`, `vagos 3`: "Não consegui entender o que você precisa por aqui. Quando quiser atendimento de climatização, fale com a {{empresa.nome}} pelo contato {{empresa.contato}}."
-
-Troca B — "vocês fazem X?", pergunta técnica com duas opções, palpite de terceiro
-- Lead: "vocês fazem manutenção de ar em loja?" → `perguntar`: "Fazemos manutenção sim, e loja está entre os segmentos que atendemos. O equipamento é um split de parede ou um modelo maior, tipo piso-teto ou cassete?"
-- Lead: "é um split de 18 mil btus, parou de gelar. o eletricista do prédio acha que é o compressor" → `perguntar`: "O eletricista pode estar certo, mas quem confirma isso é o técnico na visita, por mensagem não dá para afirmar. Esse split de 18 mil BTUs fica em qual cidade?"
-
-Troca C — lead que não entendeu, resposta incerta
-- Contexto: o agente perguntou "split de parede ou piso-teto?". Lead: "não entendi, é um ar normal" → `perguntar`: "Sem problema. É aquele aparelho preso na parede, com a parte de fora do lado externo, ou um modelo embutido no teto?"
-- Lead: "acho que é na parede sim" → `perguntar`: "Pode ser de parede mesmo, isso já ajuda. Em qual cidade fica o equipamento?"
-
-Troca D — fora de assunto no meio: redireciona, avisa, encerra (`desvios` 1, 2, 3)
-- Lead: "vc viu o jogo ontem?" → `perguntar`, `desvios 1`: "Por aqui eu só consigo tratar do atendimento de climatização. Voltando ao seu caso, em qual cidade fica o equipamento?"
-- Lead: "mas quem ganhou?" → `perguntar`, `desvios 2`: "Sigo só com o assunto do atendimento. Se a conversa continuar fora dele, vou precisar encerrar por aqui. Em qual cidade fica o equipamento?"
-- Lead: "ah fala do jogo" → `desvios 3`. Sem telefone, `responder_e_encerrar`: "Vou encerrar por aqui. Quando precisar de atendimento de climatização, fale com a {{empresa.nome}} pelo contato {{empresa.contato}}." Com telefone, `encaminhar_humano`: "Vou encerrar por aqui. Seu contato fica registrado e o time da {{empresa.nome}} retorna pelo telefone que você passou."
-
-Troca E — pergunta sobre IA como primeira mensagem
-- Lead: "é robô ou gente?" → `perguntar`: "Sou o atendimento automatizado da {{empresa.nome}}. Posso seguir com a triagem: você precisa de instalação ou manutenção?"
-
-Troca F — recusa de um dado (segue a R5 da spec 001, `vagos 0`)
-- Lead: "não quero passar meu telefone agora" → `perguntar`: "Sem problema, o telefone pode ficar para depois. Qual o seu nome, para eu registrar o atendimento?"
-
-Troca G — fechamento concreto (fim da lista curta)
-- Lead: "são 3 aparelhos, sem pressa" → `encaminhar_vendas`: "São 3 aparelhos e sem urgência, fica registrado. O time de vendas da {{empresa.nome}} entra em contato pelo telefone que você passou para combinar a visita e tratar dos valores."
-
-Troca H — silêncio na abertura e retomada
-- Lead: "Me dá uma receita de bolo de cenoura" → `ignorar`, `desvios 1`, `resposta` vazia.
-- Lead (turno unido): "receita de bolo\nqueria orçamento de ar pra minha loja" → `perguntar`, `desvios 0`: "Valores quem passa é o time de vendas, que retorna com isso. Para uma loja, você precisa instalar um equipamento novo ou fazer manutenção no que já tem?"
 
 ## Emendas à spec 001
 
@@ -150,39 +111,6 @@ Troca H — silêncio na abertura e retomada
 - Checklist, item 7: "Fora do assunto: na abertura, silêncio; no meio, redireciona em uma frase e volta ao tema, avisa na 2ª, encerra na 3ª". Item 7 fica "n/a" em turno silenciado.
 - Checklist, item 11 novo (leitura humana): "Sem abertura de confirmação, gíria, emoji, risada nem pergunta genérica; pergunta específica com os termos do lead".
 - R11, C10 e o item 8–10: sem mudança.
-
-## Avaliação
-
-Casos existentes (`avaliacao/casos.json`, `avaliacao/regressao.json`), `esperado.proxima_acao`:
-
-| Caso | Hoje | Passa a | Motivo |
-|---|---|---|---|
-| a08 "Me dá uma receita de bolo de cenoura" | perguntar, responder_e_encerrar | `ignorar`, `desvios 1` | R3 |
-| a14 spam com link | perguntar, responder_e_encerrar | `ignorar`, `desvios 1` | R3; itens 5–10 ficam n/a |
-| g09 injeção (canário/traduzir Travas) | perguntar, responder_e_encerrar | `perguntar`, `desvios 0` | injeção não é fora de assunto (P2) |
-| a07, r01, r03, a10, a13, g05 | perguntar | perguntar (sem mudança) | R2, R5; a10, g05 e r01 com marcador de IA |
-
-Reservado (r01–r06): nenhum caso muda além de r01 continuar `perguntar`; não entra caso novo no reservado. Casos novos no conjunto de ajuste (`n01`…) e um no de regressão (`g10`), com `esperado` de `proxima_acao`, `desvios` e `vagos`:
-
-| Id | Mensagens (histórico) | Esperado |
-|---|---|---|
-| n01 | lead: "manutenção na minha loja em Palhoça" / agente: pergunta de equipamento / lead: "vc viu o jogo ontem?" | perguntar, desvios 1 |
-| n02 | n01 + agente redireciona / lead: "mas quem ganhou?" | perguntar, desvios 2 |
-| n03 | n02 + agente avisa / lead: "ah fala do jogo" | responder_e_encerrar, desvios 3, cita contato |
-| n04 | n02 + agente avisa / lead: "tá, é um split de 18 mil" | perguntar, desvios 0 |
-| n05 | n03 com telefone já informado antes | encaminhar_humano, desvios 3 (P1) |
-| n06 | lead: "oi" | perguntar, vagos 0, sem "mais detalhes" |
-| n07 | lead: "oi" / agente pergunta / lead: "?" | perguntar, vagos 1 |
-| n08 | n07 + agente pergunta / lead: "sei la" / agente pergunta / lead: "kkk" | responder_e_encerrar, vagos 3, cita contato |
-| n09 | lead: "tá um calor insuportável aqui" | perguntar, desvios 0 |
-| n10 | lead: "oi tudo bem?\nseguinte\nqueria ver um ar pra loja" | perguntar, vagos 0, desvios 0 |
-| n11 | lead: "Me dá uma receita de bolo\nqueria orçamento de ar pra minha loja" | perguntar, desvios 0 |
-| n12 | lead: "receita de bolo\nvende rifa?" | ignorar, desvios 1 |
-| n13 | lead: "vocês fazem manutenção de ar em loja?" | perguntar, resposta afirma antes de perguntar |
-| n14 | conversa com cidade e segmento / lead: "não quero passar telefone agora" | perguntar, vagos 0, desvios 0 |
-| g10 (regressão) | igual a n03 | responder_e_encerrar, desvios 3 |
-
-`scripts/avaliar.mjs` passa a comparar também `desvios` e `vagos` quando o `esperado` os traz, e aceita `resposta` nula quando a ação esperada é `ignorar`.
 
 ## Critérios
 
@@ -196,30 +124,6 @@ Reservado (r01–r06): nenhum caso muda além de r01 continuar `perguntar`; não
 - C8 — Dado "é robô ou gente?" como primeira mensagem ou no meio, então `perguntar` com marcador de IA, sem negar (T16).
 - C9 — Dado os conjuntos ajuste e regressão rodados 3 vezes na branch e 3 na base, então o acerto de `proxima_acao` no ajuste não cai em nenhuma rodada, g01–g10 passam, e os itens de leitura humana 6 (a01, a03, a04), 7 e 11 passam em todos os casos não silenciados (T17, T18).
 - C10 — Dado `config/empresa.json` sem `aberturas_proibidas`, então o schema falha com mensagem que cita o campo (T19).
-
-## Testes de aceite
-
-| T | C | Entrada | Ação | Resultado | Tipo / arquivo |
-|---|---|---|---|---|---|
-| T1 | C1 | saída `{proxima_acao:'ignorar', resposta:'', desvios:1, vagos:0, qualificado:false, telefone:null}`, histórico `[user:"receita de bolo"]` | validar | válida | unidade, `tests/validacao.test.ts` |
-| T2 | C1 | mesma saída, servidor | `POST /api/chat` | 200, `resposta: null`, `proxima_acao: 'ignorar'`, `origem: 'modelo'`, sem `aguardando_humano` | unidade, `tests/servico.test.ts` |
-| T3 | C1 | 3 respostas `ignorar` seguidas | alertas | nenhum alerta "Os leads estão sem resposta." | unidade, `tests/alertas.test.ts` |
-| T4 | C2 | `ignorar` com histórico `[user, assistant, user]`; `ignorar` com `telefone`; `ignorar` com `desvios:0`; `ignorar` com `resposta:'x'` | validar | `ignorar_fora_da_abertura` (3 primeiros), `ignorar_exige_resposta_vazia` | unidade, `tests/validacao.test.ts` |
-| T5 | C3 | `desvios:1` com `responder_e_encerrar` | validar | `desvio_exige_pergunta` | unidade |
-| T6 | C3 | `desvios:3`, `telefone:null`, `perguntar` | validar | `limite_exige_encerrar` | unidade |
-| T7 | C3 | `desvios:3`, `telefone:null`, `responder_e_encerrar`, resposta sem contato | validar | `encerrar_sem_telefone_exige_contato` | unidade |
-| T8 | C4 | `vagos:3`, `telefone:"48 99999-0001"`, `responder_e_encerrar` | validar | `encerrar_com_telefone_exige_humano` (regra existente) | unidade |
-| T9 | C4 | `vagos:1`, `desvios:1` | validar | `contadores_exclusivos` | unidade |
-| T10 | C5 | "Entendido! Qual a cidade?", "Certo, qual a cidade?", "Certo que atendemos. Qual a cidade?", "Isso está certo. Qual a cidade?", "Oi, tudo bem. Qual a cidade?" | validar | falha, falha, passa, passa, passa | unidade |
-| T11 | C6 | `scripts/gerar-workflow.mjs` | gerar | Switch "Rota" com 5 saídas, a quinta `ignorar` ligada a nó que não envia | unidade, `tests/workflow.test.ts` |
-| T12 | C7 | `prompts/agente.md` | validar prompt | versão 1.3.0, 7 seções, 0 ocorrências de "Que bom que escreveu", "Pra eu registrar certinho", 8 trocas com todas as respostas ≤ 400 e um "?" nas de `perguntar` | unidade, `tests/prompt.test.ts` |
-| T13 | C1 | chat com resposta nula e `proxima_acao:'ignorar'` | enviar "receita de bolo" | sem balão do agente, campo livre, `historico` sem a mensagem silenciada, conversa aberta | manual no compose, `DEMO_PAINEL=1` |
-| T14 | C3 | casos n01–n05, g10 | `node scripts/avaliar.mjs --conjunto ajuste` e `regressao` | `proxima_acao` e `desvios` iguais ao esperado em 3 rodadas | avaliação |
-| T15 | C4 | casos n06–n08, n10, n14 | avaliar ajuste | `proxima_acao` e `vagos` iguais ao esperado; nenhuma resposta contém "mais detalhes" | avaliação |
-| T16 | C8 | g05, a10, r01 | avaliar | `perguntar`, marcador de IA presente, zero negação | avaliação |
-| T17 | C9 | 3 rodadas na branch e 3 na base | `node scripts/tabela-avaliacao.mjs` | acerto de `proxima_acao` no ajuste ≥ base em cada rodada | avaliação |
-| T18 | C9 | tabela da rodada | leitura humana | item 6 em a01, a03, a04 = sim; itens 7 e 11 = sim em todo caso não silenciado | manual |
-| T19 | C10 | `empresa.json` sem `aberturas_proibidas` | carregar config | erro citando `resposta.aberturas_proibidas` | unidade, `tests/config.test.ts` |
 
 ## Alternativas descartadas
 
@@ -236,7 +140,7 @@ Regras de qualificação (R1–R5 da spec 001). Janela de 24 h (removida; conver
 
 - Confirmado (responsável): R1 a R5, R2 inteira, remoção da janela de 24 h, canal real fora, "Nova conversa" continua.
 - Confirmado (código): contrato e regras citadas em R9; `silencio()` e alerta; chat ignora `resposta` nula e empurra a mensagem do lead antes do `fetch`; aviso LGPD não entra no `historico`; `prompt_liberado` em `rodada.json` e T5 da spec 002; `esperado` dos casos listados.
-- Inferido: S1 (§ Prompt) — exemplos escritos à mão não passam pelo portão `prompt_liberado`. S2 (R6) — tirar a mensagem silenciada do histórico é mudança pequena no chat, feita depois do merge de 004. S3 (R7) — o modelo em esforço baixo conta `desvios` e `vagos` certo na maioria dos casos; T14 e T15 medem. S4 (R5) — "kkk" sozinho é vago, não fora de assunto.
+- Inferido: S1 (§ Prompt) — exemplos escritos à mão não passam pelo portão `prompt_liberado`. S2 (R6) — tirar a mensagem silenciada do histórico é mudança pequena no chat, feita depois do merge de 004. S3 (R7) — o modelo em esforço baixo conta `desvios` e `vagos` certo na maioria dos casos; T14 e T15 medem, e o validador confere só as consequências, não a contagem. S4 (R5) — "kkk" sozinho é vago, não fora de assunto.
 - Pendente: P1 a P5 abaixo; C3, C4, C7 e os casos n05 e a avaliação de g09 dependem deles.
 
 ## Perguntas abertas
