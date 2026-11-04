@@ -3,16 +3,14 @@ name: Revisão do agente
 on:
   pull_request:
     branches: [staging]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   revisao-agente:
-    if: >-
-      startsWith(github.head_ref, 'claude/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.user.login != 'gomesbeduardo'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -24,6 +22,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       PR: ${{ github.event.pull_request.number }}
+      BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,6 +32,7 @@ jobs:
         with:
           node-version: 24
       - name: Guarda o diff e a issue como dado
+        shell: bash
         run: |
           mkdir .revisao
           gh pr diff "$PR" > .revisao/diff.patch
@@ -56,9 +56,11 @@ jobs:
             --model claude-opus-5-5
             --max-turns 20
             --allowedTools "Read,Glob,Grep,Write(.revisao/veredito.json)"
-            --disallowedTools "Read(avaliacao/casos.json),Bash,WebFetch,WebSearch"
+            --disallowedTools "Read(avaliacao/casos.json),Read(//proc/**),Read(//home/**),Bash,WebFetch,WebSearch"
       - name: Aplica o veredito
+        shell: bash
         run: |
+          test "$(git rev-parse HEAD)" = "$BASE"
           set +e
           node scripts/veredito.mjs .revisao/veredito.json > comentario.md
           codigo=$?

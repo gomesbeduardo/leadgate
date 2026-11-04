@@ -26,19 +26,23 @@ jobs:
       actions: read
       id-token: write
     env:
-      GH_TOKEN: ${{ github.token }}
       ISSUE: ${{ github.event.issue.number }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Guarda a issue como dado
-        run: gh issue view "$ISSUE" --json number,title,body > .git/issue-agente.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue view "$ISSUE" --json number,title,body > .git/issue-agente.json
+          echo "INICIO=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - uses: anthropics/claude-code-action@v1
         timeout-minutes: 25
         with:
@@ -65,16 +69,20 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npx vitest run:*),Bash(npx tsc --noEmit),Bash(npm run build:servico),Bash(npm run gerar:workflow)"
-            --disallowedTools "Read(avaliacao/casos.json),Bash(curl:*),Bash(wget:*),WebFetch,WebSearch"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git switch:*),Bash(git diff),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npx vitest run:*),Bash(npx tsc --noEmit),Bash(npm run build:servico),Bash(npm run gerar:workflow)"
+            --disallowedTools "Read(avaliacao/casos.json),Bash(gh pr create*--label*),Bash(gh pr create*-l *),Bash(curl:*),Bash(wget:*),WebFetch,WebSearch"
       - name: Confere que o PR existe
-        run: |
-          gh pr list --state open --base staging --json headRefName,body \
-            --jq "[.[] | select((.headRefName | startswith(\"claude/\")) and (.body | contains(\"Closes #$ISSUE\")))] | length" > total-prs
-          test "$(cat total-prs)" -gt 0
-      - name: Avisa a falha na issue
-        if: failure()
+        shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr list --state open --base staging --head "claude/issue-$ISSUE" --json body,updatedAt \
+            --jq "[.[] | select(.updatedAt >= \"$INICIO\")] | .[0].body // \"\"" \
+            | grep -qE "Closes #$ISSUE([^0-9]|\$)"
+      - name: Avisa a falha na issue
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
           EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh issue comment "$ISSUE" --body "O agente terminou sem PR. Execução: $EXECUCAO"

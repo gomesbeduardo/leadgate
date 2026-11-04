@@ -10,9 +10,7 @@ permissions:
 
 jobs:
   alcance:
-    if: >-
-      startsWith(github.head_ref, 'claude/') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.user.login != 'gomesbeduardo'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -22,6 +20,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       PR: ${{ github.event.pull_request.number }}
+      AUTOR: ${{ github.event.pull_request.user.login }}
+      COMMIT: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,21 +29,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Lê os arquivos e o corpo do PR
+      - name: Lê os arquivos, o corpo e os rótulos do PR
+        shell: bash
         run: |
           gh api --paginate "repos/$GH_REPO/pulls/$PR/files" \
             --jq '.[] | {nome: .filename, estado: .status, anterior: .previous_filename}' \
             | jq -s 'map(with_entries(select(.value != null)))' > arquivos.json
+          test "$(jq length arquivos.json)" -eq "$(gh pr view "$PR" --json changedFiles --jq .changedFiles)"
           gh pr view "$PR" --json body --jq .body > corpo.md
+          gh pr view "$PR" --json labels --jq '[.labels[].name]' > rotulos.json
       - name: Decide o merge automático
+        shell: bash
         run: |
           set +e
-          node scripts/alcance.mjs arquivos.json corpo.md > saida.txt
+          node scripts/alcance.mjs arquivos.json corpo.md rotulos.json > saida.txt 2>&1
           codigo=$?
           set -e
           cat saida.txt
           if [ "$codigo" -eq 0 ]; then
-            gh pr merge "$PR" --auto --squash
+            if [ "$AUTOR" != 'claude[bot]' ]; then
+              exit 0
+            fi
+            gh api "repos/$GH_REPO/rules/branches/staging" \
+              --jq '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context]' > exigidos.json
+            for check in portoes alcance revisao-agente; do
+              jq -e --arg check "$check" 'index($check) != null' exigidos.json > /dev/null
+            done
+            gh pr merge "$PR" --auto --squash --match-head-commit "$COMMIT"
             exit 0
           fi
           gh pr merge "$PR" --disable-auto || true
