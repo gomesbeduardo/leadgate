@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atendimento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #254777;
+  --navy-noturno: #202249;
+  --azure: #0f6fac;
+  --azure-tinta: #0a5c92;
+  --azure-nevoa: #e9f4fb;
+  --nevoa-pagina: #f3f5f8;
+  --branco: #ffffff;
+  --nevoa-borda: #bcc5d3;
+  --grafite: #515a6e;
+  --tinta: #171b24;
+  --fonte-titulo: 'Barlow Semi Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --raio: 3px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--tinta);
+  background: var(--nevoa-pagina);
+  overflow-x: hidden;
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+:focus-visible { outline: 3px solid var(--azure); outline-offset: 2px; }
+
+.app { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.topo { background: var(--navy); color: var(--branco); padding: 14px 16px; border-bottom: 3px solid var(--azure); }
+.topo h1 { margin: 0; font: 600 1.375rem/1.2 var(--fonte-titulo); letter-spacing: .01em; }
+.corpo { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: 760px; margin: 0 auto; }
+body.com-painel .corpo { max-width: none; flex-direction: column; }
+.coluna { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: 760px; margin: 0 auto; background: var(--branco); border-left: 1px solid var(--nevoa-borda); border-right: 1px solid var(--nevoa-borda); }
+
+.conversa { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 88%; padding: 10px 14px; border-radius: var(--raio); border: 1px solid var(--nevoa-borda); overflow-wrap: anywhere; white-space: pre-wrap; }
+.msg.sistema { align-self: flex-start; background: var(--branco); color: var(--tinta); }
+.msg.lead { align-self: flex-end; background: var(--navy); border-color: var(--navy); color: var(--branco); }
+.msg.aviso { align-self: stretch; max-width: none; background: var(--azure-nevoa); border-color: var(--azure); border-left-width: 4px; color: var(--navy-noturno); font-size: .9375rem; }
+.msg.aviso .rotulo { display: block; font: 600 .8125rem/1.2 var(--fonte-titulo); text-transform: uppercase; letter-spacing: .08em; color: var(--azure-tinta); margin-bottom: 4px; }
+.msg.falha { background: var(--branco); border-left: 4px solid var(--navy); }
+.encerrado { align-self: center; font-size: .875rem; color: var(--grafite); border-top: 1px solid var(--nevoa-borda); padding-top: 10px; width: 100%; text-align: center; }
+
+.digitando { align-self: flex-start; display: flex; align-items: center; gap: 10px; color: var(--grafite); font-size: .9375rem; padding: 6px 2px; }
+.digitando[hidden] { display: none; }
+.pontos { display: inline-flex; gap: 4px; }
+.pontos i { width: 7px; height: 7px; background: var(--azure); border-radius: 1px; display: block; animation: pulso 1.2s ease-in-out infinite; }
+.pontos i:nth-child(2) { animation-delay: .15s; }
+.pontos i:nth-child(3) { animation-delay: .3s; }
+@keyframes pulso { 0%, 80%, 100% { opacity: .25; transform: scaleY(.6); } 40% { opacity: 1; transform: scaleY(1.15); } }
+
+.rodape { border-top: 1px solid var(--nevoa-borda); background: var(--nevoa-pagina); padding: 12px 16px; }
+form { display: flex; gap: 8px; align-items: flex-end; }
+textarea {
+  flex: 1; min-width: 0; resize: none; font: inherit; color: var(--tinta); background: var(--branco);
+  border: 1px solid var(--grafite); border-radius: var(--raio); padding: 9px 12px; max-height: 8.5em;
+}
+textarea:disabled { background: var(--nevoa-pagina); border-color: var(--nevoa-borda); color: var(--grafite); }
+button {
+  font: 600 1rem/1 var(--fonte-titulo); letter-spacing: .03em; min-height: 44px; padding: 0 18px;
+  border-radius: var(--raio); border: 1px solid var(--azure); background: var(--azure); color: var(--branco); cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--azure-tinta); border-color: var(--azure-tinta); }
+button:disabled { background: var(--nevoa-borda); border-color: var(--nevoa-borda); color: var(--grafite); cursor: not-allowed; }
+button.secundario { background: var(--branco); color: var(--azure-tinta); }
+button.secundario:hover:not(:disabled) { background: var(--azure-nevoa); color: var(--azure-tinta); }
+.nova { display: flex; justify-content: center; }
+.nova[hidden] { display: none; }
+
+.painel { display: none; background: var(--nevoa-pagina); border-top: 1px solid var(--nevoa-borda); padding: 16px; overflow: auto; max-height: 40vh; }
+body.com-painel .painel { display: block; }
+.painel h2 { margin: 0 0 8px; font: 600 1.125rem/1.2 var(--fonte-titulo); color: var(--navy); }
+.painel dl { margin: 0 0 10px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: .875rem; }
+.painel dt { color: var(--grafite); }
+.painel dd { margin: 0; font-weight: 600; }
+.painel pre { margin: 0; padding: 10px; background: var(--branco); border: 1px solid var(--nevoa-borda); border-radius: var(--raio); font: .8125rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.painel .vazio { color: var(--grafite); font-size: .875rem; margin: 0; }
+
+@media (min-width: 900px) {
+  body.com-painel .corpo { flex-direction: row; }
+  body.com-painel .coluna { max-width: none; margin: 0; flex: 1 1 60%; }
+  body.com-painel .painel { flex: 0 0 380px; max-height: none; border-top: 0; border-right: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pontos i { animation: none; opacity: .7; }
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topo"><h1 id="titulo">Atendimento</h1></header>
+  <div class="corpo">
+    <main class="coluna">
+      <div class="conversa" id="conversa" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversa"></div>
+      <div class="rodape">
+        <div class="nova" id="nova" hidden><button type="button" id="btn-nova" class="secundario">Nova conversa</button></div>
+        <form id="form" autocomplete="off">
+          <label class="sr-only" for="entrada">Sua mensagem</label>
+          <textarea id="entrada" rows="1" placeholder="Escreva sua mensagem" enterkeyhint="send"></textarea>
+          <button type="submit" id="enviar">Enviar</button>
+        </form>
+      </div>
+    </main>
+    <aside class="painel" id="painel" aria-labelledby="painel-titulo">
+      <h2 id="painel-titulo">O que o sistema decidiu</h2>
+      <dl>
+        <dt>Próxima ação</dt><dd id="p-acao">-</dd>
+        <dt>Tentativas</dt><dd id="p-tent">-</dd>
+      </dl>
+      <p class="vazio" id="p-vazio">Aparece depois da primeira resposta.</p>
+      <pre id="p-saida" hidden></pre>
+    </aside>
+  </div>
+</div>
+<div class="sr-only" id="status" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var conversa = $('conversa'), entrada = $('entrada'), enviar = $('enviar'), form = $('form');
+  var nova = $('nova'), status = $('status');
+  var painel = new URLSearchParams(location.search).get('painel') === '1';
+  if (painel) document.body.classList.add('com-painel');
+
+  var tela = { titulo: 'Atendimento', aviso_lgpd: '' };
+  var historico = [];
+  var aguardando = false;
+  var encerrada = false;
+  var digitando = null;
+  var timers = [];
+
+  function el(tag, classe, texto) {
+    var e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto !== undefined) e.textContent = texto;
+    return e;
+  }
+  function rolar() { conversa.scrollTop = conversa.scrollHeight; }
+  function adicionar(classe, texto) {
+    var m = el('div', 'msg ' + classe, texto);
+    conversa.appendChild(m);
+    rolar();
+    return m;
+  }
+  function mostrarAviso() {
+    if (!tela.aviso_lgpd) return;
+    var m = el('div', 'msg aviso');
+    m.appendChild(el('span', 'rotulo', 'Aviso'));
+    m.appendChild(document.createTextNode(tela.aviso_lgpd));
+    conversa.appendChild(m);
+  }
+  function atualizarControles() {
+    var bloqueado = aguardando || encerrada;
+    entrada.disabled = bloqueado;
+    enviar.disabled = bloqueado;
+    nova.hidden = !encerrada;
+    form.hidden = encerrada;
+  }
+  function ajustarAltura() {
+    entrada.style.height = 'auto';
+    entrada.style.height = Math.min(entrada.scrollHeight, 136) + 'px';
+  }
+
+  var frases = ['Lendo sua mensagem...', 'Analisando o que você contou...', 'Ainda trabalhando na resposta...'];
+  function iniciarEspera() {
+    digitando = el('div', 'digitando');
+    var p = el('span', 'pontos');
+    p.setAttribute('aria-hidden', 'true');
+    p.appendChild(el('i')); p.appendChild(el('i')); p.appendChild(el('i'));
+    var t = el('span', null, frases[0]);
+    digitando.appendChild(p);
+    digitando.appendChild(t);
+    conversa.appendChild(digitando);
+    rolar();
+    status.textContent = 'Preparando a resposta.';
+    timers.push(setTimeout(function () { t.textContent = frases[1]; }, 3500));
+    timers.push(setTimeout(function () { t.textContent = frases[2]; }, 8000));
+  }
+  function encerrarEspera() {
+    timers.forEach(clearTimeout); timers = [];
+    if (digitando && digitando.parentNode) digitando.parentNode.removeChild(digitando);
+    digitando = null;
+    status.textContent = '';
+  }
+
+  function atualizarPainel(d) {
+    if (!painel) return;
+    $('p-acao').textContent = d.proxima_acao == null ? '-' : String(d.proxima_acao);
+    $('p-tent').textContent = d.tentativas == null ? '-' : String(d.tentativas);
+    var pre = $('p-saida');
+    if (d.saida !== undefined && d.saida !== null) {
+      pre.textContent = JSON.stringify(d.saida, null, 2);
+      pre.hidden = false;
+      $('p-vazio').hidden = true;
+    } else {
+      pre.hidden = true;
+      $('p-vazio').hidden = false;
+      $('p-vazio').textContent = 'Sem saída estruturada nesta resposta.';
+    }
+  }
+
+  async function enviarMensagem(texto) {
+    historico.push({ role: 'user', content: texto });
+    adicionar('lead', texto);
+    aguardando = true;
+    atualizarControles();
+    iniciarEspera();
+    var d;
+    try {
+      var r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ historico: historico })
+      });
+      d = await r.json();
+    } catch (e) {
+      d = { origem: 'falha' };
+    }
+    encerrarEspera();
+    var resposta = d && typeof d.resposta === 'string' && d.resposta ? d.resposta : null;
+    var falhou = !resposta || d.origem === 'falha';
+    if (resposta) {
+      historico.push({ role: 'assistant', content: resposta });
+      adicionar('sistema' + (falhou ? ' falha' : ''), resposta);
+    } else {
+      adicionar('sistema falha', 'Não consegui responder agora. Tente novamente em instantes.');
+      historico.pop();
+    }
+    atualizarPainel(d || {});
+    var acao = d && d.proxima_acao;
+    if (falhou || (acao !== undefined && acao !== null && acao !== 'perguntar')) {
+      encerrada = true;
+      conversa.appendChild(el('div', 'encerrado', 'Atendimento encerrado'));
+      rolar();
+    }
+    aguardando = false;
+    atualizarControles();
+    if (!encerrada) entrada.focus(); else $('btn-nova').focus();
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var texto = entrada.value.trim();
+    if (!texto || aguardando || encerrada) return;
+    entrada.value = '';
+    ajustarAltura();
+    enviarMensagem(texto);
+  });
+  entrada.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) {
+      ev.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  entrada.addEventListener('input', ajustarAltura);
+
+  function reiniciar() {
+    historico = [];
+    aguardando = false;
+    encerrada = false;
+    conversa.textContent = '';
+    mostrarAviso();
+    atualizarPainel({});
+    if (painel) { $('p-vazio').textContent = 'Aparece depois da primeira resposta.'; $('p-vazio').hidden = false; $('p-saida').hidden = true; }
+    atualizarControles();
+    entrada.focus();
+  }
+  $('btn-nova').addEventListener('click', reiniciar);
+
+  function aplicarTema(c) {
+    var raiz = document.documentElement.style;
+    if (/^#[0-9a-fA-F]{3,8}$/.test(c.cor_primaria || '')) raiz.setProperty('--navy', c.cor_primaria);
+    if (/^#[0-9a-fA-F]{3,8}$/.test(c.cor_destaque || '')) raiz.setProperty('--azure', c.cor_destaque);
+  }
+
+  fetch('/tela.json').then(function (r) { return r.json(); }).then(function (c) {
+    tela = c;
+    if (c.titulo) { $('titulo').textContent = c.titulo; document.title = c.titulo; }
+    aplicarTema(c);
+  }).catch(function () {}).then(function () {
+    mostrarAviso();
+    atualizarControles();
+    entrada.focus();
+  });
+})();
+</script>
+</body>
+</html>

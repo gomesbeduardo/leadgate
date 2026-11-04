@@ -1,0 +1,12 @@
+FROM node:24-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts && npm rebuild esbuild
+COPY src ./src
+RUN npm run build:servico
+
+FROM node:24-alpine
+WORKDIR /app
+COPY --from=build /app/dist/servico.mjs ./servico.mjs
+USER node
+CMD ["node", "servico.mjs"]
