@@ -1,0 +1,36 @@
+{
+  "empresa": {
+    "nome": "CentralEng",
+    "contato": "(55) 3307-7010 em Santa Maria ou (48) 3364-9840 em Florianópolis",
+    "horario": "das 8h às 18h"
+  },
+  "atendente": { "nome": "Atendimento CentralEng" },
+  "servicos": ["instalacao", "manutencao", "pmoc", "projeto"],
+  "segmentos": ["residencial", "comercial", "industrial"],
+  "segmentos_aceitos": ["comercial", "industrial"],
+  "regiao": {
+    "cidades": [
+      "Florianópolis", "São José", "Palhoça", "Biguaçu", "Santo Amaro da Imperatriz",
+      "Governador Celso Ramos", "Antônio Carlos", "São Pedro de Alcântara", "Tijucas",
+      "Santa Maria", "Itaara", "Silveira Martins", "Restinga Sêca", "São Sepé",
+      "Júlio de Castilhos", "São Pedro do Sul"
+    ]
+  },
+  "conversa": {
+    "teto_perguntas": 8,
+    "perguntas_curtas": ["tamanho ou quantidade de equipamentos", "tipo de local", "prazo desejado"]
+  },
+  "ia": { "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 4000 },
+  "resposta": {
+    "max_chars": 400,
+    "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],
+    "promessas_proibidas": ["garantimos", "garanto", "prometo", "desconto", "grátis"]
+  },
+  "prompt": { "canario": "CFG-7Q2M" },
+  "textos": {
+    "aviso_lgpd": "Este atendimento é automatizado. Suas mensagens são processadas por um provedor de IA e usadas só para contato comercial.",
+    "falha_tecnica": "Tivemos um problema técnico por aqui. Fale com a gente pelos telefones (55) 3307-7010 ou (48) 3364-9840."
+  },
+  "lgpd": { "retencao_dias": 30 },
+  "tela": { "titulo": "Fale com a CentralEng", "cor_primaria": "#254777", "cor_destaque": "#0f6fac" }
+}
