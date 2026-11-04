@@ -129,13 +129,19 @@ Os itens 1 a 4 são automáticos (travas da resposta). O item 3 usa o mesmo dete
 
 ### Reproduzir
 
-Com o Compose no ar e a chave no `.env`:
+Com o Compose no ar e a chave no `.env`. A avaliação passa pelo proxy `/api/chat` (porta 8080), o único ponto que conta falhas, e por isso o Compose sobe com o painel ligado e o limite de requisições por minuto folgado:
 
 ```sh
-node scripts/avaliar.mjs --conjunto ajuste && node scripts/tabela-avaliacao.mjs
+DEMO_PAINEL=1 LIMITE_POR_MINUTO=600 docker compose up
 ```
 
-O segundo comando regenera `avaliacao/tabela.md`. Os conjuntos `reservado` e `regressao` rodam com o mesmo comando trocando o nome; o reservado recusa uma segunda rodada sem `--forcar`. O modelo não é determinístico, então uma nova rodada pode dar números diferentes.
+Em outro terminal:
+
+```sh
+DEMO_PAINEL=1 node scripts/avaliar.mjs --conjunto ajuste && node scripts/tabela-avaliacao.mjs
+```
+
+A avaliação zera a contagem de falhas antes de começar e grava `avaliacao/falhas-<conjunto>.md` (a taxa é por conjunto; sem nenhum turno medido o arquivo diz "não medida"). O segundo comando regenera `avaliacao/tabela.md`, com um bloco listando cada `falhas-<conjunto>.md` encontrado. Os conjuntos `reservado` e `regressao` rodam com o mesmo comando trocando o nome; o reservado recusa uma segunda rodada sem `--forcar`. O modelo não é determinístico, então uma nova rodada pode dar números diferentes.
 
 ## Quando algo falha
 
@@ -147,7 +153,7 @@ O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os 
 
 **Aviso ao vendedor.** O serviço acompanha os turnos: duas falhas seguidas (`alerta.turnos_para_queda`) geram um aviso de queda, e uma falha do n8n ou do próprio serviço gera o aviso na hora. Enquanto a queda durar, o aviso se repete no máximo a cada 30 minutos (`alerta.intervalo_min`). Quando um turno volta a ser respondido pelo modelo, sai um aviso de recuperação com o número de conversas afetadas. O canal padrão é **simulado**: o aviso vai para o log e para `GET /alertas`. Há também um canal de e-mail pelo Resend, ativado com `ALERTA_CANAL=resend` e `RESEND_API_KEY`; ele está pronto, mas precisa de uma conta, e sem a chave o serviço fica só no canal simulado. Os textos dos avisos ficam em `textos.alerta_queda` e `textos.alerta_recuperado` na configuração.
 
-**Contagem de falhas.** Cada tentativa que falha é registrada com o tipo (`rede`, `dns`, `timeout`, `429`, `5xx`, `cliente`, `refusal`, `max_tokens`, `schema`, `servico`), a camada, o modelo e se foi recuperada. O resumo traz o total de turnos, os turnos que terminaram em falha, a taxa de falha, as tentativas falhas por tipo, quantos turnos cada camada recuperou e qual modelo respondeu. Não é guardado texto de conversa. O resumo fica em `GET /falhas`, exposto só com `DEMO_PAINEL=1`, e a taxa entra no bloco "Taxa de falha" de `avaliacao/tabela.md`.
+**Contagem de falhas.** Cada tentativa que falha é registrada com o tipo (`rede`, `dns`, `timeout`, `429`, `5xx`, `cliente`, `refusal`, `max_tokens`, `schema`, `servico`, `n8n`), a camada, o modelo e se foi recuperada. O resumo traz o total de turnos, os turnos que terminaram em falha, a taxa de falha, as tentativas falhas por tipo, quantos turnos cada camada recuperou e qual modelo respondeu. Não é guardado texto de conversa. Os contadores ficam em volume do Compose: `docker compose down -v` apaga a contagem de falhas e o histórico de avisos. O resumo fica em `GET /falhas`, exposto só com `DEMO_PAINEL=1`, e a taxa entra no bloco "Taxa de falha" de `avaliacao/tabela.md`.
 
 ## Dataset sintético
 

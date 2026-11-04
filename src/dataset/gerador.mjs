@@ -27,6 +27,7 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
   const rejCat = Object.fromEntries(CATEGORIAS.map((c) => [c, 0])) // rejeicoes desta execucao, para ceder a vez
   const rejeitadas = { duplicata: 0, telefone: 0, schema: 0, api: 0 }
   const rejeitadasPorCategoria = Object.fromEntries(CATEGORIAS.map((c) => [c, 0]))
+  let semCategoria = false
   const tokens = { entrada: 0, saida: 0 }
   let chamadas = 0 // desta execucao
   let chamadasAnteriores = 0
@@ -58,6 +59,8 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
     volume = ant.volume_pedido ?? volume
     chamadasAnteriores = ant.chamadas ?? 0
     for (const k of Object.keys(rejeitadas)) rejeitadas[/** @type {keyof typeof rejeitadas} */ (k)] = ant.rejeitadas?.[k] ?? 0
+    // Rodada anterior sem contagem por categoria: nao inventa zeros.
+    semCategoria = ant.rejeitadas_por_categoria == null
     for (const c of CATEGORIAS) rejeitadasPorCategoria[c] = ant.rejeitadas_por_categoria?.[c] ?? 0
     tokens.entrada = ant.tokens?.entrada ?? 0
     tokens.saida = ant.tokens?.saida ?? 0
@@ -81,7 +84,7 @@ export async function rodarGeracao(/** @type {import('./gerador.mjs').OpcoesGera
       volume_pedido: volume,
       geradas: aceitas.length,
       rejeitadas,
-      rejeitadas_por_categoria: rejeitadasPorCategoria,
+      rejeitadas_por_categoria: semCategoria ? null : rejeitadasPorCategoria,
       categorias: cob.porCategoria,
       tokens,
       chamadas: chamadasAnteriores + chamadas,

@@ -75,7 +75,6 @@ describe('iniciarTurno', () => {
     ['content longo demais', { historico: [{ role: 'user', content: 'x'.repeat(4001) }] }],
     ['nao e objeto', 'oi'],
     ['ultima do assistant com telefone', { historico: [{ role: 'user', content: '48 99999-0001' }, { role: 'assistant', content: 'x' }] }],
-    ['user,user que somados passam de 8000', { historico: [{ role: 'user', content: 'x'.repeat(4000) }, { role: 'user', content: 'y'.repeat(4000) }, { role: 'user', content: 'z' }] }],
     ['41 mensagens alternadas mesmo apos unir', { historico: Array.from({ length: 41 }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: 'x' })) }],
     ['total de caracteres acima de 8000', { historico: Array.from({ length: 5 }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: 'x'.repeat(2000) })) }],
   ])('entrada invalida (%s) nao chama o modelo', (_n, entrada) => {

@@ -43,3 +43,5 @@ export function avaliarCaso(
 ): Avaliacao
 export function resumir(execucoes: { ajuste: Avaliacao[] | null; reservado: Avaliacao[] | null; regressao?: Avaliacao[] | null; validacao?: Avaliacao[] | null }): Resumo
 export function tabelaMarkdown(resumo: Resumo): string
+export function falhasMarkdown(conjunto: string, f: Record<string, any>): string
+export function blocoFalhas(arquivos: { conjunto: string; md: string }[]): string

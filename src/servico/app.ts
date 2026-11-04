@@ -93,22 +93,30 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
 
   const falhas = opcoes.falhas ?? new FalhasStore({ retencaoDias: cfg.lgpd.retencao_dias })
   const alertas = opcoes.alertas ?? new AlertasStore({ retencaoDias: cfg.lgpd.retencao_dias })
+  const log = opcoes.log ?? console.log
   const notificador = criarNotificador({
     empresa: cfg.empresa.nome,
     turnosParaQueda: cfg.alerta.turnos_para_queda,
     intervaloMin: cfg.alerta.intervalo_min,
     agora,
     store: alertas,
-    canais: criarCanais(opcoes.env ?? {}, opcoes.log ?? console.log),
+    canais: criarCanais(opcoes.env ?? {}, log),
     textos: cfg.textos,
+    log,
   })
   // Registra so campos de controle (R19): nunca resposta, conversa nem telefone.
-  const registrar = (turno: Record<string, unknown>) => {
+  // Gravar em disco e avisar o vendedor sao passos separados: falha de disco nunca bloqueia o alerta.
+  const registrar = (turno: Record<string, unknown>, avisar = true) => {
     try {
       falhas.registrarTurno(turno)
+    } catch (e) {
+      log(`falha ao gravar a contagem de falhas: ${e instanceof Error ? e.message : String(e)}`)
+    }
+    if (!avisar) return
+    try {
       notificador.tratar(turno)
     } catch (e) {
-      console.error('falha ao registrar turno', e)
+      log(`falha ao tratar o alerta: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
@@ -121,7 +129,8 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     origem: j.origem,
     estado: j.estado_conversa ?? j.estado,
     tipo: j.tipo,
-    ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas } : {}),
+    // A avaliacao le estes campos pelo proxy; so com DEMO_PAINEL=1. Conversa nunca sai.
+    ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas, erro: j.erro, violacoes: j.violacoes } : {}),
   })
 
   const chat = async (corpo: unknown): Promise<unknown> => {
@@ -146,6 +155,11 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
         registrar(falhaChat)
         return falhaChat
       }
+      // Sem origem conhecida (ex.: {"message":"Workflow was started"}) o turno nao pode sumir.
+      if (j.origem !== 'modelo' && j.origem !== 'falha') {
+        registrar(falhaChat)
+        return falhaChat
+      }
       registrar(j)
       return publico(j)
     } catch {
@@ -159,13 +173,13 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
       ? { fim: true, resultado: p.resultado }
       : { fim: false, estado: p.estado, esperar_ms: p.esperar_ms, requisicao: montarRequisicao(p.estado, cfg), timeout_ms: cfg.ia.timeout_ms }
 
-  const preparar = (corpo: unknown) => saida(iniciarTurno(corpo, modelo, cfg))
+  const preparar = (corpo: unknown) => saida(iniciarTurno(corpo, modelo, cfg, agora))
 
   const validar = (corpo: unknown) => {
     if (!ehObjeto(corpo)) throw new ErroHttp(400, 'estado ausente ou invalido')
     const estado = EstadoSchema.safeParse(corpo.estado)
     if (!estado.success) throw new ErroHttp(400, 'estado ausente ou invalido')
-    return saida(processarResposta(estado.data, corpo.resposta, cfg))
+    return saida(processarResposta(estado.data, corpo.resposta, cfg, agora))
   }
 
   return createServer(async (req, res) => {
@@ -197,6 +211,8 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
           }
           if (emVoo >= maxConcorrentes) {
             req.resume()
+            // Sobrecarga e turno perdido do lead: conta como falha `servico`, sem disparar alerta de queda.
+            registrar({ origem: 'falha', tipo: 'servico' }, false)
             return responder(res, 503, { erro: 'servico ocupado' })
           }
           emVoo++

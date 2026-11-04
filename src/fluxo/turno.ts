@@ -22,6 +22,8 @@ export type Estado = {
   /** Requisicoes HTTP ja respondidas ou falhadas no turno. */
   chamadas: number
   registros: Registro[]
+  /** Inicio do turno, em ms; o prazo de ia.timeout_turno_ms conta daqui. */
+  inicio_ms: number
 }
 export type Resultado = {
   resposta: string | null
@@ -65,6 +67,7 @@ export const EstadoSchema = z.object({
   tentativa_modelo: clamp(100),
   tentativa_http: clamp(100),
   chamadas: clamp(1000),
+  inicio_ms: z.number().int().min(0),
   registros: z
     .array(
       z.object({
@@ -90,7 +93,8 @@ function unirUsers(entrada: unknown): unknown {
       ant && atual && ant.role === 'user' && atual.role === 'user' &&
       typeof ant.content === 'string' && typeof atual.content === 'string'
     ) {
-      saida[saida.length - 1] = { role: 'user', content: ant.content + '\n' + atual.content }
+      // Fica com os 4000 caracteres mais recentes em vez de reprovar a entrada inteira.
+      saida[saida.length - 1] = { role: 'user', content: (ant.content + '\n' + atual.content).slice(-4000) }
     } else saida.push(m)
   }
   return { ...(entrada as object), historico: saida }
@@ -117,7 +121,7 @@ function silencio(
   }
 }
 
-export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config): Passo {
+export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config, agora: () => number = Date.now): Passo {
   const parsed = EntradaSchema.safeParse(unirUsers(entrada))
   if (!parsed.success) {
     // Entrada invalida: nao guarda historico do cliente nem encaminha a um humano.
@@ -131,7 +135,7 @@ export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config): Pas
       esperar_ms: 0,
       estado: {
         historico, promptMontado, tentativa: 1, correcao: null, modelo_atual: 'primario',
-        tentativa_modelo: 1, tentativa_http: 1, chamadas: 0, registros: [],
+        tentativa_modelo: 1, tentativa_http: 1, chamadas: 0, registros: [], inicio_ms: agora(),
       },
     }
   } catch (e) {
@@ -236,6 +240,19 @@ export function classificar(estado: Estado, resposta: unknown, cfg: Config): Cla
 const TIPOS_REDE: Tipo[] = ['rede', 'dns', 'timeout', '429', '5xx']
 
 export function processarResposta(estado: Estado, resposta: unknown, cfg: Config, agora: () => number = Date.now): Passo {
+  const p = decidir(estado, resposta, cfg, agora)
+  if (p.fim) return p
+  // Prazo do turno: sem folga para outra chamada (espera mais timeout_ms) antes de o proxy abortar,
+  // encerra aqui em silencio com o tipo da ultima falha, para o turno nao virar `n8n`.
+  const restante = estado.inicio_ms + cfg.ia.timeout_turno_ms - agora()
+  if (restante < p.esperar_ms + cfg.ia.timeout_ms) {
+    const ultimo = p.estado.registros.at(-1)
+    return { fim: true, resultado: silencio(estado.historico, estado.tentativa, ultimo?.tipo ?? 'timeout', [], p.estado.registros) }
+  }
+  return p
+}
+
+function decidir(estado: Estado, resposta: unknown, cfg: Config, agora: () => number): Passo {
   const cl = classificar(estado, resposta, cfg)
   const chamadas = estado.chamadas + 1
   const camada: 1 | 2 = estado.modelo_atual === 'primario' ? 1 : 2

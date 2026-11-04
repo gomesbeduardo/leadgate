@@ -11,6 +11,7 @@ services:
       CHAT_PATH: /dados/chat/index.html
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/chat
       DEMO_PAINEL: ${DEMO_PAINEL:-0}
+      LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-20}
       DADOS_DIR: /dados/estado
       ALERTA_CANAL: ${ALERTA_CANAL:-simulado}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -41,7 +42,7 @@ services:
       N8N_SECURE_COOKIE: "false"
       # Retenção da spec 001 (30 dias). Sem volume, derrubar o Compose apaga tudo.
       EXECUTIONS_DATA_MAX_AGE: "720"
-      # Acima do pior turno de ia.timeout_turno_ms (180 s), para o serviço decidir antes do n8n cortar.
+      # Acima do orçamento do turno, ia.timeout_turno_ms (180 s), para o serviço decidir antes do n8n cortar.
       EXECUTIONS_TIMEOUT: "240"
       EXECUTIONS_TIMEOUT_MAX: "300"
     ports:

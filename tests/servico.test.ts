@@ -58,7 +58,7 @@ describe('servico HTTP (porta interna)', () => {
     expect(j.timeout_ms).toBe(cfg.ia.timeout_ms)
     expect(j.esperar_ms).toBe(0)
     expect(Object.keys(j.estado).sort()).toEqual(
-      ['chamadas', 'correcao', 'historico', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
+      ['chamadas', 'correcao', 'historico', 'inicio_ms', 'modelo_atual', 'promptMontado', 'registros', 'tentativa', 'tentativa_http', 'tentativa_modelo'],
     )
   })
 
@@ -171,8 +171,8 @@ describe('chat', () => {
         recebido = JSON.parse(Buffer.concat(partes).toString('utf8'))
         res.writeHead(200, { 'content-type': 'application/json' })
         res.end(JSON.stringify({
-          resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
-          estado_conversa: 'em_andamento', tipo: 'nenhum', registros: [{ tipo: '5xx' }],
+          resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+          estado_conversa: 'em_andamento', tipo: 'nenhum', registros: [{ tipo: '5xx' }], erro: false,
           violacoes: [{ regra: 'segredo' }], conversa: [{ role: 'user', content: 'Oi' }],
         }))
       })
@@ -205,15 +205,16 @@ describe('chat', () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlChat + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(r.status).toBe(200)
-    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum' })
+    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum' })
     expect(recebido).toEqual({ historico: h })
   })
 
-  it('com painel liga, /api/chat inclui saida e tentativas, nunca violacoes nem conversa', async () => {
+  it('com painel ligado, /api/chat inclui tudo que a avaliacao le (saida, tentativas, erro, violacoes), nunca conversa', async () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(await r.json()).toEqual({
-      resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum', saida: { cidade: 'X' }, tentativas: 2,
+      resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum', saida: { cidade: 'X' }, tentativas: 2,
+      erro: false, violacoes: [{ regra: 'segredo' }],
     })
   })
 
@@ -297,7 +298,7 @@ describe('limites publicas em /api/chat', () => {
       req.resume()
       const responder = () => {
         res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
       }
       responder()
     })
@@ -351,7 +352,7 @@ describe('limites publicas em /api/chat', () => {
       req.resume()
       soltar.push(() => {
         res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+        res.end(JSON.stringify({ resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar' }))
       })
     })
     const urlLento = await subir(lento)

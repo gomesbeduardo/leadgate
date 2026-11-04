@@ -1,7 +1,8 @@
-// Executor da avaliacao: conduz cada conversa pelo webhook real e grava avaliacao/resultado-<conjunto>.json.
+// Executor da avaliacao: conduz cada conversa pelo proxy /api/chat (so ele conta falhas; precisa de DEMO_PAINEL=1) e grava avaliacao/resultado-<conjunto>.json.
 // Uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { converterValidacao } from '../src/dataset/dataset.mjs'
+import { falhasMarkdown } from '../src/avaliacao/metricas.mjs'
 
 const raiz = new URL('../', import.meta.url)
 const args = process.argv.slice(2)
@@ -11,7 +12,7 @@ if (!['ajuste', 'reservado', 'regressao', 'validacao'].includes(conjunto)) {
   console.error('uso: node scripts/avaliar.mjs --conjunto ajuste|reservado|regressao|validacao [--forcar]')
   process.exit(2)
 }
-const url = process.env.AVALIACAO_URL ?? 'http://127.0.0.1:5678/webhook/chat'
+const url = process.env.AVALIACAO_URL ?? 'http://127.0.0.1:8080/api/chat'
 // AVALIACAO_SAIDA_DIR e AVALIACAO_ESPERA_MS existem para teste; o padrao e avaliacao/ e 60 s.
 const saidaDir = process.env.AVALIACAO_SAIDA_DIR
 const saidaArq = saidaDir ? new URL(`file://${saidaDir.replace(/\/$/, '')}/resultado-${conjunto}.json`) : new URL(`avaliacao/resultado-${conjunto}.json`, raiz)
@@ -95,7 +96,7 @@ if (painel) {
     falhasAtivas = (await fetch(falhasUrl, { method: 'DELETE', signal: AbortSignal.timeout(5000) })).ok
   } catch {}
 }
-if (!falhasAtivas) console.warn(`aviso: contagem de falhas desligada (${falhasUrl} inacessivel ou DEMO_PAINEL != 1); avaliacao/falhas.md nao sera gerado.`)
+if (!falhasAtivas) console.warn(`aviso: contagem de falhas desligada (${falhasUrl} inacessivel ou DEMO_PAINEL != 1); avaliacao/falhas-<conjunto>.md nao sera gerado.`)
 
 const execucoes = []
 for (const caso of casos) {
@@ -140,24 +141,9 @@ console.log(`gravado em ${saidaArq.pathname}`)
 if (falhasAtivas) {
   const f = await lerFalhas()
   if (f) {
-    const tipos = Object.entries(f.tentativas_falhas_por_tipo ?? {}).map(([t, n]) => `- ${t}: ${n}`).join('\n') || '- nenhuma'
-    const md = `# Taxa de falha (conjunto ${conjunto})
-
-- turnos = ${f.turnos_totais}
-- falhas = ${f.turnos_falha}
-- taxa_falha = ${f.turnos_falha}/${f.turnos_totais} = ${f.taxa_falha}
-- recuperados na camada 1 = ${f.recuperados_por_camada?.['1']}; na camada 2 = ${f.recuperados_por_camada?.['2']}
-- respondeu o modelo primario = ${f.modelo_respondeu?.primario}; o reserva = ${f.modelo_respondeu?.reserva}
-- entradas invalidas (fora da conta) = ${f.entradas_invalidas ?? 0}
-
-Tentativas falhas por tipo:
-
-${tipos}
-
-Conta: taxa_falha = turnos com origem falha / turnos totais; turno recuperado na camada 1 ou 2 nao entra.
-`
-    writeFileSync(new URL('falhas.md', new URL('.', saidaArq)), md)
-    console.log(`gravado em ${new URL('falhas.md', new URL('.', saidaArq)).pathname}`)
+    const arq = new URL(`falhas-${conjunto}.md`, new URL('.', saidaArq))
+    writeFileSync(arq, falhasMarkdown(conjunto, f))
+    console.log(`gravado em ${arq.pathname}`)
   }
 }
 if (falhas.length) {

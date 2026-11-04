@@ -366,6 +366,26 @@ describe('gerador: rejeitadas_por_categoria e --completar', () => {
     }
   }, 60_000)
 
+  it('--completar sobre rodada sem contagem por categoria grava null, nao zeros', async () => {
+    const s1 = await subirStub(primeiraRodada())
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(s1.url, ['--volume', '80'], dir)
+    } finally {
+      await s1.fechar()
+    }
+    const r0 = ler(dir, 'rodada.json')
+    delete r0.rejeitadas_por_categoria
+    writeFileSync(join(dir, 'rodada.json'), JSON.stringify(r0))
+    const s2 = await subirStub((n, cat) => valida(n + 1000, cat))
+    try {
+      await cli(s2.url, ['--completar'], dir)
+      expect(ler(dir, 'rodada.json').rejeitadas_por_categoria).toBeNull()
+    } finally {
+      await s2.fechar()
+    }
+  }, 60_000)
+
   it('--completar: rodada com multiturno = 3 termina completa, originais intactos, tokens acumulados', async () => {
     const s1 = await subirStub(primeiraRodada())
     const dir = mkdtempSync(join(tmpdir(), 'ds-'))

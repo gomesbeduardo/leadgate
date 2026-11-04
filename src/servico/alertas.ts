@@ -22,12 +22,12 @@ export interface CanalAlerta {
 export type TurnoAlerta = { origem?: unknown; tipo?: unknown }
 
 /** Maquina de estados pura da queda (R18). Entrada invalida (falha sem tipo) e ignorada. */
-export function criarMaquinaQueda(cfg: { turnos_para_queda: number; intervalo_min: number }, agora: () => number) {
+export function criarMaquinaQueda(cfg: { turnos_para_queda: number; intervalo_min: number }, agora: () => number, ultimo?: EventoQueda) {
   let consecutivos = 0
-  let emQueda = false
-  let afetados = 0
-  let ultimoAlerta = 0
-  let tipoFalha: string | null = null
+  let emQueda = ultimo?.tipo_evento === 'queda'
+  let afetados = emQueda ? ultimo!.turnos_afetados : 0
+  let ultimoAlerta = emQueda ? Date.parse(ultimo!.ts) : 0
+  let tipoFalha: string | null = emQueda ? ultimo!.tipo_falha : null
   const evento = (tipo_evento: EventoQueda['tipo_evento']): EventoQueda => ({
     ts: new Date(agora()).toISOString(), tipo_evento, tipo_falha: tipoFalha, turnos_afetados: afetados,
   })
@@ -157,11 +157,19 @@ export function criarNotificador(o: {
   store: AlertasStore
   canais: CanalAlerta[]
   textos: { alerta_queda: string; alerta_recuperado: string }
+  log?: (linha: string) => void
 }) {
-  const maquina = criarMaquinaQueda({ turnos_para_queda: o.turnosParaQueda, intervalo_min: o.intervaloMin }, o.agora)
+  // Reinicio no meio de uma queda: retoma nela, para o primeiro turno bom emitir `recuperado`.
+  const maquina = criarMaquinaQueda({ turnos_para_queda: o.turnosParaQueda, intervalo_min: o.intervaloMin }, o.agora, o.store.json().eventos.at(-1))
+  const log = o.log ?? console.error
   const pendentes = new Set<Promise<void>>()
   const emitir = async (e: EventoQueda) => {
-    o.store.adicionar(e)
+    // Persistir nunca bloqueia os canais: a lista em memoria ja foi atualizada antes de gravar.
+    try {
+      o.store.adicionar(e)
+    } catch (err) {
+      log(`falha ao gravar o alerta em disco: ${err instanceof Error ? err.message : String(err)}`)
+    }
     const queda = e.tipo_evento === 'queda'
     const texto = preencher(queda ? o.textos.alerta_queda : o.textos.alerta_recuperado, {
       'empresa.nome': o.empresa,
@@ -176,7 +184,12 @@ export function criarNotificador(o: {
         try {
           await c.enviar({ ...e, assunto, texto })
         } catch {
-          if (c.nome !== 'simulado') o.store.incNaoEntregue()
+          if (c.nome === 'simulado') return
+          try {
+            o.store.incNaoEntregue()
+          } catch {
+            /* contador em memoria ja subiu; disco falhou */
+          }
         }
       }),
     )

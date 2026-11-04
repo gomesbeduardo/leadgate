@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { converterValidacao } from '../src/dataset/dataset.mjs'
-import { avaliarCaso, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
+import { avaliarCaso, blocoFalhas, resumir, tabelaMarkdown } from '../src/avaliacao/metricas.mjs'
 
 const raiz = new URL('../', import.meta.url)
 const ler = (rel) => JSON.parse(readFileSync(new URL(rel, raiz), 'utf8'))
@@ -47,11 +47,12 @@ function avaliar(conjunto) {
     })
 }
 
-// Bloco de taxa de falha (C13): a conta fica em avaliacao/falhas.md, gravado por avaliar.mjs.
-const falhasMd = new URL('avaliacao/falhas.md', raiz)
-const blocoFalhas = existsSync(falhasMd)
-  ? `\n## Taxa de falha\n\n${readFileSync(falhasMd, 'utf8').split('\n').filter((l) => l.startsWith('- taxa_falha')).join('\n')}\n\nDetalhe por tipo, camada e modelo em [falhas.md](falhas.md).\n`
-  : '\n## Taxa de falha\n\nnao medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver falhas.md).\n'
+// Bloco de taxa de falha (C13): uma conta por conjunto, em avaliacao/falhas-<conjunto>.md, gravado por avaliar.mjs.
+const blocoDeFalhas = blocoFalhas(
+  ['ajuste', 'reservado', 'regressao', 'validacao']
+    .filter((c) => existsSync(new URL(`avaliacao/falhas-${c}.md`, raiz)))
+    .map((c) => ({ conjunto: c, md: readFileSync(new URL(`avaliacao/falhas-${c}.md`, raiz), 'utf8') })),
+)
 
 // Validacao sintetica: so entra se o dataset existir; o bloco some da tabela caso contrario.
 function avaliarValidacao() {
@@ -65,6 +66,6 @@ function avaliarValidacao() {
     .map((c) => avaliarCaso(c, res.execucoes.find((e) => e.id === c.id), res.limiar, {}, verificar))
 }
 
-const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao'), validacao: avaliarValidacao() })) + blocoFalhas
+const md = tabelaMarkdown(resumir({ ajuste: avaliar('ajuste'), reservado: avaliar('reservado'), regressao: avaliar('regressao'), validacao: avaliarValidacao() })) + blocoDeFalhas
 writeFileSync(new URL('avaliacao/tabela.md', raiz), md)
 console.log(md)
