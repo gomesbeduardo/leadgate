@@ -9,7 +9,7 @@ export const ConfigSchema = z
     servicos: textos.min(1),
     segmentos: textos.min(1),
     segmentos_aceitos: textos,
-    regiao: z.object({ cidades: textos.min(1) }),
+    regiao: z.object({ cidades: textos.min(1), ufs: z.record(z.string(), z.string().length(2)) }),
     conversa: z.object({
       teto_perguntas: z.number().int().positive(),
       perguntas_curtas: textos,
@@ -40,6 +40,10 @@ export const ConfigSchema = z
     tela: z.object({ titulo: z.string().min(1), cor_primaria: z.string().min(1), cor_destaque: z.string().min(1) }),
   })
   .superRefine((cfg, ctx) => {
+    const semUf = cfg.regiao.cidades.filter((c) => !(c in cfg.regiao.ufs))
+    if (semUf.length > 0) {
+      ctx.addIssue({ code: 'custom', path: ['regiao', 'ufs'], message: `cidades sem UF em regiao.ufs: ${semUf.join(', ')}` })
+    }
     const fora = cfg.segmentos_aceitos.filter((s) => !cfg.segmentos.includes(s))
     if (fora.length > 0) {
       ctx.addIssue({

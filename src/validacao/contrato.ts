@@ -45,20 +45,36 @@ function montarSchema(cfg: Config) {
 export const normalizar = (s: string) =>
   s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
-const contarInterrogacoes = (s: string) => (s.match(/\?/g) ?? []).length
+const contarInterrogacoes = (s: string) => (s.match(/[?？]/g) ?? []).length
 
 // "Florianopolis-SC", "Florianopolis/SC", "Florianopolis, SC".
-const SUFIXO_UF = /\s*[-/,]\s*[a-z]{2}$/
+const SUFIXO_UF = /^(.*?)\s*[-/,]\s*([a-z]{2})$/
 
-/** O telefone so conta se parece telefone e os digitos aparecem numa fala do lead. */
-function telefoneReal(telefone: string | null, historico: Mensagem[]): boolean {
+/** Cidade sem o sufixo de UF, ou null se nao esta na lista ou a UF nao bate com a da cidade. */
+function cidadeAtendida(cidade: string, cfg: Config): string | null {
+  const ufPorCidade = new Map(Object.entries(cfg.regiao.ufs).map(([c, uf]) => [normalizar(c), normalizar(uf)]))
+  const n = normalizar(cidade)
+  if (ufPorCidade.has(n)) return n
+  const m = SUFIXO_UF.exec(n)
+  if (m && ufPorCidade.get(m[1]!) === m[2]) return m[1]!
+  return null
+}
+
+/** Telefones do lead, sem os da propria empresa. */
+const telefonesDoLead = (texto: string, contato: string): string[] => {
+  const da_empresa = new Set(extrairTelefones(contato).map(digitosTelefone))
+  return extrairTelefones(texto).filter((t) => !da_empresa.has(digitosTelefone(t)))
+}
+
+/** O telefone so conta se o campo inteiro e um numero e os digitos aparecem numa fala do lead. */
+function telefoneReal(telefone: string | null, historico: Mensagem[], contato: string): boolean {
   if (telefone === null || telefone.trim() === '') return false
-  const [trecho] = extrairTelefones(telefone)
-  if (!trecho) return false
-  const alvo = digitosTelefone(trecho)
+  const achados = extrairTelefones(telefone)
+  if (achados.length !== 1 || achados[0] !== telefone.trim()) return false
+  const alvo = digitosTelefone(achados[0])
   return historico
     .filter((m) => m.role === 'user')
-    .some((m) => extrairTelefones(m.content).some((t) => digitosTelefone(t) === alvo))
+    .some((m) => telefonesDoLead(m.content, contato).some((t) => digitosTelefone(t) === alvo))
 }
 
 function schemaViol(regra: string, detalhe: string): Violacao {
@@ -107,13 +123,21 @@ export function analisarContrato(
   const contato = cfg.empresa.contato
   const servido = s.tipo_servico !== null && cfg.servicos.includes(s.tipo_servico)
   const aceito = s.segmento !== null && cfg.segmentos_aceitos.includes(s.segmento)
-  const cidadesNorm = new Set(cfg.regiao.cidades.map(normalizar))
   const cidade = s.cidade !== null && s.cidade.trim() !== '' ? s.cidade : null
-  const cidadeOk = cidade !== null && cidadesNorm.has(normalizar(cidade).replace(SUFIXO_UF, ''))
-  const temTelefone = telefoneReal(s.telefone, historico)
+  const cidadeBase = cidade !== null ? cidadeAtendida(cidade, cfg) : null
+  const cidadeOk = cidadeBase !== null
+  // A cidade tem de ter sido dita pelo lead (o assistant do historico e do cliente).
+  const cidadeDita = cidadeBase !== null && historico.some((m) => m.role === 'user' && normalizar(m.content).includes(cidadeBase))
+  const temTelefone = telefoneReal(s.telefone, historico, contato)
+  const telefoneInventado = s.telefone !== null && s.telefone.trim() !== '' && !temTelefone
   const recusa = s.tipo_servico === 'fora_escopo' || (s.segmento !== null && !aceito)
   const cidadeFora = cidade !== null && !cidadeOk
   const citaContato = normalizar(s.resposta).includes(normalizar(contato))
+
+  // telefone preenchido tem de ser um unico numero dito pelo lead
+  if (telefoneInventado) {
+    cruz('telefone_nao_confere', 'telefone deve ser exatamente um numero que o lead informou. Use null se ele nao informou.')
+  }
 
   // confianca no intervalo
   if (s.confianca < 0 || s.confianca > 1) {
@@ -125,6 +149,7 @@ export function analisarContrato(
     if (!servido) cruz('qualificado_exige_servico', 'qualificado=true exige tipo_servico atendido pela empresa. Marque qualificado=false.')
     if (!aceito) cruz('qualificado_exige_segmento_aceito', 'qualificado=true exige segmento aceito. Marque qualificado=false.')
     if (!cidadeOk) cruz('qualificado_exige_cidade', 'qualificado=true exige cidade dentro da regiao atendida. Marque qualificado=false.')
+    else if (!cidadeDita) cruz('qualificado_exige_cidade_dita', 'qualificado=true exige que o lead tenha dito a cidade. Pergunte a cidade e marque qualificado=false.')
     if (!temTelefone) cruz('qualificado_exige_telefone', 'qualificado=true exige telefone preenchido. Marque qualificado=false e pergunte o telefone.')
     if (s.dados_faltantes.length > 0) cruz('qualificado_exige_sem_faltantes', 'qualificado=true exige dados_faltantes vazio. Ajuste qualificado ou dados_faltantes.')
     if (s.proxima_acao !== 'perguntar' && s.proxima_acao !== 'encaminhar_vendas') {
@@ -133,7 +158,7 @@ export function analisarContrato(
   }
 
   // dados completos com confianca suficiente exigem qualificado
-  if (servido && aceito && cidadeOk && temTelefone && s.confianca >= limiar && !s.qualificado) {
+  if (servido && aceito && cidadeOk && cidadeDita && temTelefone && s.confianca >= limiar && !s.qualificado) {
     cruz('dados_completos_exigem_qualificado', 'Servico, segmento, cidade e telefone estao completos com confianca suficiente: marque qualificado=true.')
   }
 

@@ -70,6 +70,8 @@ describe('iniciarTurno', () => {
     ['content vazio', { historico: [{ role: 'user', content: '' }] }],
     ['content longo demais', { historico: [{ role: 'user', content: 'x'.repeat(4001) }] }],
     ['nao e objeto', 'oi'],
+    ['dois user seguidos com telefone', { historico: [{ role: 'user', content: '48 99999-0001' }, { role: 'user', content: 'x' }] }],
+    ['total de caracteres acima de 8000', { historico: Array.from({ length: 5 }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: 'x'.repeat(2000) })) }],
   ])('entrada invalida (%s) nao chama o modelo', (_n, entrada) => {
     const p = iniciarTurno(entrada, modelo, cfg)
     expect(p.fim).toBe(true)
@@ -78,6 +80,8 @@ describe('iniciarTurno', () => {
       expect(p.resultado.origem).toBe('falha')
       expect(p.resultado.erro).toBe(true)
       expect(p.resultado.resposta).toBe(cfg.textos.falha_tecnica)
+      expect(p.resultado.conversa).toEqual([])
+      expect(p.resultado.proxima_acao).toBe('responder_e_encerrar')
     }
   })
   it('T22: marcador sem valor falha a montagem e nao chama o modelo', () => {
@@ -97,7 +101,7 @@ describe('montarRequisicao', () => {
     if (p.fim) throw new Error('esperava estado')
     const r: any = montarRequisicao(p.estado, cfg)
     expect(r.model).toBe(cfg.ia.modelo)
-    expect(r.max_tokens).toBe(4000)
+    expect(r.max_tokens).toBe(1500)
     expect(r.system).toBe(p.estado.promptMontado)
     expect(r.messages).toEqual(oi)
     expect(r.output_config.effort).toBe(cfg.ia.effort)
