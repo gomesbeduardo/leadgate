@@ -60,6 +60,8 @@ services:
     image: node:24-alpine
     profiles: ["teste"]
     command: ["node", "/stub/stub-api.mjs"]
+    environment:
+      STUB_CENARIO: ${STUB_CENARIO:-padrao}
     volumes:
       - ./scripts/stub-api.mjs:/stub/stub-api.mjs:ro
     mem_limit: 64m
