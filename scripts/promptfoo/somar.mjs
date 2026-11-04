@@ -1,5 +1,5 @@
 // Soma da comparacao base x branch (issue 15): acertos por campo e por provider, a partir do JSON do promptfoo.
-// Regra da esteira (passo 4): 3 rodadas em cada lado, soma dos acertos por campo; bloqueia se a soma da branch ficar abaixo da base.
+// Regra de bloqueio do README (seção Avaliação, "Comparar duas versões"): 3 rodadas em cada lado, soma dos acertos por campo; bloqueia se a soma da branch ficar abaixo da base.
 import { CAMPOS } from '../../src/avaliacao/metricas.mjs'
 import { gerarTestes } from './casos.mjs'
 

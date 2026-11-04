@@ -14,8 +14,5 @@ Atualizado em 04/11/2026.
 - Emendas das specs 001 e 002 aprovadas pelo responsável em 04/11/2026.
 - Spec 004 integrada no PR #14: landing page em `/` e conversa em `/conversa`.
 - CI integrado no PR #17: `Portões` roda em PR e em `staging`.
-- Spec 005 (agente de issues no Actions) integrada nos PRs #20 a #33. O rótulo `claude-fix` em issue do responsável abre PR, e o merge é automático com `portoes`, `alcance` e `revisao-agente`. Primeiro ciclo completo no PR #25.
-- Merge pelo `GITHUB_TOKEN` não fecha a issue nem roda `Portões` em `staging`. A emenda C14 da spec 005 troca por um GitHub App, que ainda precisa ser criado.
-- `claude-fix` só serve para issue fora dos caminhos barrados da C8. PR do agente nesses caminhos reprova `alcance`, que é obrigatório, e fica sem merge.
-- O rótulo `claude-sessao` é a fila das sessões locais: a sessão tira o rótulo, comenta na issue e faz uma por vez.
 - Comparação de versões com promptfoo (#15): `npm run comparar:prompt`, em pacote isolado em `scripts/promptfoo/`. O teste com o executável real roda em `npm run test:promptfoo`, fora do CI.
+- O projeto segue o pipeline padrão descrito em `CLAUDE.md`.
