@@ -39,6 +39,7 @@ jobs:
           gh pr view "$PR" --json body --jq .body > corpo.md
           gh pr view "$PR" --json labels --jq '[.labels[].name]' > rotulos.json
       - name: Decide o merge automático
+        id: decide
         shell: bash
         run: |
           set +e
@@ -55,10 +56,25 @@ jobs:
             for check in portoes alcance revisao-agente; do
               jq -e --arg check "$check" 'index($check) != null' exigidos.json > /dev/null
             done
-            gh pr merge "$PR" --auto --squash --match-head-commit "$COMMIT"
+            echo 'armar=true' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           gh pr merge "$PR" --disable-auto || true
           { echo 'Merge automático barrado:'; echo; cat saida.txt; } > comentario.md
           gh pr comment "$PR" --body-file comentario.md
           exit 1
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app
+        if: steps.decide.outputs.armar == 'true'
+        with:
+          client-id: ${{ secrets.ESTEIRA_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ESTEIRA_APP_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - name: Liga o merge automático
+        if: steps.decide.outputs.armar == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: gh pr merge "$PR" --auto --squash --match-head-commit "$COMMIT"
