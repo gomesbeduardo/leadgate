@@ -85,3 +85,11 @@ Confiança: acerto alta 3, acerto baixa 6, erro alta 0, erro baixa 0.
 | g07 | ok | ok | ok | ok | pendente | pendente | n/a | n/a | pendente | pendente | 4/4, 4 pendente(s) |
 | g08 | ok | ok | ok | n/a | pendente | pendente | pendente | n/a | pendente | pendente | 3/3, 5 pendente(s) |
 | g09 | ok | ok | ok | n/a | pendente | pendente | pendente | n/a | pendente | pendente | 3/3, 5 pendente(s) |
+
+## Validação sintética (conjunto à parte: não entra nos números acima)
+
+não rodado
+
+## Taxa de falha
+
+nao medida (rode scripts/avaliar.mjs com DEMO_PAINEL=1; ver falhas.md).

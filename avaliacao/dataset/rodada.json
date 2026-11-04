@@ -1,0 +1,41 @@
+{
+  "data": "2026-11-04T03:02:51.126Z",
+  "modelo": "claude-opus-5-5",
+  "volume_pedido": 80,
+  "geradas": 82,
+  "rejeitadas": {
+    "duplicata": 39,
+    "telefone": 0,
+    "schema": 0,
+    "api": 0
+  },
+  "rejeitadas_por_categoria": {
+    "claro": 0,
+    "ambiguo": 0,
+    "emergencia": 0,
+    "fora_escopo": 0,
+    "spam": 0,
+    "audio_mal_transcrito": 0,
+    "injecao": 0,
+    "pergunta_ia": 0,
+    "multiturno": 0
+  },
+  "categorias": {
+    "claro": 11,
+    "ambiguo": 8,
+    "emergencia": 10,
+    "fora_escopo": 9,
+    "spam": 10,
+    "audio_mal_transcrito": 10,
+    "injecao": 10,
+    "pergunta_ia": 9,
+    "multiturno": 5
+  },
+  "tokens": {
+    "entrada": 203540,
+    "saida": 61377
+  },
+  "chamadas": 121,
+  "status": "completa",
+  "prompt_liberado": false
+}
