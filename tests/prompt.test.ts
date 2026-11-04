@@ -201,4 +201,9 @@ describe('T12: prompt 1.3.0', () => {
     expect(JSON.stringify(n19)).not.toContain('kkk')
     expect(n08.esperado.proxima_acao).toEqual(expect.arrayContaining(['perguntar', 'responder_e_encerrar']))
   })
+
+  it('campo já informado persiste nos turnos seguintes', () => {
+    expect(modelo).toContain('Campo que o lead já informou continua preenchido nos turnos seguintes')
+    expect(modelo).toContain('lendo a conversa inteira')
+  })
 })

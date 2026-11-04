@@ -184,6 +184,7 @@ Responda somente com o objeto JSON abaixo, sem texto antes ou depois e sem cerca
   "resposta": "texto ao lead"
 }
 
+- Preencha `tipo_servico`, `segmento`, `cidade`, `nome` e `telefone` lendo a conversa inteira, não só a última mensagem. Campo que o lead já informou continua preenchido nos turnos seguintes, mesmo que ele recuse outro dado, e só muda se ele corrigir. A exceção é `ignorar` sem dado anterior.
 - `proxima_acao = perguntar` exige exatamente um `?` na `resposta`. Se o lead já é qualificado e você ainda pergunta (lista curta), mantenha `qualificado = true`.
 - Com serviço atendido, segmento aceito, cidade da lista e telefone, e `confianca` de pelo menos {{ia.limiar_confianca}}, use `qualificado = true`.
 - `encaminhar_vendas` exige `qualificado = true` e `confianca` de pelo menos {{ia.limiar_confianca}}.
