@@ -187,10 +187,10 @@ describe('somar', () => {
   it('tabela: lado sem linha medida ou com zero acertos imprime "não medida", nunca 0,0 %', () => {
     const tab1 = tabelaMarkdown(somar(json([...rep(42, () => semSaida('base')), ...rep(42, () => semSaida('branch'))])))
     expect(tab1).not.toMatch(/0,0 %|0\/42/)
-    for (const l of tab1.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x) => x.trim())).toEqual(['não medida', 'não medida'])
+    for (const l of tab1.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x: string) => x.trim())).toEqual(['não medida', 'não medida'])
     const tab2 = tabelaMarkdown(somar(json([...rep(42, () => lin('base')), ...rep(42, () => linha('branch', tudo(0)))])))
     expect(tab2).not.toMatch(/(^|[^\d,])0,0 %/)
-    for (const l of tab2.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x) => x.trim())).toEqual(['42/42 (100,0 %)', 'não medida'])
+    for (const l of tab2.split('\n').slice(2)) expect(l.split('|').slice(2, 4).map((x: string) => x.trim())).toEqual(['42/42 (100,0 %)', 'não medida'])
   })
   it('falha técnica nunca bloqueia: base melhor e branch com erro de provider é inválida, não bloqueada', () => {
     const r = somar(json([...rep(42, () => lin('base')), ...rep(30, () => lin('branch')), ...rep(12, () => linha('branch', null))]))
