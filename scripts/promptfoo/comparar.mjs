@@ -1,8 +1,9 @@
 // Compara duas versoes do sistema (base e branch) com o promptfoo: 3 rodadas, conjunto de ajuste.
+// Antes: npm ci --prefix scripts/promptfoo --ignore-scripts (o promptfoo vive num pacote proprio, fora da raiz).
 // Uso: npm run comparar:prompt [-- --saida arquivo.json]. Sobe antes as duas pilhas (README) e ajuste COMPARAR_URL_BASE / COMPARAR_URL_BRANCH.
 // O veredito sai do JSON e de somar.mjs; o codigo de saida do promptfoo (nao zero quando uma asserção falha) e ignorado.
 import { spawn } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -38,10 +39,15 @@ export function montarEnv(dir, herdado = process.env, proxy = PROXY_MORTO) {
 }
 
 /** @returns {Promise<{ codigo: number, saida: string }>} */
-export async function comparar({ saida, env = process.env, log = console.log, silencioso = false, proxy, bin = resolve(aqui, '../../node_modules/.bin/promptfoo') } = {}) {
+export async function comparar({ saida, env = process.env, log = console.log, silencioso = false, proxy, bin = resolve(aqui, 'node_modules/.bin/promptfoo') } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'comparar-prompt-'))
   const arquivo = resolve(saida ?? join(dir, 'resultado.json'))
   const args = ['eval', '-c', join(aqui, 'promptfooconfig.yaml'), '-o', arquivo, '--no-cache', '--no-write']
+  // O promptfoo mora num pacote isolado (scripts/promptfoo); sem ele nada roda e o --saida existente fica como esta.
+  if (!existsSync(bin)) {
+    log(`comparação inválida: promptfoo não instalado em ${bin}. Instale com: npm ci --prefix scripts/promptfoo --ignore-scripts`)
+    return { codigo: 1, saida: arquivo }
+  }
   // Resultado de uma rodada anterior nunca pode virar veredito desta.
   rmSync(arquivo, { force: true })
   const morreu = await new Promise((ok, falha) => {

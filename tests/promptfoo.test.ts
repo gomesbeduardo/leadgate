@@ -5,6 +5,7 @@ import { createServer as createTcp } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { CAMPOS, avaliarCaso } from '../src/avaliacao/metricas.mjs'
 // @ts-expect-error .mjs sem declaração de tipos
@@ -57,11 +58,25 @@ describe('ambiente do promptfoo', () => {
 })
 
 describe('package.json', () => {
-  it('promptfoo só em devDependencies, na versão exata; dependencies só com zod', () => {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-    expect(pkg.devDependencies.promptfoo).toBe('0.124.1')
+  const ler = (arq: string) => JSON.parse(readFileSync(arq, 'utf8'))
+  it('raiz sem promptfoo: dependencies só com zod, nada no devDependencies nem no lockfile', () => {
+    const pkg = ler('package.json')
     expect(Object.keys(pkg.dependencies)).toEqual(['zod'])
+    expect(pkg.devDependencies.promptfoo).toBeUndefined()
     expect(pkg.scripts['comparar:prompt']).toContain('comparar.mjs')
+    expect(pkg.scripts['test:promptfoo']).toContain('COMPARAR_E2E=1')
+    const lock = ler('package-lock.json')
+    expect(Object.keys(lock.packages).filter((k) => /promptfoo/.test(k))).toEqual([])
+    expect(lock.packages[''].devDependencies.promptfoo).toBeUndefined()
+  })
+  it('scripts/promptfoo fixa o promptfoo 0.124.1 exato, e o lockfile próprio resolve essa versão', () => {
+    const pkg = ler('scripts/promptfoo/package.json')
+    expect(pkg.private).toBe(true)
+    expect(pkg.type).toBe('module')
+    expect(pkg.dependencies).toEqual({ promptfoo: '0.124.1' })
+    const lock = ler('scripts/promptfoo/package-lock.json')
+    expect(lock.packages['node_modules/promptfoo'].version).toBe('0.124.1')
+    expect(lock.packages[''].dependencies).toEqual({ promptfoo: '0.124.1' })
   })
 })
 
@@ -232,6 +247,16 @@ describe('resultado antigo e processo morto', () => {
     expect(r.codigo).toBe(1)
     expect(linhas.join('\n')).not.toContain('aprovado:')
   })
+  it('promptfoo isolado ausente: mensagem com o comando de instalação, código 1 e o --saida existente intocado', async () => {
+    const { dir, saida } = preparar('exit 0')
+    const antes = readFileSync(saida, 'utf8')
+    const linhas: string[] = []
+    const r = await comparar({ saida, bin: join(dir, 'nao-existe'), log: (l: string) => linhas.push(l), silencioso: true })
+    expect(r.codigo).toBe(1)
+    expect(linhas.join('\n')).toContain('npm ci --prefix scripts/promptfoo --ignore-scripts')
+    expect(existsSync(saida)).toBe(true)
+    expect(readFileSync(saida, 'utf8')).toBe(antes)
+  })
   it('exit diferente de zero do promptfoo com JSON novo e bom segue decidido pelo JSON', async () => {
     const { r, texto } = await rodar('cp "$APROVADO" "$5"\nexit 1')
     expect(r.codigo).toBe(0)
@@ -242,7 +267,18 @@ describe('resultado antigo e processo morto', () => {
 // Só estes hosts podem aparecer no que o promptfoo tenta alcançar pelo proxy; um host novo reprova o teste.
 const HOSTS_PERMITIDOS = ['r.promptfoo.app']
 
-describe('comparação ponta a ponta com o promptfoo real', () => {
+// O e2e usa o binário real do pacote isolado (scripts/promptfoo). Sem ele, pula com motivo visível;
+// com COMPARAR_E2E=1 (npm run test:promptfoo) a ausência do binário reprova, para pular não parecer sucesso.
+const binIsolado = fileURLToPath(new URL('../scripts/promptfoo/node_modules/.bin/promptfoo', import.meta.url))
+const temBin = existsSync(binIsolado)
+const exigido = process.env.COMPARAR_E2E === '1'
+const MOTIVO = 'promptfoo isolado não instalado: npm ci --prefix scripts/promptfoo --ignore-scripts'
+if (!temBin && !exigido) process.stderr.write(`\n[promptfoo.test] e2e com o binário real PULADO: ${MOTIVO}\n`)
+
+describe.skipIf(!temBin && !exigido)('comparação ponta a ponta com o promptfoo real', () => {
+  it('o binário isolado está instalado', () => {
+    expect(temBin, `COMPARAR_E2E=1 mas ${MOTIVO}`).toBe(true)
+  })
   const abertos: Server[] = []
   afterAll(() => abertos.forEach((s) => s.close()))
   const conexoes: string[] = []

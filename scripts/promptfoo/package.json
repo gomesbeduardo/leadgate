@@ -1,0 +1,9 @@
+{
+  "name": "comparar-prompt",
+  "private": true,
+  "type": "module",
+  "description": "Isolado do pacote raiz: o promptfoo e pesado e so a comparacao base x branch o usa.",
+  "dependencies": {
+    "promptfoo": "0.124.1"
+  }
+}
