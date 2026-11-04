@@ -25,7 +25,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SERVICO_URL }}/preparar",
+        "url": "__SERVICO_URL__/preparar",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
@@ -139,14 +139,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.ANTHROPIC_BASE_URL }}/v1/messages",
+        "url": "__ANTHROPIC_BASE_URL__/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "x-api-key",
-              "value": "={{ $env.ANTHROPIC_API_KEY }}"
-            },
             {
               "name": "anthropic-version",
               "value": "2026-10-21"
@@ -179,12 +177,18 @@
         1320,
         160
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "claudeApiChave001",
+          "name": "Claude API"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SERVICO_URL }}/validar",
+        "url": "__SERVICO_URL__/validar",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",

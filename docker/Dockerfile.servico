@@ -8,5 +8,6 @@ RUN npm run build:servico
 FROM node:24-alpine
 WORKDIR /app
 COPY --from=build /app/dist/servico.mjs ./servico.mjs
+RUN mkdir -p /dados/estado && chown node:node /dados/estado
 USER node
 CMD ["node", "servico.mjs"]

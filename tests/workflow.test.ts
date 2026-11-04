@@ -29,8 +29,8 @@ describe('workflow n8n gerado', () => {
   it('Preparar turno e Validar saída chamam o servico por SERVICO_URL', () => {
     expect(no('Preparar turno').type).toBe('n8n-nodes-base.httpRequest')
     expect(no('Validar saída').type).toBe('n8n-nodes-base.httpRequest')
-    expect(no('Preparar turno').parameters.url).toBe('={{ $env.SERVICO_URL }}/preparar')
-    expect(no('Validar saída').parameters.url).toBe('={{ $env.SERVICO_URL }}/validar')
+    expect(no('Preparar turno').parameters.url).toBe('__SERVICO_URL__/preparar')
+    expect(no('Validar saída').parameters.url).toBe('__SERVICO_URL__/validar')
     const corpoValidar = no('Validar saída').parameters.jsonBody as string
     expect(corpoValidar).toContain("$('Tentativa').last().json.estado")
     for (const campo of ['status:', 'cabecalhos:', 'corpo:', 'erro:']) expect(corpoValidar).toContain(campo)
@@ -43,11 +43,14 @@ describe('workflow n8n gerado', () => {
     expect(ia.waitBetweenTries).toBeUndefined()
     expect(ia.onError).toBe('continueRegularOutput')
     expect(ia.parameters.jsonBody).toBe('={{ JSON.stringify($json.requisicao) }}')
-    expect(ia.parameters.url).toBe('={{ $env.ANTHROPIC_BASE_URL }}/v1/messages')
+    expect(ia.parameters.url).toBe('__ANTHROPIC_BASE_URL__/v1/messages')
     expect(ia.parameters.options.response.response).toMatchObject({ fullResponse: true, neverError: true })
     expect(ia.parameters.options.timeout).toBe('={{ $json.timeout_ms }}')
     const cab = ia.parameters.headerParameters.parameters.map((h: any) => h.name)
-    expect(cab).toEqual(expect.arrayContaining(['x-api-key', 'anthropic-version']))
+    expect(cab).toContain('anthropic-version')
+    expect(cab).not.toContain('x-api-key')
+    expect(ia.parameters.genericAuthType).toBe('httpHeaderAuth')
+    expect(ia.credentials.httpHeaderAuth.name).toBe('Claude API')
   })
 
   it('Esperar e um no Wait em ms e fica no laco Tentativa -> IA -> Validar -> Regenerar? -> Tentativa', () => {
@@ -85,7 +88,7 @@ describe('workflow n8n gerado', () => {
 
   it('nao vaza chave de API nem nome de empresa', () => {
     expect(bruto).not.toContain('sk-ant')
-    expect(bruto).toContain('$env.ANTHROPIC_API_KEY')
+    expect(bruto).not.toContain('$env')
     expect(bruto.toLowerCase()).not.toContain(['central', 'eng'].join(''))
   })
 

@@ -26,7 +26,7 @@ const no = (id, name, type, typeVersion, position, parameters, extra = {}) => ({
 const chamada = (id, name, rota, position, jsonBody) =>
   no(id, name, 'n8n-nodes-base.httpRequest', 4.2, position, {
     method: 'POST',
-    url: `={{ $env.SERVICO_URL }}${rota}`,
+    url: `__SERVICO_URL__${rota}`,
     sendBody: true,
     contentType: 'json',
     specifyBody: 'json',
@@ -62,11 +62,12 @@ const nodes = [
   }, { webhookId: 'filtro-leads-espera-0001' }),
   no('n-ia', 'Nó de IA (Claude)', 'n8n-nodes-base.httpRequest', 4.2, [1320, 160], {
     method: 'POST',
-    url: '={{ $env.ANTHROPIC_BASE_URL }}/v1/messages',
+    url: '__ANTHROPIC_BASE_URL__/v1/messages',
+    authentication: 'genericCredentialType',
+    genericAuthType: 'httpHeaderAuth',
     sendHeaders: true,
     headerParameters: {
       parameters: [
-        { name: 'x-api-key', value: '={{ $env.ANTHROPIC_API_KEY }}' },
         { name: 'anthropic-version', value: '2026-10-21' },
         { name: 'content-type', value: 'application/json' },
       ],
@@ -75,7 +76,7 @@ const nodes = [
     specifyBody: 'json',
     jsonBody: '={{ JSON.stringify($json.requisicao) }}',
     options: { response: { response: { fullResponse: true, neverError: true, responseFormat: 'json' } }, timeout: '={{ $json.timeout_ms }}' },
-  }, { onError: 'continueRegularOutput' }),
+  }, { onError: 'continueRegularOutput', credentials: { httpHeaderAuth: { id: 'claudeApiChave001', name: 'Claude API' } } }),
   chamada('n-validar', 'Validar saída', '/validar', [1520, 160],
     "={{ JSON.stringify({ estado: $('Tentativa').last().json.estado, resposta: { status: $json.statusCode, cabecalhos: $json.headers, corpo: $json.body, erro: $json.error ? (typeof $json.error === 'string' ? $json.error : ($json.error.message || String($json.error))) : undefined } }) }}"),
   no('n-regenerar', 'Regenerar?', 'n8n-nodes-base.if', 2.2, [1760, 160], { conditions: fimFalso('regenerar-fim-falso'), options: {} }),
