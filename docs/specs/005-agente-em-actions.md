@@ -1,6 +1,6 @@
 # Spec 005: agente de issues no GitHub Actions
 
-**Status:** rascunho. Aprovada em 04/11/2026; emendada depois da revisão de código e aguardando reaprovação.
+**Status:** aprovada pelo responsável em 04/11/2026, com as emendas das duas revisões de código.
 **Pedido:** "Leia e adapte para nosso uso", sobre o texto "Claude Autonomous Software Engineer Handoff": um workflow disparado pelo rótulo `claude-fix`, que lê a issue, altera o código, abre PR e, como passo opcional, revisa o PR.
 
 ## Problema
@@ -13,7 +13,7 @@ O texto de origem não serve como está (tabela no fim). Além disso, boa parte 
 
 Confirmadas pelo responsável em 04/11/2026:
 
-- **Motor:** `anthropics/claude-code-action@v1`, não um script próprio com o SDK.
+- **Motor:** `anthropics/claude-code-action`, linha v1, fixada por SHA de commit, não um script próprio com o SDK. A tag `v1` é móvel, e o job guarda um segredo.
 - **Credencial:** segredo `CLAUDE_CODE_OAUTH_TOKEN`, gerado com `claude setup-token`. Só faz chamadas ao modelo, dura um ano e usa o plano do responsável.
 - **Modelo do agente:** `claude-sonnet-5-5`.
 - **Merge:** automático, sem aprovação humana, nas condições de C7.
