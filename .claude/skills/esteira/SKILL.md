@@ -72,7 +72,9 @@ Use a skill `review-pr`, que define o revisor pelo risco: no máximo duas revis�
 
 ### 6. Abrir e liberar
 
-Abra o PR para `develop` com o corpo da skill `review-pr` e, na seção Revisão, o veredito real. Quem libera é o portão: tente o merge com `gh pr merge --squash` só com portões verdes e sem achado crítico, alto ou médio aberto. Se o portão negar, deixe o PR aberto, registre o motivo e siga para o passo 7; o merge espera o responsável.
+Abra o PR para `develop` com o corpo da skill `review-pr` e, na seção Revisão, o veredito real. Faça o merge com `gh pr merge --squash` com portões verdes, sem achado crítico ou alto aberto e com a revisão gravada no corpo. Achado médio que outra entrega já resolve pode seguir, com o número do PR que o fecha escrito na seção Revisão. Se o portão negar, deixe o PR aberto, registre o motivo e siga para o passo 7; o merge espera o responsável.
+
+O merge autônomo vale porque este repositório está em `REPOS_PESSOAIS`, no portão de PR. O portão continua negando push direto, `--admin`, rótulo humano e PR sem seções. Noutro repositório, sem essa entrada, o merge espera o rótulo do responsável.
 
 ### 7. Retroalimentar
 

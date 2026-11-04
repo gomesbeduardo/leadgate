@@ -31,3 +31,33 @@ Cada entrada traz a evidência, a causa provada e a regra. A skill `esteira` lê
 **Evidência:** a API devolveu 401 com a chave recém-criada. O valor no `.env` tinha um espaço e aspas em volta.
 **Causa:** formatação, não credencial. Foi diagnosticada pela forma do valor, sem imprimir a chave.
 **Regra:** nunca imprima segredo para depurar. Confira formato, tamanho e prefixo.
+
+## 03/11/2026 — Avaliação que falhou em silêncio
+
+**Evidência:** a primeira rodada devolveu 404 em todos os casos, e o script terminou com código 0.
+**Causa:** o webhook do n8n ainda não tinha registrado quando a rodada começou, e o script gravava o erro como resultado do caso.
+**Regra:** avaliação que não mediu nada tem de sair com erro. `scripts/avaliar.mjs` espera o webhook por até 60 segundos e termina com código 1 se ele não responder.
+
+## 03/11/2026 — Regra que empurrava o modelo a errar
+
+**Evidência:** com `Santa Maria-DF`, a regra `dados_completos_exigem_qualificado` forçava `qualificado = true` para uma cidade fora da região.
+**Causa:** a regra olhava só se os dados estavam preenchidos, sem olhar a região.
+**Regra:** validador que obriga uma decisão precisa de um teste com um caso em que a decisão certa é a oposta.
+
+## 03/11/2026 — Recusa contada como promessa
+
+**Evidência:** "não oferecemos desconto" era rejeitada pela lista de promessas proibidas, e o caso gastava as 3 chamadas.
+**Causa:** a lista procurava o radical sem olhar a negação antes dele.
+**Regra:** toda lista de termos proibidos ganha um teste com a recusa correta daquele termo.
+
+## 04/11/2026 — Métrica que nunca podia falhar
+
+**Evidência:** o item 2 do checklist lia as violações do turno gravado, e turno aceito sempre grava a lista vazia. Só a revisão final notou.
+**Causa:** o teste cobria o caso que passa, e nenhum caso em que o item devesse reprovar sozinho.
+**Regra:** toda métrica nova ganha um teste em que ela reprova sozinha, sem outra métrica reprovar junto.
+
+## 04/11/2026 — Regex de prazo mais larga que a trava real
+
+**Evidência:** "fora da região que atendemos hoje" contava como citar prazo no checklist, e o README descrevia isso como defeito das respostas. A trava da conversa já exigia "ainda hoje" ou "hoje mesmo".
+**Causa:** duas definições de prazo, uma na conversa e outra na avaliação.
+**Regra:** avaliação e trava usam a mesma definição. README com número só depois de abrir o caso que gerou o número.
