@@ -5,6 +5,7 @@ services:
       dockerfile: docker/Dockerfile.servico
     environment:
       PORT: "3000"
+      PORT_INTERNA: "3001"
       CONFIG_PATH: /dados/config/empresa.json
       PROMPT_PATH: /dados/prompts/agente.md
       CHAT_PATH: /dados/chat/index.html
@@ -26,7 +27,7 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?preencha a chave no arquivo .env}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
-      SERVICO_URL: http://servico:3000
+      SERVICO_URL: http://servico:3001
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_SECURE_COOKIE: "false"
