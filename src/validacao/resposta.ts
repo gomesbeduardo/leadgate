@@ -42,7 +42,8 @@ export function validarResposta(resposta: string, ctx: { cfg: Config; promptMont
   }
 
   for (const termo of cfg.resposta.promessas_proibidas) {
-    const re = new RegExp(`(?<![a-z0-9])${escapar(normalizar(termo))}(?![a-z0-9])`)
+    // Sem borda a direita: pega o plural ("descontos"); a borda esquerda evita casar dentro de outra palavra.
+    const re = new RegExp(`(?<![a-z0-9])${escapar(normalizar(termo))}`)
     if (re.test(norm)) {
       add('resposta_promessa', `A resposta contem a promessa proibida "${termo}". Remova qualquer promessa ou garantia.`)
     }
@@ -54,8 +55,16 @@ export function validarResposta(resposta: string, ctx: { cfg: Config; promptMont
     }
   }
 
-  // Linha iniciada por numero ou marcador, ou enumeracao inline "1)" (sem casar "(55) ...").
-  if (/^\s*(\d+\s*[.)\-:]|[-*]\s)/m.test(resposta) || /(?<![(\d])\d{1,2}\)/.test(resposta)) {
+  for (const frase of cfg.resposta.negacoes_ia) {
+    const re = new RegExp(`(?<!nao )(?<![a-z0-9])${escapar(normalizar(frase))}(?![a-z0-9])`)
+    if (re.test(norm)) {
+      add('resposta_nega_ia', `A resposta nega ser uma IA ("${frase}"). Nunca negue; diga com naturalidade que este e um atendimento automatizado.`)
+    }
+  }
+
+  // Menu (R10): linha iniciada por numero ou marcador, ou enumeracao inline "1)" / "1. item".
+  const inline = /(?<![(\d])\d{1,2}\)/.test(resposta) || /(?<=^|\s)\d{1,2}\.\s+\p{L}/u.test(resposta)
+  if (/^\s*\d/m.test(resposta) || /^\s*[-*]/m.test(resposta) || inline) {
     add('resposta_menu', 'A resposta parece um menu ou lista numerada. Escreva em texto corrido, sem enumeracoes nem marcadores.')
   }
 

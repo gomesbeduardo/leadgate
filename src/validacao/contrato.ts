@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Config } from '../config/schema'
+import { digitosTelefone, extrairTelefones } from './telefone'
 
 export type Mensagem = { role: 'user' | 'assistant'; content: string }
 // Para novos tipos de verificacao (ex.: 'resposta'), basta ampliar esta uniao.
@@ -45,6 +46,20 @@ export const normalizar = (s: string) =>
   s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
 const contarInterrogacoes = (s: string) => (s.match(/\?/g) ?? []).length
+
+// "Florianopolis-SC", "Florianopolis/SC", "Florianopolis, SC".
+const SUFIXO_UF = /\s*[-/,]\s*[a-z]{2}$/
+
+/** O telefone so conta se parece telefone e os digitos aparecem numa fala do lead. */
+function telefoneReal(telefone: string | null, historico: Mensagem[]): boolean {
+  if (telefone === null || telefone.trim() === '') return false
+  const [trecho] = extrairTelefones(telefone)
+  if (!trecho) return false
+  const alvo = digitosTelefone(trecho)
+  return historico
+    .filter((m) => m.role === 'user')
+    .some((m) => extrairTelefones(m.content).some((t) => digitosTelefone(t) === alvo))
+}
 
 function schemaViol(regra: string, detalhe: string): Violacao {
   return { tipo: 'schema', regra, detalhe }
@@ -93,10 +108,11 @@ export function analisarContrato(
   const servido = s.tipo_servico !== null && cfg.servicos.includes(s.tipo_servico)
   const aceito = s.segmento !== null && cfg.segmentos_aceitos.includes(s.segmento)
   const cidadesNorm = new Set(cfg.regiao.cidades.map(normalizar))
-  const cidadeOk = s.cidade !== null && cidadesNorm.has(normalizar(s.cidade))
-  const temTelefone = s.telefone !== null
+  const cidade = s.cidade !== null && s.cidade.trim() !== '' ? s.cidade : null
+  const cidadeOk = cidade !== null && cidadesNorm.has(normalizar(cidade).replace(SUFIXO_UF, ''))
+  const temTelefone = telefoneReal(s.telefone, historico)
   const recusa = s.tipo_servico === 'fora_escopo' || (s.segmento !== null && !aceito)
-  const cidadeFora = s.cidade !== null && !cidadeOk
+  const cidadeFora = cidade !== null && !cidadeOk
   const citaContato = normalizar(s.resposta).includes(normalizar(contato))
 
   // confianca no intervalo
@@ -140,13 +156,21 @@ export function analisarContrato(
     if (n !== 1) cruz('perguntar_exige_uma_interrogacao', `proxima_acao=perguntar exige exatamente uma interrogacao na resposta; encontradas ${n}. Faca uma unica pergunta.`)
   }
 
+  // So perguntar pode terminar em interrogacao.
+  if (s.proxima_acao !== 'perguntar' && contarInterrogacoes(s.resposta) > 0) {
+    cruz('interrogacao_so_com_perguntar', 'Somente proxima_acao=perguntar pode ter interrogacao na resposta. Reescreva sem pergunta ou mude a acao.')
+  }
+
   // R4
   if (s.urgencia === 'alta' && s.qualificado && s.proxima_acao !== 'encaminhar_vendas') {
     cruz('urgencia_alta_exige_vendas', 'urgencia alta com lead qualificado exige proxima_acao=encaminhar_vendas.')
   }
 
   // R5: duvida que pergunta nao resolve
-  const perguntasFeitas = historico.filter((m) => m.role === 'assistant' && m.content.includes('?')).length
+  // O cliente controla o historico: conta turnos, nao o '?' que ele escreve.
+  const turnosAssistant = historico.filter((m) => m.role === 'assistant').length
+  const turnosUser = historico.filter((m) => m.role === 'user').length
+  const perguntasFeitas = Math.max(turnosAssistant, turnosUser - 1)
   const tetoAtingido = perguntasFeitas >= cfg.conversa.teto_perguntas
   if (tetoAtingido && s.proxima_acao === 'perguntar') {
     cruz('teto_perguntas_atingido', `O teto de ${cfg.conversa.teto_perguntas} perguntas foi atingido: nao pergunte mais. Encaminhe a um humano (com telefone) ou encerre citando o contato.`)
@@ -161,6 +185,15 @@ export function analisarContrato(
     } else {
       if (s.proxima_acao !== 'responder_e_encerrar') cruz('duvida_sem_telefone_exige_encerrar', `Motivo: ${motivo}. Sem telefone, use proxima_acao=responder_e_encerrar.`)
       else if (!citaContato) cruz('duvida_sem_telefone_exige_contato', `Motivo: ${motivo}. A resposta deve citar o contato da empresa: ${contato}.`)
+    }
+  }
+
+  // R5: lead dentro do escopo nunca e dispensado com um simples encerramento.
+  if (!recusa && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
+    if (temTelefone) {
+      cruz('encerrar_com_telefone_exige_humano', 'Lead nao recusado com telefone nao pode ser encerrado: use proxima_acao=encaminhar_humano.')
+    } else if ((servido || aceito || cidadeOk) && !citaContato) {
+      cruz('encerrar_sem_telefone_exige_contato', `Lead dentro do escopo sem telefone: a resposta deve citar o contato da empresa: ${contato}.`)
     }
   }
 

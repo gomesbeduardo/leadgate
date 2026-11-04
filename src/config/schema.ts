@@ -25,6 +25,10 @@ export const ConfigSchema = z
       max_chars: z.number().int().positive(),
       frases_bot: textos,
       promessas_proibidas: textos,
+      negacoes_ia: textos.default([
+        'sou humano', 'sou humana', 'sou uma pessoa', 'não sou um robô', 'não sou robô',
+        'não sou uma ia', 'não sou ia', 'sou uma atendente de verdade', 'sou um atendente de verdade',
+      ]),
     }),
     prompt: z.object({ canario: z.string().min(1) }),
     textos: z.object({ aviso_lgpd: z.string().min(1), falha_tecnica: z.string().min(1) }),

@@ -44,12 +44,20 @@ function responder(res: ServerResponse, status: number, corpo: unknown) {
 
 const ehObjeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
-export type OpcoesChat = { chatHtml?: string; webhookUrl?: string }
+export type OpcoesChat = { chatHtml?: string; webhookUrl?: string; painel?: boolean }
 
 const TIMEOUT_WEBHOOK_MS = 60_000
 
 export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = {}): Server {
   const falhaChat = { resposta: cfg.textos.falha_tecnica, origem: 'falha' }
+
+  // O navegador so recebe o necessario; violacoes e conversa nunca saem daqui.
+  const publico = (j: Record<string, unknown>) => ({
+    resposta: j.resposta,
+    proxima_acao: j.proxima_acao,
+    origem: j.origem,
+    ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas } : {}),
+  })
 
   const chat = async (corpo: unknown): Promise<unknown> => {
     if (!opcoes.webhookUrl || !ehObjeto(corpo) || !Array.isArray(corpo.historico)) return falhaChat
@@ -62,7 +70,7 @@ export function criarServidor(cfg: Config, modelo: string, opcoes: OpcoesChat = 
       })
       if (!r.ok) return falhaChat
       const j: unknown = await r.json()
-      return ehObjeto(j) ? j : falhaChat
+      return ehObjeto(j) ? publico(j) : falhaChat
     } catch {
       return falhaChat
     }

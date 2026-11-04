@@ -63,6 +63,9 @@ describe('iniciarTurno', () => {
   })
   it.each([
     ['historico vazio', { historico: [] }],
+    ['historico que nao alterna', { historico: [{ role: 'user', content: 'a' }, { role: 'user', content: 'b' }, { role: 'user', content: 'c' }] }],
+    ['comeca pelo assistant', { historico: [{ role: 'assistant', content: 'a' }, { role: 'user', content: 'b' }] }],
+    ['mais de 40 mensagens', { historico: Array.from({ length: 41 }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: 'x' })) }],
     ['ultima mensagem do assistant', { historico: [{ role: 'user', content: 'a' }, { role: 'assistant', content: 'b' }] }],
     ['content vazio', { historico: [{ role: 'user', content: '' }] }],
     ['content longo demais', { historico: [{ role: 'user', content: 'x'.repeat(4001) }] }],
@@ -214,7 +217,7 @@ describe('falhaDeApi', () => {
   it('ignora numero de 4 digitos e so olha mensagens do user', () => {
     const h: Mensagem[] = [
       { role: 'user', content: 'sala 1234' },
-      { role: 'assistant', content: 'ligue (48) 3364-9840' },
+      { role: 'assistant', content: 'ligue (48) 90000-0000' },
       { role: 'user', content: 'ok' },
     ]
     expect(falhaDeApi(est(h), cfg).proxima_acao).toBe('responder_e_encerrar')

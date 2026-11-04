@@ -40,7 +40,7 @@ const simulados = ['Continuar conversa', 'Vendas (simulado)', 'Humano (simulado)
 
 const nodes = [
   no('n-webhook', 'Webhook', 'n8n-nodes-base.webhook', 2, [0, Y],
-    { httpMethod: 'POST', path: 'chat', responseMode: 'responseNode', options: { allowedOrigins: '*' } },
+    { httpMethod: 'POST', path: 'chat', responseMode: 'responseNode', options: { allowedOrigins: 'http://localhost:8080' } },
     { webhookId: 'filtro-leads-chat-0001' }),
   chamada('n-preparar', 'Preparar turno', '/preparar', [240, Y], '={{ JSON.stringify($json.body) }}'),
   no('n-precisa', 'Precisa do modelo?', 'n8n-nodes-base.if', 2.2, [480, Y], { conditions: fimFalso('precisa-fim-falso'), options: {} }),
@@ -60,7 +60,7 @@ const nodes = [
     specifyBody: 'json',
     jsonBody: '={{ JSON.stringify($json.requisicao) }}',
     options: { response: { response: { fullResponse: true, neverError: true, responseFormat: 'json' } }, timeout: 60000 },
-  }),
+  }, { onError: 'continueRegularOutput', retryOnFail: true, maxTries: 3, waitBetweenTries: 1000 }),
   chamada('n-validar', 'Validar saída', '/validar', [1200, 160],
     "={{ JSON.stringify({ tentativa: $('Tentativa').last().json, http: { statusCode: $json.statusCode, body: $json.body } }) }}"),
   no('n-regenerar', 'Regenerar?', 'n8n-nodes-base.if', 2.2, [1440, 160], { conditions: fimFalso('regenerar-fim-falso'), options: {} }),

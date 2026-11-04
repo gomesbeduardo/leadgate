@@ -68,6 +68,20 @@ describe('servico HTTP', () => {
     expect(r.resultado.tentativas).toBe(1)
   })
 
+  it('falha de rede no n8n (sem statusCode nem body) vira falha de API, com ou sem http', async () => {
+    const t = await (await post('/preparar', corpo)).json()
+    // O n8n monta o corpo com JSON.stringify: chaves undefined somem.
+    const doN8n = JSON.parse(JSON.stringify({ tentativa: t, http: { statusCode: undefined, body: undefined } }))
+    for (const c of [doN8n, { tentativa: t }]) {
+      const r = await post('/validar', c)
+      expect(r.status).toBe(200)
+      const j: any = await r.json()
+      expect(j.fim).toBe(true)
+      expect(j.resultado.origem).toBe('falha')
+      expect(j.resultado.tentativas).toBe(1)
+    }
+  })
+
   it('saida valida do modelo encerra com origem modelo', async () => {
     const t = await (await post('/preparar', corpo)).json()
     const saida = {
@@ -101,6 +115,8 @@ describe('chat', () => {
   let web: Server
   let comChat: Server
   let semWebhook: Server
+  let comPainel: Server
+  let urlPainel = ''
   let urlChat = ''
   let urlSem = ''
   let recebido: any
@@ -117,7 +133,10 @@ describe('chat', () => {
       req.on('end', () => {
         recebido = JSON.parse(Buffer.concat(partes).toString('utf8'))
         res.writeHead(200, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' }))
+        res.end(JSON.stringify({
+          resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+          violacoes: [{ regra: 'segredo' }], conversa: [{ role: 'user', content: 'Oi' }],
+        }))
       })
     })
     const urlWeb = await subir(web)
@@ -125,9 +144,11 @@ describe('chat', () => {
     urlChat = await subir(comChat)
     semWebhook = criarServidor(cfg, prompt, { webhookUrl: 'http://127.0.0.1:1/webhook' })
     urlSem = await subir(semWebhook)
+    comPainel = criarServidor(cfg, prompt, { webhookUrl: urlWeb + '/webhook', painel: true })
+    urlPainel = await subir(comPainel)
   })
   afterAll(async () => {
-    for (const s of [web, comChat, semWebhook]) await new Promise<void>((r) => s.close(() => r()))
+    for (const s of [web, comChat, semWebhook, comPainel]) await new Promise<void>((r) => s.close(() => r()))
   })
 
   it('T23: /tela.json traz o aviso LGPD com "automatizado" e "provedor de IA"', async () => {
@@ -148,6 +169,14 @@ describe('chat', () => {
     expect(r.status).toBe(200)
     expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' })
     expect(recebido).toEqual({ historico: h })
+  })
+
+  it('com painel liga, /api/chat inclui saida e tentativas, nunca violacoes nem conversa', async () => {
+    const h = [{ role: 'user', content: 'Oi' }]
+    const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
+    expect(await r.json()).toEqual({
+      resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+    })
   })
 
   it('webhook fora do ar devolve 200 com a falha tecnica', async () => {

@@ -22,4 +22,4 @@ try {
   falhar(`config ou prompt invalido (${caminhoConfig}, ${caminhoPrompt}): ${e instanceof Error ? e.message : String(e)}`)
 }
 
-criarServidor(cfg, prompt, { chatHtml, webhookUrl: process.env.N8N_WEBHOOK_URL }).listen(porta, () => console.log(`servico ouvindo na porta ${porta}`))
+criarServidor(cfg, prompt, { chatHtml, webhookUrl: process.env.N8N_WEBHOOK_URL, painel: process.env.DEMO_PAINEL === '1' }).listen(porta, () => console.log(`servico ouvindo na porta ${porta}`))

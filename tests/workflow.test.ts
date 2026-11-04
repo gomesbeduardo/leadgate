@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 const bruto = readFileSync('n8n/filtro-leads.json', 'utf8')
 const wf = JSON.parse(bruto)
 
-type No = { name: string; type: string; parameters: { url?: string; jsonBody?: string } }
+type No = { name: string; type: string; parameters: { url?: string; jsonBody?: string; options?: { allowedOrigins?: string } }; [k: string]: unknown }
 const no = (nome: string): No => wf.nodes.find((n: No) => n.name === nome)
 
 describe('workflow n8n gerado', () => {
@@ -32,6 +32,18 @@ describe('workflow n8n gerado', () => {
     expect(no('Preparar turno').parameters.url).toBe('={{ $env.SERVICO_URL }}/preparar')
     expect(no('Validar saída').parameters.url).toBe('={{ $env.SERVICO_URL }}/validar')
     expect(no('Validar saída').parameters.jsonBody).toContain("$('Tentativa').last().json")
+  })
+
+  it('falha de rede no no de IA segue o fluxo com tentativas', () => {
+    const ia = no('Nó de IA (Claude)')
+    expect(ia.onError).toBe('continueRegularOutput')
+    expect(ia.retryOnFail).toBe(true)
+    expect(ia.maxTries).toBe(3)
+    expect(ia.waitBetweenTries).toBe(1000)
+  })
+
+  it('o webhook so aceita a origem do chat local', () => {
+    expect(no('Webhook').parameters.options?.allowedOrigins).toBe('http://localhost:8080')
   })
 
   it('nao vaza chave de API nem nome de empresa', () => {

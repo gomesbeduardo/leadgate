@@ -19,7 +19,9 @@ const base = (): Record<string, unknown> => ({
   confianca: 0.9, proxima_acao: 'perguntar', resposta: 'Perfeito, qual o tamanho do local?',
 })
 const saida = (over: Record<string, unknown>) =>
-  validarSaida(JSON.stringify({ ...base(), ...over }), { historico: [], cfg, promptMontado })
+  validarSaida(JSON.stringify({ ...base(), ...over }), {
+    historico: [{ role: 'user', content: 'meu telefone 48 99999-0001' }], cfg, promptMontado,
+  })
 const regrasSaida = (r: ResultadoValidacao) => (r.ok ? [] : r.violacoes.map((v) => v.regra))
 
 describe('aceite', () => {
@@ -65,7 +67,23 @@ describe('regras da camada 2', () => {
     expect(regrasDe('Tem desconto')).toContain('resposta_promessa')
     expect(regrasDe('É grátis')).toContain('resposta_promessa')
     ok('Fazemos o orçamento')
-    ok('Os descontos não existem')
+    expect(regrasDe('Temos descontos especiais para empresas.')).toContain('resposta_promessa')
+    ok('Fazemos o orçamento com calma')
+  })
+  it('nega ser IA', () => {
+    for (const t of ['Sou humano, pode confiar.', 'Pode ficar tranquilo, não sou um robô.', 'Sou uma atendente de verdade.']) {
+      expect(regrasDe(t), t).toContain('resposta_nega_ia')
+    }
+    ok('Não sou uma pessoa, este é um atendimento automatizado.')
+    ok('Este atendimento é automatizado.')
+  })
+  it('menu literal da R10', () => {
+    expect(regrasDe('-instalação')).toContain('resposta_menu')
+    expect(regrasDe('Temos:\n1 instalação\n2 manutenção')).toContain('resposta_menu')
+    expect(regrasDe('Temos 1. instalação e 2. manutenção')).toContain('resposta_menu')
+    expect(regrasDe('Ligue:\n48 3000-0000')).toContain('resposta_menu')
+    ok('Ligue para (48) 90000-0000 amanhã.')
+    ok('Tem 12 m2. Obrigado')
   })
   it('frase de bot', () => {
     expect(regrasDe('Como posso ajudar hoje')).toContain('resposta_frase_bot')
@@ -77,7 +95,7 @@ describe('regras da camada 2', () => {
     expect(regrasDe('Opções:\n* instalação')).toContain('resposta_menu')
     expect(regrasDe('Escolha 1) ou 2) agora')).toContain('resposta_menu')
     ok('Temos 2 opções')
-    ok('Ligue (55) 3307-7010')
+    ok('Ligue (48) 90000-0000')
   })
 })
 

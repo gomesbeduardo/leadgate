@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Config } from '../config/schema'
 import { montarPrompt, ErroMontagem } from '../prompt/montar'
 import { validarSaida } from '../validacao/saida'
+import { extrairTelefones } from '../validacao/telefone'
 import type { Mensagem, Saida, Violacao } from '../validacao/contrato'
 
 export type Estado = {
@@ -26,21 +27,13 @@ const EntradaSchema = z.object({
   historico: z
     .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(4000) }))
     .min(1)
-    .refine((h) => h.at(-1)?.role === 'user', 'a ultima mensagem deve ser do user'),
+    .max(40)
+    .refine((h) => h.at(-1)?.role === 'user', 'a ultima mensagem deve ser do user')
+    .refine((h) => h.every((m, i) => m.role === (i % 2 === 0 ? 'user' : 'assistant')), 'o historico deve alternar user/assistant, comecando por user'),
 })
 
-const TELEFONE = /\+?\d[\d\s().-]{8,}\d/g
-
-function temTelefone(historico: Mensagem[]): boolean {
-  return historico
-    .filter((m) => m.role === 'user')
-    .some((m) =>
-      (m.content.match(TELEFONE) ?? []).some((trecho) => {
-        const n = trecho.replace(/\D/g, '').length
-        return n >= 10 && n <= 13
-      }),
-    )
-}
+const temTelefone = (historico: Mensagem[]) =>
+  historico.filter((m) => m.role === 'user').some((m) => extrairTelefones(m.content).length > 0)
 
 function falha(historico: Mensagem[], tentativas: number, violacoes: Violacao[], cfg: Config): Resultado {
   return {
