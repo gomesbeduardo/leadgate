@@ -95,4 +95,14 @@ describe('veredito do revisor', () => {
     expect(bullets).toHaveLength(1)
     expect(bullets[0]).toContain('linha um linha dois linha tres')
   })
+
+  it('T31: padrao de segredo no veredito sai com 2 sem ecoar o valor', async () => {
+    const a = await rodar({ achados: [achado('baixo', { problema: 'chave sk-ant-abc123 vazou' })] })
+    expect(a.code).toBe(2)
+    expect(a.out).toContain('padrão de segredo no veredito')
+    expect(a.out).not.toContain('abc123')
+    const b = await rodar({ achados: [achado('baixo', { arquivo: 'ghs_abc123' })] })
+    expect(b.code).toBe(2)
+    expect(b.out).not.toContain('abc123')
+  })
 })

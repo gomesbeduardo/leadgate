@@ -1,15 +1,21 @@
 import { readFileSync } from 'node:fs'
 
 const pastas = ['prompts/', 'src/validacao/', 'config/', 'docs/specs/', 'avaliacao/', '.github/', '.claude/', 'docker/']
-const raiz = ['package.json', 'package-lock.json', 'tsconfig.json', 'vitest.config.ts', '.env.example', 'docker-compose.yml']
-const prefixosRaiz = ['Dockerfile']
+const raiz = ['scripts/alcance.mjs', 'scripts/veredito.mjs', 'docs/aprendizados.md', 'docs/estado.md', 'package.json', 'package-lock.json', 'tsconfig.json', '.env.example', '.mcp.json', '.npmrc']
+const prefixosRaiz = ['vitest.config.', 'vitest.workspace.', 'docker-compose', 'compose.', 'dockerfile']
+const nomesQualquerPasta = ['claude.md', 'agents.md']
 const secoes = ['## Contexto', '## O que mudou', '## Como testar', '## Riscos e rollback']
 
-function area(caminho) {
+function area(original) {
+  const caminho = original.toLowerCase()
   const pasta = pastas.find((p) => caminho.startsWith(p))
   if (pasta) return pasta
-  const arquivo = raiz.find((r) => caminho === r) ?? prefixosRaiz.find((p) => caminho.startsWith(p))
-  return arquivo ? (prefixosRaiz.includes(arquivo) ? `${arquivo}*` : arquivo) : null
+  const exato = raiz.find((r) => caminho === r)
+  if (exato) return exato
+  const prefixo = prefixosRaiz.find((p) => caminho.startsWith(p))
+  if (prefixo) return `${prefixo}*`
+  const nome = caminho.split('/').pop()
+  return nomesQualquerPasta.includes(nome) ? nome : null
 }
 
 function falhar(msg) {
@@ -25,8 +31,8 @@ function ler(caminho) {
   }
 }
 
-const [arquivosPath, corpoPath] = process.argv.slice(2)
-if (!arquivosPath || !corpoPath) falhar('uso: node scripts/alcance.mjs <arquivos.json> <corpo.md>')
+const [arquivosPath, corpoPath, rotulosPath] = process.argv.slice(2)
+if (!arquivosPath || !corpoPath || !rotulosPath) falhar('uso: node scripts/alcance.mjs <arquivos.json> <corpo.md> <rotulos.json>')
 
 let arquivos
 try {
@@ -40,6 +46,13 @@ for (const a of arquivos) {
     falhar('item invalido em arquivos.json: esperado { nome, estado, anterior? }')
 }
 const corpo = ler(corpoPath)
+let rotulos
+try {
+  rotulos = JSON.parse(ler(rotulosPath))
+} catch {
+  falhar(`JSON invalido em ${rotulosPath}`)
+}
+if (!Array.isArray(rotulos) || rotulos.some((r) => typeof r !== 'string')) falhar('rotulos.json deve ser uma lista de textos')
 
 const motivos = []
 if (arquivos.length === 0) motivos.push('lista de arquivos vazia')
@@ -50,9 +63,18 @@ for (const a of arquivos) {
     const alvo = area(n)
     if (alvo) motivos.push(`${n}: area protegida ${alvo}`)
   }
-  const saiuDeTests = a.estado === 'removed' && a.nome.startsWith('tests/') ? a.nome : a.estado === 'renamed' && a.anterior?.startsWith('tests/') && !a.nome.startsWith('tests/') ? a.anterior : null
+  const nome = a.nome.toLowerCase()
+  const anterior = a.anterior?.toLowerCase()
+  const saiuDeTests =
+    a.estado === 'removed' && nome.startsWith('tests/')
+      ? a.nome
+      : a.estado === 'renamed' && anterior?.startsWith('tests/') && !(nome.startsWith('tests/') && nome.endsWith('.test.ts'))
+        ? a.anterior
+        : null
   if (saiuDeTests) motivos.push(`${saiuDeTests}: remocao de arquivo de tests/`)
 }
+
+if (rotulos.includes('revisado-por-humano')) motivos.push('rotulo revisado-por-humano presente')
 
 const linhas = new Set(corpo.split(/\r?\n/).map((l) => l.trimEnd()))
 for (const s of secoes) if (!linhas.has(s)) motivos.push(`corpo sem a secao ${s}`)

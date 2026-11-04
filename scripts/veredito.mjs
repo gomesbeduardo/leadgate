@@ -39,6 +39,9 @@ for (const [i, a] of dados.achados.entries()) {
   if (!ok) invalido(`achado ${i + 1} com formato inválido (esperado gravidade conhecida, arquivo, linha inteira e problema)`)
 }
 
+const segredos = ['sk-ant-', 'ghp_', 'gho_', 'ghs_', 'ghu_', 'github_pat_']
+if (dados.achados.some((a) => segredos.some((s) => a.problema.includes(s) || a.arquivo.includes(s)))) invalido('padrão de segredo no veredito')
+
 const achados = dados.achados
 if (achados.length === 0) process.exit(0)
 

@@ -11,14 +11,16 @@ const corpoCompleto = '## Contexto\nx\n\n## O que mudou\nx\n\n## Como testar\nx\
 type Arquivo = { nome: string; estado: string; anterior?: string }
 const mod = (nome: string): Arquivo => ({ nome, estado: 'modified' })
 
-function rodar(arquivos: unknown, corpo = corpoCompleto, bruto?: string) {
+function rodar(arquivos: unknown, corpo = corpoCompleto, bruto?: string, rotulos: string | null = '[]') {
   const dir = mkdtempSync(join(tmpdir(), 'alcance-'))
   const a = join(dir, 'arquivos.json')
   const c = join(dir, 'corpo.md')
   writeFileSync(a, bruto ?? JSON.stringify(arquivos))
   writeFileSync(c, corpo)
+  const r = join(dir, 'rotulos.json')
+  if (rotulos !== null) writeFileSync(r, rotulos)
   return new Promise<{ code: number; out: string; err: string }>((resolve) =>
-    execFile('node', [script, a, c], (e, out, err) => resolve({ code: e ? ((e as any).code ?? 1) : 0, out, err })))
+    execFile('node', [script, a, c, ...(rotulos === null ? [] : [r])], (e, out, err) => resolve({ code: e ? ((e as any).code ?? 1) : 0, out, err })))
 }
 
 describe('portao de alcance', () => {
@@ -117,5 +119,37 @@ describe('portao de alcance', () => {
   it('entrada com formato errado sai com 2', async () => {
     const r = await rodar([{ nome: 5 }])
     expect(r.code).toBe(2)
+  })
+
+  it('T27: caminhos protegidos novos sao rejeitados, cada um sozinho', async () => {
+    for (const n of ['scripts/alcance.mjs', 'src/CLAUDE.md', 'compose.yaml', 'dockerfile', 'docs/estado.md', 'Docker-Compose.override.yml', 'vitest.workspace.ts', '.npmrc', 'AGENTS.md', '.mcp.json', 'PROMPTS/a.md']) {
+      const r = await rodar([mod(n)])
+      expect(r.code, n).toBe(1)
+    }
+  })
+
+  it('T28: vizinhos legitimos continuam aprovados', async () => {
+    for (const n of ['scripts/stub-api.mjs', 'docs/README.md', 'src/composer.ts']) {
+      expect((await rodar([mod(n)])).code, n).toBe(0)
+    }
+  })
+
+  it('T29: renomear de tests/ para nome sem .test.ts conta como remocao', async () => {
+    const r = await rodar([{ nome: 'tests/chat.txt', estado: 'renamed', anterior: 'tests/chat.test.ts' }])
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('remo')
+    expect((await rodar([{ nome: 'tests/b.test.ts', estado: 'renamed', anterior: 'tests/a.test.ts' }])).code).toBe(0)
+  })
+
+  it('T30: rotulo revisado-por-humano rejeita', async () => {
+    const r = await rodar([mod('src/a.ts')], corpoCompleto, undefined, '["revisado-por-humano"]')
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('revisado-por-humano')
+    expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, '["bug"]')).code).toBe(0)
+  })
+
+  it('rotulos.json ausente ou que nao e lista sai com 2', async () => {
+    expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, null)).code).toBe(2)
+    expect((await rodar([mod('src/a.ts')], corpoCompleto, undefined, '{}')).code).toBe(2)
   })
 })
