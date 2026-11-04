@@ -9,6 +9,8 @@ services:
       CONFIG_PATH: /dados/config/empresa.json
       PROMPT_PATH: /dados/prompts/agente.md
       CHAT_PATH: /dados/chat/index.html
+      LP_PATH: /dados/chat/lp.html
+      LOGO_PATH: /dados/chat/logo.svg
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/chat
       DEMO_PAINEL: ${DEMO_PAINEL:-0}
       LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-20}

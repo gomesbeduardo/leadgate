@@ -20,7 +20,7 @@ Aqui a IA entra onde a linguagem é solta: entender o que a pessoa quer, pedir s
 - Uma avaliação reproduzível com 20 casos, mais um conjunto separado de regressão com falhas que já aconteceram.
 - Uma esteira de desenvolvimento em que agentes especificam, implementam, revisam e registram o que aprenderam (seção final).
 
-A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
+A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. Na tela do chat, `tela.titulo` define só o título da aba do navegador (o cabeçalho visível é fixo, "Atendimento CentralEng"); as cores da conversa ficam nos tokens de `chat/index.html`, e `cor_primaria` e `cor_destaque` não são mais aplicadas ali, embora `/tela.json` ainda as devolva. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
 
 ## O que funcionou
 
@@ -60,7 +60,7 @@ flowchart LR
     rota --> humano
 ```
 
-O n8n só orquestra; a decisão de qualificar é do modelo, e quem confere é o código. As rotas `/preparar` e `/validar` ficam numa porta interna (3001) que o Compose não publica no host. O chat é servido em `127.0.0.1:8080`.
+O n8n só orquestra; a decisão de qualificar é do modelo, e quem confere é o código. As rotas `/preparar` e `/validar` ficam numa porta interna (3001) que o Compose não publica no host. A landing page é servida em `127.0.0.1:8080/` e o chat em `127.0.0.1:8080/conversa`.
 
 ## Contrato JSON
 
@@ -223,7 +223,7 @@ cp .env.example .env        # preencha ANTHROPIC_API_KEY, sem aspas
 docker compose up --build   # sobe o serviço Node e o n8n (workflow importado e ativado na partida)
 ```
 
-Abra `http://127.0.0.1:8080` para o chat. O n8n fica em `http://127.0.0.1:5678`, onde se vê cada execução. Para conferir o código:
+Abra `http://127.0.0.1:8080` para a landing page; o botão "Entrar em contato" leva ao chat, em `/conversa`. O n8n fica em `http://127.0.0.1:5678`, onde se vê cada execução. Para conferir o código:
 
 ```sh
 npm install
