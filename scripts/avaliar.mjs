@@ -31,7 +31,9 @@ if (conjunto === 'validacao') {
   casos = converterValidacao(JSON.parse(readFileSync(arq, 'utf8')))
 } else {
   const arquivoCasos = conjunto === 'regressao' ? 'avaliacao/regressao.json' : 'avaliacao/casos.json'
-  casos = JSON.parse(readFileSync(new URL(arquivoCasos, raiz), 'utf8')).filter((c) => c.conjunto === conjunto)
+  // AVALIACAO_CASOS_ARQ (caminho absoluto) existe para teste.
+  const arqCasos = process.env.AVALIACAO_CASOS_ARQ ? new URL(`file://${process.env.AVALIACAO_CASOS_ARQ}`) : new URL(arquivoCasos, raiz)
+  casos = JSON.parse(readFileSync(arqCasos, 'utf8')).filter((c) => c.conjunto === conjunto)
 }
 const limiar = JSON.parse(readFileSync(new URL('config/empresa.json', raiz), 'utf8')).ia.limiar_confianca
 
@@ -106,7 +108,8 @@ if (!falhasAtivas) console.warn(`aviso: contagem de falhas desligada (${falhasUr
 const execucoes = []
 for (const caso of casos) {
   const turnos = []
-  const historico = []
+  // historico_inicial semeia conversas que o modelo vivo nao deixaria abertas (ex.: lead ja qualificado).
+  const historico = [...(caso.historico_inicial ?? [])]
   let falhou = null
   for (const msg of caso.mensagens) {
     historico.push({ role: 'user', content: msg })
@@ -114,6 +117,7 @@ for (const caso of casos) {
       const r = await chamar(historico)
       turnos.push({
         resposta: r.resposta ?? '',
+        resposta_nula: r.resposta == null,
         saida: r.saida ?? null,
         tentativas: r.tentativas ?? 0,
         origem: r.origem ?? 'falha',
@@ -121,6 +125,13 @@ for (const caso of casos) {
         violacoes: r.violacoes ?? [],
         proxima_acao: r.proxima_acao ?? null,
       })
+      // Silencio deliberado do modelo (ignorar, resposta nula): nenhuma fala do agente entra no historico.
+      const silencio = r.origem === 'modelo' && r.resposta == null && r.proxima_acao === 'ignorar'
+      if (silencio) {
+        // Como o chat: na abertura (sem assistant) a mensagem silenciada sai do historico; depois dela, fica.
+        if (!historico.some((m) => m.role === 'assistant')) historico.pop()
+        continue
+      }
       historico.push({ role: 'assistant', content: r.resposta ?? '' })
       if (r.proxima_acao !== 'perguntar') break
     } catch (e) {

@@ -197,11 +197,11 @@ describe('casos.json', () => {
     mensagens: string[]
     esperado: Record<string, unknown[]>
   }[]
-  it('tem 20 casos, 14 + 6, ids unicos', () => {
-    expect(casos).toHaveLength(20)
-    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(14)
+  it('tem 37 casos, 31 + 6 (a01-a14 e n01-n17 no ajuste), ids unicos', () => {
+    expect(casos).toHaveLength(37)
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(31)
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
-    expect(new Set(casos.map((c) => c.id)).size).toBe(20)
+    expect(new Set(casos.map((c) => c.id)).size).toBe(37)
   })
   it('cobre multi-mensagem e travas', () => {
     expect(casos.filter((c) => c.mensagens.length > 1).length).toBeGreaterThanOrEqual(3)
@@ -251,7 +251,7 @@ describe('scripts/avaliar.mjs', () => {
     expect(r.code).toBe(0)
     const j = JSON.parse(readFileSync(join(r.pasta, 'resultado-regressao.json'), 'utf8'))
     expect(j.conjunto).toBe('regressao')
-    expect(j.execucoes).toHaveLength(9)
+    expect(j.execucoes).toHaveLength(10)
   }, 30_000)
 
   it('webhook com 500 depois de pronto: todos os turnos falharam, sai 1 sem sobrescrever', async () => {
@@ -269,8 +269,8 @@ describe('regressao.json', () => {
   const casos = JSON.parse(readFileSync(new URL('../avaliacao/regressao.json', import.meta.url), 'utf8')) as {
     id: string; conjunto: string; mensagens: string[]; esperado: Record<string, unknown[]>; itens_na: number[]
   }[]
-  it('tem g01 a g09, conjunto regressao, esperado completo', () => {
-    expect(casos.map((c) => c.id)).toEqual(['g01', 'g02', 'g03', 'g04', 'g05', 'g06', 'g07', 'g08', 'g09'])
+  it('tem g01 a g10, conjunto regressao, esperado completo', () => {
+    expect(casos.map((c) => c.id)).toEqual(['g01', 'g02', 'g03', 'g04', 'g05', 'g06', 'g07', 'g08', 'g09', 'g10'])
     for (const c of casos) {
       expect(c.conjunto).toBe('regressao')
       for (const campo of CAMPOS) expect(Array.isArray(c.esperado[campo]) && c.esperado[campo]!.length > 0).toBe(true)
@@ -337,5 +337,185 @@ describe('scripts/avaliar.mjs --conjunto validacao', () => {
     } finally {
       await new Promise<void>((r) => srv.close(() => r()))
     }
+  }, 30_000)
+})
+
+describe('falas e interacao (spec 006): casos', () => {
+  type C = { id: string; conjunto: string; mensagens: string[]; historico_inicial?: { role: string; content: string }[]; esperado: Record<string, unknown[]>; itens_na: number[] }
+  const ler = (f: string) => JSON.parse(readFileSync(new URL(`../avaliacao/${f}`, import.meta.url), 'utf8')) as C[]
+  const casos = ler('casos.json')
+  const reg = ler('regressao.json')
+  const por = (id: string) => [...casos, ...reg].find((c) => c.id === id)!
+  it('a08, a14, a07 e g09 passam a ignorar com desvios 1; a14 e a07 deixam 5 a 10 n/a', () => {
+    for (const id of ['a08', 'a14', 'a07', 'g09']) {
+      expect(por(id).esperado.proxima_acao, id).toEqual(['ignorar'])
+      expect(por(id).esperado.desvios, id).toEqual([1])
+    }
+    for (const id of ['a14', 'a07']) expect(por(id).itens_na).toEqual(expect.arrayContaining([5, 6, 7, 8, 9, 10]))
+    for (const id of ['a10', 'a13', 'g05']) expect(por(id).esperado.proxima_acao).toEqual(['perguntar'])
+  })
+  it('n01 a n17 no ajuste e g10 na regressao, com proxima_acao, desvios e vagos esperados', () => {
+    const ids = Array.from({ length: 17 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
+    expect(casos.filter((c) => /^n\d\d$/.test(c.id)).map((c) => c.id)).toEqual(ids)
+    for (const id of ids) expect(por(id).conjunto).toBe('ajuste')
+    expect(por('g10').conjunto).toBe('regressao')
+    const acao = (id: string) => por(id).esperado.proxima_acao
+    expect(acao('n01')).toEqual(['perguntar'])
+    expect(por('n02').esperado.desvios).toEqual([2])
+    expect(acao('n03')).toEqual(['responder_e_encerrar'])
+    expect(por('n03').esperado.desvios).toEqual([3])
+    expect(acao('n05')).toEqual(['encaminhar_vendas'])
+    expect(por('n05').esperado.qualificado).toEqual([true])
+    expect(acao('n08')).toEqual(['responder_e_encerrar'])
+    expect(por('n08').esperado.vagos).toEqual([3])
+    expect(acao('n12')).toEqual(['ignorar'])
+    expect(acao('n15')).toEqual(['ignorar'])
+    expect(por('n15').esperado.qualificado).toEqual([false])
+    expect(acao('n16')).toEqual(['ignorar'])
+    expect(por('n17').esperado.desvios).toEqual([0])
+    expect(acao('g10')).toEqual(['responder_e_encerrar'])
+    expect(por('g10').esperado.desvios).toEqual([3])
+  })
+  it('n05, n16 e n17 partem de historico semeado que ja tem o agente, para a conversa seguir aberta', () => {
+    for (const id of ['n05', 'n16', 'n17']) {
+      const h = por(id).historico_inicial!
+      expect(h.some((m) => m.role === 'assistant'), id).toBe(true)
+      expect(h.at(-1)!.role === 'assistant' || id !== 'n05', id).toBe(true)
+    }
+  })
+  it('nenhum esperado dos reservados mudou e nao ha reservado novo', () => {
+    expect(casos.filter((c) => c.conjunto === 'reservado').map((c) => c.id)).toEqual(['r01', 'r02', 'r03', 'r04', 'r05', 'r06'])
+    for (const c of casos.filter((c) => c.conjunto === 'reservado')) expect(c.esperado.desvios).toBeUndefined()
+  })
+})
+
+describe('falas e interacao (spec 006): desvios, vagos e silencio na pontuacao', () => {
+  const saidaIgn = { ...saidaOk, proxima_acao: 'ignorar', resposta: '', desvios: 1, vagos: 0, qualificado: false, cidade: null, tipo_servico: null, segmento: null }
+  const casoIgn = {
+    id: 'x02',
+    esperado: { tipo_servico: [null], segmento: [null], cidade: [null], urgencia: [null], qualificado: [false], proxima_acao: ['ignorar'], desvios: [1] },
+    itens_na: [],
+  }
+  const turnoIgn = (over = {}) => turno({ resposta: '', resposta_nula: true, saida: saidaIgn, proxima_acao: 'ignorar', ...over })
+  it('desvios errado reprova o caso; certo aprova; ausente do esperado nao e comparado', () => {
+    const ok = avaliarCaso(casoIgn, { turnos: [turnoIgn()] }, 0.7)
+    expect(ok.acertou).toBe(true)
+    const errado = avaliarCaso(casoIgn, { turnos: [turnoIgn({ saida: { ...saidaIgn, desvios: 2 } })] }, 0.7)
+    expect(errado.acertou).toBe(false)
+    expect(errado.campos.desvios).toBe(false)
+    expect(errado.quadrante).toBe('erro_alta')
+    const semDesvios = { ...casoIgn, esperado: { ...casoIgn.esperado, desvios: undefined } }
+    expect(avaliarCaso(semDesvios, { turnos: [turnoIgn({ saida: { ...saidaIgn, desvios: 2 } })] }, 0.7).acertou).toBe(true)
+  })
+  it('vagos errado reprova o caso; desvios e vagos ausentes na saida reprovam quando esperados', () => {
+    const c = { ...casoIgn, esperado: { ...casoIgn.esperado, desvios: [1], vagos: [0] } }
+    expect(avaliarCaso(c, { turnos: [turnoIgn()] }, 0.7).acertou).toBe(true)
+    expect(avaliarCaso(c, { turnos: [turnoIgn({ saida: { ...saidaIgn, vagos: 1 } })] }, 0.7).campos.vagos).toBe(false)
+    const { vagos: _v, ...semVagos } = saidaIgn
+    expect(avaliarCaso(c, { turnos: [turnoIgn({ saida: semVagos })] }, 0.7).acertou).toBe(false)
+  })
+  it('caso existente (sem desvios no esperado) continua com seis campos e mesma pontuacao', () => {
+    const r = avaliarCaso(caso, { turnos: [turno()] }, 0.7)
+    expect(Object.keys(r.campos)).toEqual([...CAMPOS])
+    expect(r.acertou).toBe(true)
+  })
+  it('resposta nula so vale com ignorar esperado ou encaminhar_vendas com desvios 3', () => {
+    const nula = (esperado: any, saida: any) => avaliarCaso({ ...casoIgn, esperado: { ...casoIgn.esperado, ...esperado } }, { turnos: [turnoIgn({ saida })] }, 0.7)
+    expect(nula({}, saidaIgn).erro).toBe(false)
+    // esperado responder_e_encerrar: silencio nao vale, mesmo com o resto igual
+    const re = nula({ proxima_acao: ['responder_e_encerrar'] }, { ...saidaIgn, proxima_acao: 'responder_e_encerrar' })
+    expect(re.erro).toBe(true)
+    expect(re.acertou).toBe(false)
+    const venda = { ...saidaIgn, proxima_acao: 'encaminhar_vendas', desvios: 3, qualificado: true }
+    const ok = nula({ proxima_acao: ['encaminhar_vendas'], desvios: [3], qualificado: [true] }, venda)
+    expect(ok.erro).toBe(false)
+    expect(ok.acertou).toBe(true)
+    const sem3 = nula({ proxima_acao: ['encaminhar_vendas'], desvios: [0], qualificado: [true] }, { ...venda, desvios: 0 })
+    expect(sem3.erro).toBe(true)
+    const semDesvios = nula({ proxima_acao: ['encaminhar_vendas'], desvios: undefined, qualificado: [true] }, venda)
+    expect(semDesvios.erro).toBe(true)
+  })
+  it('ignorar esperado com falha real (origem falha) reprova', () => {
+    const r = avaliarCaso(casoIgn, { turnos: [turnoIgn({ origem: 'falha', erro: true, saida: null })] }, 0.7)
+    expect(r.acertou).toBe(false)
+    expect(r.erro).toBe(true)
+    expect(r.itens[1]).toBe(false)
+    for (const c of CAMPOS) expect(r.campos[c]).toBe(false)
+  })
+})
+
+describe('scripts/avaliar.mjs: silencio deliberado', () => {
+  const script = fileURLToPath(new URL('../scripts/avaliar.mjs', import.meta.url))
+  const falaModelo = (resposta: string | null, proxima_acao: string) => ({ resposta, origem: 'modelo', proxima_acao, tentativas: 1, saida: { cidade: null, confianca: 0.9, proxima_acao } })
+  const perg = (r: string) => falaModelo(r, 'perguntar')
+  const mudo = () => falaModelo(null, 'ignorar')
+
+  async function conduzir(casos: any[], respostas: any[]) {
+    const corpos: any[] = []
+    const dir = mkdtempSync(join(tmpdir(), 'aval-casos-'))
+    const arq = join(dir, 'casos.json')
+    writeFileSync(arq, JSON.stringify(casos))
+    const srv = createServer((req, res) => {
+      let b = ''
+      req.on('data', (d) => (b += d))
+      req.on('end', () => {
+        const hist = JSON.parse(b).historico ?? []
+        res.writeHead(200, { 'content-type': 'application/json' })
+        if (hist.length === 0) return res.end('{}')
+        corpos.push(hist)
+        res.end(JSON.stringify(respostas[corpos.length - 1] ?? perg('sobra')))
+      })
+    })
+    await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+    const env = {
+      ...process.env,
+      AVALIACAO_URL: `http://127.0.0.1:${(srv.address() as AddressInfo).port}/webhook/chat`,
+      AVALIACAO_SAIDA_DIR: dir,
+      AVALIACAO_CASOS_ARQ: arq,
+      AVALIACAO_ESPERA_MS: '1500',
+    }
+    try {
+      const code = await new Promise<number>((resolve) => execFile('node', [script, '--conjunto', 'ajuste'], { env }, (e) => resolve(e ? ((e as any).code ?? 1) : 0)))
+      const res = JSON.parse(readFileSync(join(dir, 'resultado-ajuste.json'), 'utf8'))
+      return { code, corpos, res }
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()))
+    }
+  }
+  const mk = (id: string, mensagens: string[], extra = {}) => ({ id, conjunto: 'ajuste', mensagens, esperado: {}, itens_na: [], ...extra })
+  const u = (content: string) => ({ role: 'user', content })
+  const a = (content: string) => ({ role: 'assistant', content })
+
+  it('turno silencioso no meio: nao empurra assistant, segue para a proxima mensagem, mantem a do lead e nao e falha', async () => {
+    const { code, corpos, res } = await conduzir([mk('s1', ['m1', 'm2', 'm3'])], [perg('r1'), mudo(), perg('r3')])
+    expect(code).toBe(0)
+    expect(corpos[2]).toEqual([u('m1'), a('r1'), u('m2'), u('m3')])
+    expect(res.execucoes[0].turnos).toHaveLength(3)
+    expect(res.execucoes[0].falha_execucao).toBeNull()
+    expect(res.execucoes[0].turnos[1]).toMatchObject({ proxima_acao: 'ignorar', origem: 'modelo', resposta_nula: true })
+  }, 30_000)
+  it('ignorar na abertura tira o turno do lead do historico; com assistant antes, o turno fica', async () => {
+    const ab = await conduzir([mk('s2', ['bolo', 'quero ar'])], [mudo(), perg('r2')])
+    expect(ab.corpos[1]).toEqual([u('quero ar')])
+    const meio = await conduzir([mk('s3', ['bolo'], { historico_inicial: [u('oi'), a('ola')] })], [mudo()])
+    expect(meio.corpos[0]).toEqual([u('oi'), a('ola'), u('bolo')])
+  }, 30_000)
+  it('ignorar na abertura com historico semeado so de lead (sem assistant) tambem descarta o turno', async () => {
+    const r = await conduzir([mk('s4', ['x', 'y'])], [mudo(), mudo()])
+    expect(r.corpos[1]).toEqual([u('y')])
+  }, 30_000)
+  it('silencio de encaminhar_vendas encerra a conversa (nao segue para a proxima mensagem)', async () => {
+    const r = await conduzir([mk('s5', ['m1', 'm2'])], [falaModelo(null, 'encaminhar_vendas'), perg('x')])
+    expect(r.corpos).toHaveLength(1)
+    expect(r.res.execucoes[0].turnos).toHaveLength(1)
+  }, 30_000)
+  it('turno de falha continua como antes: erro, sem continuar', async () => {
+    const r = await conduzir([mk('s6', ['m1', 'm2'])], [{ resposta: null, origem: 'falha', erro: true, proxima_acao: 'encaminhar_humano', tentativas: 3, saida: null }, perg('x')])
+    expect(r.corpos).toHaveLength(1)
+    expect(r.res.execucoes[0].turnos[0]).toMatchObject({ origem: 'falha', erro: true })
+  }, 30_000)
+  it('historico_inicial abre a conversa com o prefixo semeado', async () => {
+    const r = await conduzir([mk('s7', ['m1'], { historico_inicial: [u('oi'), a('ola')] })], [perg('r')])
+    expect(r.corpos[0]).toEqual([u('oi'), a('ola'), u('m1')])
   }, 30_000)
 })

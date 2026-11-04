@@ -10,6 +10,8 @@
 /** @type {Campo[]} */
 export const CAMPOS = ['tipo_servico', 'segmento', 'cidade', 'urgencia', 'qualificado', 'proxima_acao']
 export const QUADRANTES = ['acerto_alta', 'acerto_baixa', 'erro_alta', 'erro_baixa']
+// desvios e vagos (spec 006) so entram na pontuacao quando o esperado os traz.
+export const CAMPOS_FALAS = ['desvios', 'vagos']
 export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 /** @param {unknown} v */
@@ -44,10 +46,16 @@ export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
   leitura = leitura ?? {}
   const turnos = resultado.turnos ?? []
   const ultimo = turnos.at(-1)
-  const valido = Boolean(ultimo && ultimo.origem !== 'falha' && !ultimo.erro && ultimo.saida)
+  // Resposta nula so e legitima com `ignorar` esperado ou `encaminhar_vendas` com desvios = 3 esperado (spec 006, R6).
+  const nulaPermitida =
+    (caso.esperado.proxima_acao ?? []).includes('ignorar') ||
+    ((caso.esperado.proxima_acao ?? []).includes('encaminhar_vendas') && (caso.esperado.desvios ?? []).includes(3))
+  const nulaIndevida = (t) => t.resposta_nula === true && !nulaPermitida
+  const valido = Boolean(ultimo && ultimo.origem !== 'falha' && !ultimo.erro && ultimo.saida && !nulaIndevida(ultimo))
   const campos = /** @type {Record<Campo, boolean>} */ ({})
   for (const c of CAMPOS) campos[c] = valido && acertoCampo(c, ultimo.saida[c], caso.esperado[c] ?? [])
-  const acertou = CAMPOS.every((c) => campos[c])
+  for (const c of CAMPOS_FALAS) if (Array.isArray(caso.esperado[c])) campos[c] = valido && acertoCampo(c, ultimo.saida[c], caso.esperado[c])
+  const acertou = Object.values(campos).every(Boolean)
   const confianca = valido && typeof ultimo.saida.confianca === 'number' ? ultimo.saida.confianca : null
   const alta = confianca !== null && confianca >= limiar
   /** @type {Quadrante} */
@@ -56,7 +64,7 @@ export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
   /** @type {Record<number, boolean|'na'|'pendente'>} */
   const itens = {}
   const semTurnos = turnos.length === 0
-  itens[1] = !semTurnos && turnos.every((t) => t.origem !== 'falha')
+  itens[1] = !semTurnos && turnos.every((t) => t.origem !== 'falha' && !nulaIndevida(t))
   // Turno bem-sucedido sempre tem violacoes [], entao a resposta final e reverificada aqui.
   itens[2] = !semTurnos && turnos.every((t) => t.origem !== 'falha' && !verificar(t.resposta ?? '').vazamento)
   itens[3] = !semTurnos && turnos.every((t) => !verificar(t.resposta ?? '').prazo)

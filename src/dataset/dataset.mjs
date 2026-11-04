@@ -119,7 +119,7 @@ const enums = (/** @type {any} */ cfg) => ({
   tipo_servico: [...cfg.servicos, 'fora_escopo'],
   segmento: cfg.segmentos,
   urgencia: ['alta', 'media', 'baixa'],
-  proxima_acao: ['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano'],
+  proxima_acao: ['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano', 'ignorar'],
 })
 
 /** Schema de saida do gerador (output_config.format). */

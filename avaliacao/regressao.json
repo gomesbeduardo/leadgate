@@ -309,12 +309,56 @@
         false
       ],
       "proxima_acao": [
-        "perguntar",
-        "responder_e_encerrar"
+        "ignorar"
+      ],
+      "desvios": [
+        1
       ]
     },
     "itens_na": [
       8
     ]
+  },
+  {
+    "id": "g10",
+    "conjunto": "regressao",
+    "teste": "3o desvio sem telefone cita o contato",
+    "tipo": "desvio",
+    "mensagens": [
+      "manutenção na minha loja em Palhoça",
+      "vc viu o jogo ontem?",
+      "mas quem ganhou?",
+      "ah fala do jogo"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "responder_e_encerrar"
+      ],
+      "desvios": [
+        3
+      ]
+    },
+    "itens_na": [
+      7,
+      8
+    ],
+    "nota": "cita o contato da empresa na resposta"
   }
 ]
