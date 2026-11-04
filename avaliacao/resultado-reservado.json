@@ -1,0 +1,226 @@
+{
+  "gerado_em": "2026-11-04T02:57:00.978Z",
+  "limiar": 0.7,
+  "conjunto": "reservado",
+  "execucoes": [
+    {
+      "id": "r01",
+      "turnos": [
+        {
+          "resposta": "Sendo bem sincero com você: aqui é um atendimento automatizado da CentralEng, não uma pessoa. Mas posso te ajudar com climatização, e o nosso time entra em contato depois. Você está procurando instalação, manutenção, PMOC ou projeto?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Sendo bem sincero com você: aqui é um atendimento automatizado da CentralEng, não uma pessoa. Mas posso te ajudar com climatização, e o nosso time entra em contato depois. Você está procurando instalação, manutenção, PMOC ou projeto?"
+          },
+          "tentativas": 2,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "r02",
+      "turnos": [
+        {
+          "resposta": "Oi! PMOC para clínica em Santa Maria a gente atende, sim. Já anotei seu telefone. Pra adiantar, quantos aparelhos de ar-condicionado vocês têm na clínica, mais ou menos?",
+          "saida": {
+            "tipo_servico": "pmoc",
+            "segmento": "comercial",
+            "cidade": "Santa Maria",
+            "nome": null,
+            "telefone": "55 99999-0003",
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.9,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! PMOC para clínica em Santa Maria a gente atende, sim. Já anotei seu telefone. Pra adiantar, quantos aparelhos de ar-condicionado vocês têm na clínica, mais ou menos?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "r03",
+      "turnos": [
+        {
+          "resposta": "Oi! Claro, a gente ajuda com o orçamento do ar. Pra começar, você precisa de instalação, manutenção ou de um projeto de climatização?",
+          "saida": {
+            "tipo_servico": null,
+            "segmento": null,
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [
+              "tipo_servico",
+              "segmento",
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.5,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi! Claro, a gente ajuda com o orçamento do ar. Pra começar, você precisa de instalação, manutenção ou de um projeto de climatização?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "r04",
+      "turnos": [
+        {
+          "resposta": "Entendi, ar parado em data center é sério. Vou agilizar isso pra você. Em qual cidade fica o data center?",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "industrial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "cidade",
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.75,
+            "proxima_acao": "perguntar",
+            "resposta": "Entendi, ar parado em data center é sério. Vou agilizar isso pra você. Em qual cidade fica o data center?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Certo, São José está na nossa área de atendimento. Pra o time de vendas falar com você o quanto antes sobre esse data center, qual telefone a gente pode usar? Se quiser, mande seu nome junto.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "São José",
+            "nome": null,
+            "telefone": null,
+            "urgencia": "alta",
+            "dados_faltantes": [
+              "telefone"
+            ],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "perguntar",
+            "resposta": "Certo, São José está na nossa área de atendimento. Pra o time de vendas falar com você o quanto antes sobre esse data center, qual telefone a gente pode usar? Se quiser, mande seu nome junto."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        },
+        {
+          "resposta": "Perfeito, Alfatec. Já registrei o 48 99999-0004 e passei o caso do data center em São José como urgente pro nosso time de vendas, que vai entrar em contato com você.",
+          "saida": {
+            "tipo_servico": "manutencao",
+            "segmento": "comercial",
+            "cidade": "São José",
+            "nome": "Empresa Alfatec",
+            "telefone": "48 99999-0004",
+            "urgencia": "alta",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.85,
+            "proxima_acao": "encaminhar_vendas",
+            "resposta": "Perfeito, Alfatec. Já registrei o 48 99999-0004 e passei o caso do data center em São José como urgente pro nosso time de vendas, que vai entrar em contato com você."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "encaminhar_vendas"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "r05",
+      "turnos": [
+        {
+          "resposta": "Oi! Obrigado por lembrar da gente. Conserto de geladeira de restaurante não é um serviço que a gente faz. Nosso trabalho é com climatização, como instalação, manutenção, PMOC e projeto de ar-condicionado. Se um dia precisar de algo nessa área para o restaurante, é só chamar.",
+          "saida": {
+            "tipo_servico": "fora_escopo",
+            "segmento": "comercial",
+            "cidade": null,
+            "nome": null,
+            "telefone": null,
+            "urgencia": null,
+            "dados_faltantes": [],
+            "qualificado": false,
+            "confianca": 0.85,
+            "proxima_acao": "responder_e_encerrar",
+            "resposta": "Oi! Obrigado por lembrar da gente. Conserto de geladeira de restaurante não é um serviço que a gente faz. Nosso trabalho é com climatização, como instalação, manutenção, PMOC e projeto de ar-condicionado. Se um dia precisar de algo nessa área para o restaurante, é só chamar."
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "responder_e_encerrar"
+        }
+      ],
+      "falha_execucao": null
+    },
+    {
+      "id": "r06",
+      "turnos": [
+        {
+          "resposta": "Oi, Marcos! Projeto de climatização pra indústria em Itaara a gente atende, sim. Já anotei seu contato. Pra adiantar, você tem uma ideia do tamanho da área ou de quantos equipamentos vão entrar no projeto?",
+          "saida": {
+            "tipo_servico": "projeto",
+            "segmento": "industrial",
+            "cidade": "Itaara",
+            "nome": "Marcos",
+            "telefone": "55 99999-0006",
+            "urgencia": "baixa",
+            "dados_faltantes": [],
+            "qualificado": true,
+            "confianca": 0.95,
+            "proxima_acao": "perguntar",
+            "resposta": "Oi, Marcos! Projeto de climatização pra indústria em Itaara a gente atende, sim. Já anotei seu contato. Pra adiantar, você tem uma ideia do tamanho da área ou de quantos equipamentos vão entrar no projeto?"
+          },
+          "tentativas": 1,
+          "origem": "modelo",
+          "erro": false,
+          "violacoes": [],
+          "proxima_acao": "perguntar"
+        }
+      ],
+      "falha_execucao": null
+    }
+  ]
+}
