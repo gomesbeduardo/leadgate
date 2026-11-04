@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -300,5 +300,152 @@ describe('gerador (CLI com stub da API)', () => {
     delete (env as any).ANTHROPIC_API_KEY
     const r = await new Promise<number>((resolve) => execFile('node', [script, '--saida', dir], { env }, (e) => resolve(e ? ((e as any).code ?? 1) : 0)))
     expect(r).toBe(2)
+  }, 30_000)
+})
+
+// ---- causa das rejeicoes por duplicata no multiturno e --completar ----
+const lead = (t: string) => ({ role: 'user', content: t })
+const ag = (t: string) => ({ role: 'assistant', content: t })
+const multi = (abertura: string, resto: [string, string]) => ({
+  conversa: [lead(abertura), ag('Claro, de qual cidade?'), lead(resto[0]), ag('E o tipo de local?'), lead(resto[1]), ag('Obrigado.')],
+  gabarito: gab,
+})
+
+describe('duplicata no multiturno', () => {
+  it('causa: aberturas curtas e genericas colidem na primeira mensagem', () => {
+    // regra antiga: a 1a mensagem da conversa aceita entra nas referencias
+    const aceitas = ['oi, queria um orçamento']
+    expect(ehDuplicata('Oi! Queria um orçamento', aceitas)).toBe(true)
+    expect(ehDuplicata('oi queria um orçamento', aceitas)).toBe(true)
+  })
+
+  it('entre geradas, multiturno compara o texto inteiro do lead: mesma abertura, resto diferente passa', () => {
+    const a = multi('oi, queria um orçamento', ['moro em Palhoça, tenho 3 splits no escritório', 'precisa ser até sexta, meu contato é 48 99999-1111'])
+    const b = multi('oi, queria um orçamento', ['sou de Tijucas, é uma padaria com câmara fria', 'urgente, ligue no 48 99999-2222'])
+    const lideresA = a.conversa.filter((m) => m.role === 'user').map((m) => m.content).join(' ')
+    // contra os casos continua valendo so a 1a mensagem
+    expect(validarConversa(b, cfg, refs, 'multiturno', [lideresA])).toEqual({ ok: true })
+    // texto inteiro igual e rejeitado
+    expect(validarConversa(a, cfg, refs, 'multiturno', [lideresA])).toEqual({ ok: false, motivo: 'duplicata' })
+  })
+
+  it('contra os casos, a regra da spec segue: 1a mensagem quase igual a um caso e duplicata', () => {
+    const c = multi(casos[0].mensagens[0], ['sou o Pedro', 'prédio comercial'])
+    expect(validarConversa(c, cfg, refs, 'multiturno', [])).toEqual({ ok: false, motivo: 'duplicata' })
+  })
+})
+
+describe('gerador: rejeitadas_por_categoria e --completar', () => {
+  // 1a rodada: so 3 multiturno validos; os demais multiturno vem com 2 mensagens do lead (schema)
+  const primeiraRodada = () => {
+    let multiOk = 0
+    return (n: number, cat: string) => {
+      if (cat === 'multiturno') {
+        if (multiOk < 3) {
+          multiOk++
+          return valida(n, cat)
+        }
+        return valida(n, 'claro')
+      }
+      return valida(n, cat)
+    }
+  }
+
+  it('rodada.json traz rejeitadas_por_categoria somando o total de rejeitadas', async () => {
+    const stub = await subirStub(primeiraRodada())
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(stub.url, ['--volume', '80'], dir)
+      const rod = ler(dir, 'rodada.json')
+      expect(Object.keys(rod.rejeitadas_por_categoria).sort()).toEqual([...CATEGORIAS].sort())
+      expect(rod.rejeitadas_por_categoria.multiturno).toBeGreaterThan(0)
+      const soma = (Object.values(rod.rejeitadas_por_categoria) as number[]).reduce((a, b) => a + b, 0)
+      expect(soma).toBe(Object.values(rod.rejeitadas as Record<string, number>).reduce((a, b) => a + b, 0))
+    } finally {
+      await stub.fechar()
+    }
+  }, 60_000)
+
+  it('--completar: rodada com multiturno = 3 termina completa, originais intactos, tokens acumulados', async () => {
+    const s1 = await subirStub(primeiraRodada())
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(s1.url, ['--volume', '80'], dir)
+    } finally {
+      await s1.fechar()
+    }
+    const antes = { ex: readFileSync(join(dir, 'exemplos.json'), 'utf8'), va: readFileSync(join(dir, 'validacao.json'), 'utf8') }
+    const r0 = ler(dir, 'rodada.json')
+    expect(r0.categorias.multiturno).toBe(3)
+    expect(r0.status).toBe('incompleta')
+    const orig = [...JSON.parse(antes.ex), ...JSON.parse(antes.va)]
+    // marcacao humana no revisao.md
+    const rev0 = readFileSync(join(dir, 'revisao.md'), 'utf8')
+    const idMarcado = /## (sint-\d+) /.exec(rev0)![1]
+    const trecho = new RegExp(`(## ${idMarcado} [\\s\\S]*?Marcacao: )ok / rejeitada`)
+    writeFileSync(join(dir, 'revisao.md'), rev0.replace(trecho, '$1rejeitada'))
+
+    const s2 = await subirStub((n, cat) => valida(n + 1000, cat))
+    try {
+      const r = await cli(s2.url, ['--completar'], dir)
+      expect(r.code).toBe(0)
+      const todas = [...ler(dir, 'exemplos.json'), ...ler(dir, 'validacao.json')]
+      // originais intactos (mesmo id, mesmo conteudo)
+      for (const o of orig) expect(todas.find((x: any) => x.id === o.id)).toEqual(o)
+      expect(todas.length).toBe(orig.length + s2.chamadas.length)
+      const ids = todas.map((x: any) => x.id)
+      expect(new Set(ids).size).toBe(ids.length)
+      expect(Math.max(...ids.map((i: string) => Number(i.slice(5))))).toBe(todas.length)
+      const rod = ler(dir, 'rodada.json')
+      expect(rod.status).toBe('completa')
+      expect(rod.prompt_liberado).toBe(false)
+      expect(rod.categorias.multiturno).toBe(5)
+      // so gerou o que faltava: 2 multiturno, dentro do teto de 3x
+      expect(s2.chamadas.length).toBeLessThanOrEqual(6)
+      expect(s2.chamadas.every((c) => /categoria: multiturno/.test(JSON.stringify(c.body.messages)))).toBe(true)
+      expect(rod.chamadas).toBe(r0.chamadas + s2.chamadas.length)
+      expect(rod.tokens.entrada).toBe(r0.tokens.entrada + 1000 * s2.chamadas.length)
+      expect(rod.tokens.saida).toBe(r0.tokens.saida + 500 * s2.chamadas.length)
+      expect(rod.rejeitadas.schema).toBe(r0.rejeitadas.schema)
+      // marcacao humana preservada
+      const rev = readFileSync(join(dir, 'revisao.md'), 'utf8')
+      expect(rev).toMatch(new RegExp(`## ${idMarcado} [\\s\\S]*?Marcacao: rejeitada`))
+    } finally {
+      await s2.fechar()
+    }
+  }, 60_000)
+
+  it('--completar para no teto de 3x o que falta quando o gerador so erra', async () => {
+    const s1 = await subirStub(primeiraRodada())
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      await cli(s1.url, ['--volume', '80'], dir)
+    } finally {
+      await s1.fechar()
+    }
+    const r0 = ler(dir, 'rodada.json')
+    const s2 = await subirStub((n) => valida(n, 'claro')) // multiturno sempre invalido
+    try {
+      await cli(s2.url, ['--completar'], dir)
+      expect(s2.chamadas.length).toBe(6)
+      const rod = ler(dir, 'rodada.json')
+      expect(rod.status).toBe('incompleta')
+      expect(rod.chamadas).toBe(r0.chamadas + 6)
+      expect(rod.rejeitadas_por_categoria.multiturno).toBe(r0.rejeitadas_por_categoria.multiturno + 6)
+    } finally {
+      await s2.fechar()
+    }
+  }, 60_000)
+
+  it('--completar sem rodada anterior: erro, sem chamar a API', async () => {
+    const stub = await subirStub(valida)
+    const dir = mkdtempSync(join(tmpdir(), 'ds-'))
+    try {
+      const r = await cli(stub.url, ['--completar'], dir)
+      expect(r.code).toBe(2)
+      expect(stub.chamadas).toHaveLength(0)
+    } finally {
+      await stub.fechar()
+    }
   }, 30_000)
 })

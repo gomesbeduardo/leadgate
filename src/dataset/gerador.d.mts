@@ -5,6 +5,8 @@ export type OpcoesGeracao = {
   volume: number
   baseUrl?: string
   apiKey: string
+  /** Completa uma rodada existente em saidaDir em vez de comecar outra. */
+  completar?: boolean
   concorrencia?: number
   log?: (linha: string) => void
 }

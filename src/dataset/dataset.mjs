@@ -43,6 +43,9 @@ export function ehDuplicata(/** @type {string} */ msg, /** @type {string[]} */ r
   return refs.some((r) => normalizar(r) === n || jaccard(msg, r) >= 0.8)
 }
 
+/** Texto inteiro do lead (todas as mensagens dele, juntas). */
+export const textoDoLead = (/** @type {{content: string}[]} */ doLead) => doLead.map((m) => m.content).join(' ')
+
 const TEL_OK = /(?<!\d)(48|55) 99999-\d{4}(?!\d)/g
 
 /** Todo telefone do texto precisa ser `48 99999-xxxx` ou `55 99999-xxxx`; qualquer outra sequencia de 8+ digitos reprova. */
@@ -84,12 +87,25 @@ export function amostrar(/** @type {any[]} */ exemplos, /** @type {number} */ n)
   return escolhidos
 }
 
-export function revisaoMarkdown(/** @type {any[]} */ amostra) {
+const MARCACAO_PADRAO = 'ok / rejeitada'
+
+/** Marcacoes ja trocadas por um humano no revisao.md: id -> texto depois de `Marcacao: `. */
+export function marcacoesDoRevisao(/** @type {string} */ md) {
+  /** @type {Record<string, string>} */ const marcas = {}
+  for (const sec of String(md).split(/^## /m).slice(1)) {
+    const id = /^(sint-\d+)/.exec(sec)?.[1]
+    const m = /^Marcacao: (.*)$/m.exec(sec)
+    if (id && m && m[1].trim() && m[1].trim() !== MARCACAO_PADRAO) marcas[id] = m[1].trim()
+  }
+  return marcas
+}
+
+export function revisaoMarkdown(/** @type {any[]} */ amostra, /** @type {Record<string, string>} */ marcas = {}) {
   const L = ['# Revisao da amostra do dataset sintetico', '', 'Para cada conversa, troque a marcacao por `ok` ou `rejeitada`. Tres ou mais rejeicoes invalidam a rodada para o prompt.', '']
   for (const x of amostra) {
     L.push(`## ${x.id} (${x.categoria})`, '')
     for (const m of x.conversa ?? []) L.push(`- ${m.role === 'user' ? 'lead' : 'agente'}: ${m.content}`)
-    L.push('', `Gabarito: \`${JSON.stringify(x.gabarito)}\``, '', 'Marcacao: ok / rejeitada', '')
+    L.push('', `Gabarito: \`${JSON.stringify(x.gabarito)}\``, '', `Marcacao: ${marcas[x.id] ?? MARCACAO_PADRAO}`, '')
   }
   return L.join('\n')
 }
@@ -135,9 +151,11 @@ export function schemaGerador(/** @type {any} */ cfg) {
 
 /**
  * Valida schema, telefone e duplicata (nessa ordem).
+ * `refs`: 1as mensagens contra as quais a 1a do lead e comparada (casos e, nas outras categorias, as ja geradas).
+ * `leadsGerados`: texto inteiro do lead das multiturno ja geradas; so o multiturno compara contra elas (regra nossa, nao da spec).
  * @returns {{ok: true} | {ok: false, motivo: 'schema'|'telefone'|'duplicata'}}
  */
-export function validarConversa(/** @type {any} */ c, /** @type {any} */ cfg, /** @type {string[]} */ refs, /** @type {string} */ categoria) {
+export function validarConversa(/** @type {any} */ c, /** @type {any} */ cfg, /** @type {string[]} */ refs, /** @type {string} */ categoria, /** @type {string[]} */ leadsGerados = []) {
   const ruim = (/** @type {'schema'|'telefone'|'duplicata'} */ motivo) => ({ ok: false, motivo })
   const conv = c?.conversa
   const g = c?.gabarito
@@ -160,6 +178,7 @@ export function validarConversa(/** @type {any} */ c, /** @type {any} */ cfg, /*
   if (categoria === 'multiturno' && doLead.length < 3) return ruim('schema')
   if (!telefoneValido(conv.map((/** @type {any} */ m) => m.content).join('\n'))) return ruim('telefone')
   if (ehDuplicata(doLead[0].content, refs)) return ruim('duplicata')
+  if (categoria === 'multiturno' && ehDuplicata(textoDoLead(doLead), leadsGerados)) return ruim('duplicata')
   return { ok: true }
 }
 

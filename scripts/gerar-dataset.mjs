@@ -1,7 +1,9 @@
 // Gera o dataset sintetico (spec 002, R14). Uso:
-//   ANTHROPIC_API_KEY=... node scripts/gerar-dataset.mjs [--volume N] [--saida DIR] [--dry-run]
+//   ANTHROPIC_API_KEY=... node scripts/gerar-dataset.mjs [--volume N] [--saida DIR] [--dry-run] [--completar]
+//   --completar: mantem exemplos.json/validacao.json da saida e gera so o que falta para 5 por categoria (teto: 3x o que falta).
 // Chave so pela env; nunca e impressa. Casos reservados so servem para a checagem de duplicata.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CATEGORIAS, montarPromptGerador } from '../src/dataset/dataset.mjs'
 import { cidadeDaChamada, rodarGeracao } from '../src/dataset/gerador.mjs'
@@ -20,7 +22,22 @@ if (!Number.isInteger(volume) || volume < 1) {
 }
 const referencias = [...ler('avaliacao/casos.json'), ...ler('avaliacao/regressao.json')].map((c) => c.mensagens[0])
 
+const completar = args.includes('--completar')
+if (completar) {
+  for (const f of ['exemplos.json', 'validacao.json']) {
+    if (!existsSync(join(saidaDir, f))) {
+      console.error(`--completar: ${join(saidaDir, f)} nao existe; rode a geracao antes.`)
+      process.exit(2)
+    }
+  }
+}
+
 if (args.includes('--dry-run')) {
+  if (completar) {
+    const tudo = ['exemplos.json', 'validacao.json'].flatMap((f) => JSON.parse(readFileSync(join(saidaDir, f), 'utf8')))
+    const falta = CATEGORIAS.map((c) => [c, Math.max(0, 5 - tudo.filter((x) => x.categoria === c).length)]).filter(([, n]) => n > 0)
+    console.log(`dry-run --completar: falta ${JSON.stringify(Object.fromEntries(falta))}; teto ${3 * falta.reduce((t, [, n]) => t + n, 0)} chamadas`)
+  }
   console.log(`dry-run: volume ${volume}, max_chamadas ${cfg.dataset.max_chamadas}, saida ${saidaDir}, ${referencias.length} referencias de duplicata`)
   for (const c of CATEGORIAS) console.log(`- ${c}: prompt de ${montarPromptGerador(cfg, c, cidadeDaChamada(cfg, 0)).length} caracteres`)
   process.exit(0)
@@ -31,6 +48,6 @@ if (!apiKey) {
   console.error('ANTHROPIC_API_KEY ausente na env.')
   process.exit(2)
 }
-const rodada = await rodarGeracao({ cfg, referencias, saidaDir, volume, apiKey, baseUrl: process.env.ANTHROPIC_BASE_URL, log: console.log })
+const rodada = await rodarGeracao({ cfg, referencias, saidaDir, volume, completar, apiKey, baseUrl: process.env.ANTHROPIC_BASE_URL, log: console.log })
 console.log(`gravado em ${saidaDir}`)
 process.exit(0)
