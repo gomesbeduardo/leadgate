@@ -29,7 +29,7 @@
   },
   "ia": {
     "modelo": "claude-opus-5-5", "effort": "low", "limiar_confianca": 0.7, "max_regeracoes": 2, "max_tokens": 1500,
-    "modelo_reserva": "claude-haiku-5-5", "tentativas_http": 3, "espera_ms": [1000, 3000], "timeout_ms": 60000, "tentativas_reserva": 2 },
+    "modelo_reserva": "claude-haiku-5-5", "tentativas_http": 3, "espera_ms": [1000, 3000], "timeout_ms": 60000, "timeout_turno_ms": 180000, "tentativas_reserva": 2 },
   "resposta": {
     "max_chars": 400,
     "frases_bot": ["como posso ajudar hoje", "selecione uma opção", "digite o número", "digite 1"],

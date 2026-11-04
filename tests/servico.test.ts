@@ -170,6 +170,7 @@ describe('chat', () => {
         res.writeHead(200, { 'content-type': 'application/json' })
         res.end(JSON.stringify({
           resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+          estado_conversa: 'em_andamento', tipo: 'nenhum', registros: [{ tipo: '5xx' }],
           violacoes: [{ regra: 'segredo' }], conversa: [{ role: 'user', content: 'Oi' }],
         }))
       })
@@ -202,7 +203,7 @@ describe('chat', () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlChat + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(r.status).toBe(200)
-    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar' })
+    expect(await r.json()).toEqual({ resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum' })
     expect(recebido).toEqual({ historico: h })
   })
 
@@ -210,7 +211,7 @@ describe('chat', () => {
     const h = [{ role: 'user', content: 'Oi' }]
     const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(await r.json()).toEqual({
-      resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
+      resposta: 'ola', origem: 'ia', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum', saida: { cidade: 'X' }, tentativas: 2,
     })
   })
 
@@ -220,6 +221,35 @@ describe('chat', () => {
     expect(await r.json()).toEqual({
       resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n',
     })
+  })
+
+  it('T24: n8n com status nao 200, corpo nao JSON ou timeout devolve 200 em silencio', async () => {
+    const silencio = { resposta: null, estado: 'aguardando_humano', proxima_acao: 'encaminhar_humano', origem: 'falha', tipo: 'n8n' }
+    const falsos: Array<[string, (res: import('node:http').ServerResponse) => void]> = [
+      ['500', (res) => { res.writeHead(500).end('{"resposta":"vaza"}') }],
+      ['nao json', (res) => { res.writeHead(200).end('<html>') }],
+      ['lento', () => {}],
+    ]
+    for (const [nome, h] of falsos) {
+      const fake = createHttpServer((req, res) => { req.resume(); req.on('end', () => h(res)) })
+      const urlFake = await subir(fake)
+      const cfgRapido = { ...cfg, ia: { ...cfg.ia, timeout_turno_ms: 300 } }
+      const s = criarServidor(cfgRapido, prompt, { webhookUrl: urlFake })
+      const url = await subir(s)
+      try {
+        const r = await fetch(url + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: [] }) })
+        expect(r.status, nome).toBe(200)
+        expect(await r.json(), nome).toEqual(silencio)
+      } finally {
+        fake.closeAllConnections()
+        await new Promise<void>((r) => s.close(() => r()))
+        await new Promise<void>((r) => fake.close(() => r()))
+      }
+    }
+  })
+
+  it('timeout do proxy vem de ia.timeout_turno_ms (180000 na config)', () => {
+    expect(cfg.ia.timeout_turno_ms).toBe(180000)
   })
 
   it('GET / serve o HTML quando fornecido e 404 quando nao', async () => {

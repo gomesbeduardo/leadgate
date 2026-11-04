@@ -24,6 +24,7 @@ export const ConfigSchema = z
       tentativas_http: z.number().int().min(1),
       espera_ms: z.array(z.number().int().min(0)),
       timeout_ms: z.number().int().positive(),
+      timeout_turno_ms: z.number().int().positive(),
       tentativas_reserva: z.number().int().min(1),
     }),
     resposta: z.object({

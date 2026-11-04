@@ -50,7 +50,6 @@ body.com-painel .corpo { max-width: none; flex-direction: column; }
 .msg.lead { align-self: flex-end; background: var(--navy); border-color: var(--navy); color: var(--branco); }
 .msg.aviso { align-self: stretch; max-width: none; background: var(--azure-nevoa); border-color: var(--azure); border-left-width: 4px; color: var(--navy-noturno); font-size: .9375rem; }
 .msg.aviso .rotulo { display: block; font: 600 .8125rem/1.2 var(--fonte-titulo); text-transform: uppercase; letter-spacing: .08em; color: var(--azure-tinta); margin-bottom: 4px; }
-.msg.falha { background: var(--branco); border-left: 4px solid var(--navy); }
 .encerrado { align-self: center; font-size: .875rem; color: var(--grafite); border-top: 1px solid var(--nevoa-borda); padding-top: 10px; width: 100%; text-align: center; }
 
 .digitando { align-self: flex-start; display: flex; align-items: center; gap: 10px; color: var(--grafite); font-size: .9375rem; padding: 6px 2px; }
@@ -109,7 +108,7 @@ body.com-painel .painel { display: block; }
         <div class="nova" id="nova" hidden><button type="button" id="btn-nova" class="secundario">Nova conversa</button></div>
         <form id="form" autocomplete="off">
           <label class="sr-only" for="entrada">Sua mensagem</label>
-          <textarea id="entrada" rows="1" placeholder="Escreva sua mensagem" enterkeyhint="send"></textarea>
+          <textarea id="entrada" rows="1" aria-label="Sua mensagem" placeholder="Escreva sua mensagem" enterkeyhint="send"></textarea>
           <button type="submit" id="enviar">Enviar</button>
         </form>
       </div>
@@ -118,6 +117,8 @@ body.com-painel .painel { display: block; }
       <h2 id="painel-titulo">O que o sistema decidiu</h2>
       <dl>
         <dt>Próxima ação</dt><dd id="p-acao">-</dd>
+        <dt>Estado</dt><dd id="p-estado">-</dd>
+        <dt>Tipo</dt><dd id="p-tipo">-</dd>
         <dt>Tentativas</dt><dd id="p-tent">-</dd>
       </dl>
       <p class="vazio" id="p-vazio">Aparece depois da primeira resposta.</p>
@@ -200,6 +201,8 @@ body.com-painel .painel { display: block; }
   function atualizarPainel(d) {
     if (!painel) return;
     $('p-acao').textContent = d.proxima_acao == null ? '-' : String(d.proxima_acao);
+    $('p-estado').textContent = d.estado == null ? '-' : String(d.estado);
+    $('p-tipo').textContent = d.tipo == null ? '-' : String(d.tipo);
     $('p-tent').textContent = d.tentativas == null ? '-' : String(d.tentativas);
     var pre = $('p-saida');
     if (d.saida !== undefined && d.saida !== null) {
@@ -228,21 +231,18 @@ body.com-painel .painel { display: block; }
       });
       d = await r.json();
     } catch (e) {
-      d = { origem: 'falha' };
+      d = null;
     }
     encerrarEspera();
+    // Silencio: sem resposta nao ha bolha nem texto de erro; a mensagem do lead fica e o campo segue livre.
     var resposta = d && typeof d.resposta === 'string' && d.resposta ? d.resposta : null;
-    var falhou = !resposta || d.origem === 'falha';
     if (resposta) {
       historico.push({ role: 'assistant', content: resposta });
-      adicionar('sistema' + (falhou ? ' falha' : ''), resposta);
-    } else {
-      adicionar('sistema falha', 'Não consegui responder agora. Tente novamente em instantes.');
-      historico.pop();
+      adicionar('sistema', resposta);
     }
     atualizarPainel(d || {});
     var acao = d && d.proxima_acao;
-    if (falhou || (acao !== undefined && acao !== null && acao !== 'perguntar')) {
+    if (resposta && acao !== undefined && acao !== null && acao !== 'perguntar') {
       encerrada = true;
       conversa.appendChild(el('div', 'encerrado', 'Atendimento encerrado'));
       rolar();

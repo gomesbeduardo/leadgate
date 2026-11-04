@@ -61,8 +61,6 @@ export type OpcoesChat = {
 type Perfil = 'publico' | 'interno'
 const JANELA_MS = 60_000
 
-const TIMEOUT_WEBHOOK_MS = 60_000
-
 function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat): Server {
   const agora = opcoes.agora ?? Date.now
   const limiteCorpo = opcoes.limiteCorpo ?? 16 * 1024
@@ -92,6 +90,8 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     resposta: j.resposta,
     proxima_acao: j.proxima_acao,
     origem: j.origem,
+    estado: j.estado_conversa ?? j.estado,
+    tipo: j.tipo,
     ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas } : {}),
   })
 
@@ -102,7 +102,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ historico: corpo.historico }),
-        signal: AbortSignal.timeout(TIMEOUT_WEBHOOK_MS),
+        signal: AbortSignal.timeout(cfg.ia.timeout_turno_ms),
       })
       if (!r.ok) return falhaChat
       const j: unknown = await r.json()
