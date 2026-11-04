@@ -1,0 +1,27 @@
+name: Portões
+
+on:
+  pull_request:
+    branches: [staging]
+  push:
+    branches: [staging]
+
+permissions:
+  contents: read
+
+jobs:
+  portoes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run
+      - run: npx tsc --noEmit
+      - run: npm run build:servico
+      - run: npm run gerar:workflow
+      - run: git diff --exit-code n8n/
