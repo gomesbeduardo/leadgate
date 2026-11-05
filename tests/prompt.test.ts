@@ -153,6 +153,13 @@ function trocas(): { blocos: number; itens: Troca[] } {
 }
 
 describe('T20: prompt 1.4.0', () => {
+  it('correções da primeira medição, no prompt e no README', () => {
+    for (const t of ['uma pessoa do time, se preferir', 'com 4 ou mais, o lead já foi a vendas']) {
+      expect(modelo).toContain(t)
+      expect(readme).toContain(t)
+    }
+    expect(modelo).not.toContain('atendido por alguém do time')
+  })
   it('versão, seções e frases antigas', () => {
     expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.4\.0/)
     expect([...modelo.matchAll(/^## /gm)]).toHaveLength(7)

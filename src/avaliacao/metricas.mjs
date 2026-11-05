@@ -44,12 +44,16 @@ export function acertoCampo(campo, valor, aceitos) {
  * @returns {boolean|null} null = o caso nao pede checagem
  */
 function checarTexto(caso, turnos) {
-  const { resposta_nao_contem: naoContem, resposta_nao_comeca: naoComeca, resposta_contem_um: contemUm } = caso
-  if (!naoContem && !naoComeca && !contemUm) return null
+  const { resposta_nao_contem: naoContem, resposta_nao_comeca: naoComeca, resposta_contem_um: contemUm, resposta_ultima_nao_contem: ultimaNaoContem } = caso
+  if (!naoContem && !naoComeca && !contemUm && !ultimaNaoContem) return null
   const textos = turnos.map((t) => normalizar(t.resposta ?? '') || '')
   const norm = (/** @type {string[]} */ l) => l.map((x) => normalizar(x))
   if (naoContem && textos.some((t) => norm(naoContem).some((x) => t.includes(x)))) return false
   if (naoComeca && textos.some((t) => norm(naoComeca).some((x) => t.startsWith(x)))) return false
+  if (ultimaNaoContem) {
+    const ultima = textos.filter((t) => t !== '').at(-1) ?? ''
+    if (norm(ultimaNaoContem).some((x) => ultima.includes(x))) return false
+  }
   if (contemUm) {
     const ultima = textos.filter((t) => t !== '').at(-1) ?? ''
     if (!norm(contemUm).some((x) => ultima.includes(x))) return false

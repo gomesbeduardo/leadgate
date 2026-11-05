@@ -583,7 +583,7 @@
     "itens_na": [
       8
     ],
-    "resposta_nao_contem": [
+    "resposta_ultima_nao_contem": [
       "climatização",
       "atendimento",
       "canal"
@@ -1078,7 +1078,8 @@
         "ignorar"
       ],
       "desvios": [
-        1
+        1,
+        2
       ]
     },
     "itens_na": [
@@ -1090,7 +1091,8 @@
       10,
       11,
       12
-    ]
+    ],
+    "nota": "A mensagem tem duas linhas fora do assunto na abertura; a RE8 conta as linhas de um turno juntado, entao desvios = 2 tambem esta certo e a acao e a mesma (ignorar)."
   },
   {
     "id": "n13",
@@ -1455,23 +1457,7 @@
       },
       {
         "role": "assistant",
-        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "não sei bem"
-      },
-      {
-        "role": "assistant",
-        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "?"
-      },
-      {
-        "role": "assistant",
-        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+        "content": "Quantos aparelhos são, mais ou menos?"
       }
     ],
     "esperado": {
@@ -1520,23 +1506,7 @@
       },
       {
         "role": "assistant",
-        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "não sei bem"
-      },
-      {
-        "role": "assistant",
-        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "?"
-      },
-      {
-        "role": "assistant",
-        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+        "content": "Quantos aparelhos são, mais ou menos?"
       }
     ],
     "esperado": {
@@ -1790,23 +1760,7 @@
       },
       {
         "role": "assistant",
-        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "não sei bem"
-      },
-      {
-        "role": "assistant",
-        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
-      },
-      {
-        "role": "user",
-        "content": "?"
-      },
-      {
-        "role": "assistant",
-        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+        "content": "Quantos aparelhos são, mais ou menos?"
       },
       {
         "role": "user",

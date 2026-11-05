@@ -126,6 +126,7 @@ for (const caso of casos) {
         erro: Boolean(r.erro),
         violacoes: r.violacoes ?? [],
         proxima_acao: r.proxima_acao ?? null,
+        tipo: r.tipo ?? null,
         ressalvas: r.ressalvas ?? [],
       })
       // Silencio deliberado do modelo (ignorar, resposta nula): nenhuma fala do agente entra no historico.

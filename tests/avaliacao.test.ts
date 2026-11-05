@@ -203,6 +203,16 @@ describe('casos.json', () => {
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
     expect(new Set(casos.map((c) => c.id)).size).toBe(54)
   })
+  it('correcoes da primeira medicao: n12, n19, n01', () => {
+    const por = (id: string) => casos.find((c) => c.id === id) as unknown as Record<string, any>
+    expect(por('n12').esperado.desvios).toEqual([1, 2])
+    expect(por('n12').nota).toBeTruthy()
+    for (const id of ['n19', 'n19b', 'n24']) expect(por(id).historico_inicial.slice(0, 2)).toHaveLength(2)
+    expect(por('n19').historico_inicial).toHaveLength(2)
+    expect(por('n19b').historico_inicial).toHaveLength(2)
+    expect(por('n01').resposta_ultima_nao_contem).toEqual(['climatização', 'atendimento', 'canal'])
+    expect(por('n01').resposta_nao_contem).toBeUndefined()
+  })
   it('cobre multi-mensagem e travas', () => {
     expect(casos.filter((c) => c.mensagens.length > 1).length).toBeGreaterThanOrEqual(3)
     expect(casos.filter((c) => c.conjunto === 'ajuste' && c.tipo === 'trava').length).toBeGreaterThanOrEqual(3)

@@ -109,6 +109,11 @@ describe('checagens de texto da resposta', () => {
     expect(avaliarCaso(c, { turnos: [t('oi'), t('Sobre a manutenção, certo')] }).campos.resposta).toBe(false)
     expect(avaliarCaso(c, { turnos: [t('oi'), t('certo')] }).campos.resposta).toBe(true)
   })
+  it('resposta_ultima_nao_contem olha so a ultima resposta nao vazia', () => {
+    const c = com({ resposta_ultima_nao_contem: ['atendimento'] })
+    expect(avaliarCaso(c, { turnos: [t('atendimento'), t('ok'), t('')] }).campos.resposta).toBe(true)
+    expect(avaliarCaso(c, { turnos: [t('oi'), t('o atendimento aqui')] }).campos.resposta).toBe(false)
+  })
   it('resposta_nao_comeca olha todo turno', () => {
     const c = com({ resposta_nao_comeca: ['Olá'] })
     expect(avaliarCaso(c, { turnos: [t('ola, tudo bem'), t('certo')] }).campos.resposta).toBe(false)
