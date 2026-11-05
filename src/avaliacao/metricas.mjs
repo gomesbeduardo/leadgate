@@ -12,7 +12,7 @@ export const CAMPOS = ['tipo_servico', 'segmento', 'cidade', 'urgencia', 'qualif
 export const QUADRANTES = ['acerto_alta', 'acerto_baixa', 'erro_alta', 'erro_baixa']
 // Campos da spec 006: so entram na pontuacao quando o esperado os traz.
 // 'resposta' nao vem da saida: e a checagem de texto (resposta_nao_contem, resposta_nao_comeca, resposta_contem_um).
-export const CAMPOS_FALAS = ['desvios', 'vagos', 'ja_cliente', 'email', 'ressalvas', 'resposta']
+export const CAMPOS_FALAS = ['desvios', 'vagos', 'ja_cliente', 'uf', 'email', 'ressalvas', 'resposta']
 export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 /** @param {unknown} v */

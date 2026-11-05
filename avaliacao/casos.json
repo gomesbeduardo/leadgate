@@ -2205,6 +2205,181 @@
     "nota": "Fluxo real: o 2o desvio ja foi silenciado; vai a vendas uma vez mesmo com o sinal."
   },
   {
+    "id": "n33",
+    "conjunto": "ajuste",
+    "teste": "estado fora de RS e SC avisa e encerra sem contato",
+    "tipo": "cidade",
+    "mensagens": [
+      "Preciso de manutenção no ar da minha loja em Manaus"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Manaus"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "responder_e_encerrar"
+      ],
+      "uf": [
+        "AM"
+      ],
+      "telefone": [
+        null
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "3307-7010",
+      "3364-9840",
+      "telefone",
+      "e-mail"
+    ]
+  },
+  {
+    "id": "n34",
+    "conjunto": "ajuste",
+    "teste": "estado fora recusa mesmo com telefone, sem vendas",
+    "tipo": "cidade",
+    "mensagens": [
+      "Instalação de split na minha empresa em Curitiba-PR, 41 99999-0002"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial",
+        "industrial"
+      ],
+      "cidade": [
+        "Curitiba-PR",
+        "Curitiba"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "responder_e_encerrar"
+      ],
+      "uf": [
+        "PR"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "3307-7010",
+      "3364-9840",
+      "equipe comercial",
+      "vendas"
+    ]
+  },
+  {
+    "id": "n35",
+    "conjunto": "ajuste",
+    "teste": "cidade homonima fora da lista pergunta o estado",
+    "tipo": "cidade",
+    "mensagens": [
+      "Quero orçamento de ar pra minha loja em Bom Jesus"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Bom Jesus"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "uf": [
+        null
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_contem_um": [
+      "estado",
+      "UF",
+      "qual Bom Jesus"
+    ]
+  },
+  {
+    "id": "n36",
+    "conjunto": "ajuste",
+    "teste": "cidade da lista nao pergunta o estado",
+    "tipo": "cidade",
+    "mensagens": [
+      "Quero instalar um ar na minha loja em São José"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "São José"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "uf": [
+        "SC"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "estado",
+      "UF",
+      "não atendemos"
+    ]
+  },
+  {
     "id": "r01",
     "conjunto": "reservado",
     "teste": "T19",

@@ -156,6 +156,7 @@ export function schemaSaida(cfg: Config): object {
     tipo_servico: nulavel(enumStr([...cfg.servicos, 'fora_escopo'])),
     segmento: nulavel(enumStr(cfg.segmentos)),
     cidade: nulavel({ type: 'string' }),
+    uf: nulavel({ type: 'string' }),
     nome: nulavel({ type: 'string' }),
     telefone: nulavel({ type: 'string' }),
     ja_cliente: nulavel({ type: 'boolean' }),

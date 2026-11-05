@@ -197,11 +197,11 @@ describe('casos.json', () => {
     mensagens: string[]
     esperado: Record<string, unknown[]>
   }[]
-  it('tem 54 casos, 48 + 6 (a01-a14, n01-n32, n19b e n27b no ajuste), ids unicos', () => {
-    expect(casos).toHaveLength(54)
-    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(48)
+  it('tem 58 casos, 52 + 6 (a01-a14, n01-n36, n19b e n27b no ajuste), ids unicos', () => {
+    expect(casos).toHaveLength(58)
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(52)
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
-    expect(new Set(casos.map((c) => c.id)).size).toBe(54)
+    expect(new Set(casos.map((c) => c.id)).size).toBe(58)
   })
   it('correcoes da primeira medicao: n12, n19, n01', () => {
     const por = (id: string) => casos.find((c) => c.id === id) as unknown as Record<string, any>
@@ -364,8 +364,8 @@ describe('falas e interacao (spec 006): casos', () => {
     for (const id of ['a14', 'a07']) expect(por(id).itens_na).toEqual(expect.arrayContaining([5, 6, 7, 8, 9, 10]))
     for (const id of ['a10', 'a13', 'g05']) expect(por(id).esperado.proxima_acao).toEqual(['perguntar'])
   })
-  it('n01 a n32 (com n19b e n27b) no ajuste e g10 e g11 na regressao, com proxima_acao, desvios e vagos esperados', () => {
-    const ids = Array.from({ length: 32 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
+  it('n01 a n36 (com n19b e n27b) no ajuste e g10 e g11 na regressao, com proxima_acao, desvios e vagos esperados', () => {
+    const ids = Array.from({ length: 36 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
     expect(casos.filter((c) => /^n\d\d$/.test(c.id)).map((c) => c.id)).toEqual(ids)
     for (const id of [...ids, 'n19b', 'n27b']) expect(por(id).conjunto).toBe('ajuste')
     expect(por('g10').conjunto).toBe('regressao')
@@ -387,6 +387,15 @@ describe('falas e interacao (spec 006): casos', () => {
     expect(acao('n16')).toEqual(['ignorar'])
     expect(por('n17').esperado.desvios).toEqual([0])
     expect(acao('g10')).toEqual(['responder_e_encerrar'])
+    expect(por('g01').esperado.uf).toEqual(['DF'])
+    expect(acao('g01')).toEqual(['responder_e_encerrar'])
+    expect(por('g01').esperado.qualificado).toEqual([false])
+    expect(por('n33').esperado.uf).toEqual(['AM'])
+    expect(acao('n33')).toEqual(['responder_e_encerrar'])
+    expect(por('n34').esperado.uf).toEqual(['PR'])
+    expect(acao('n35')).toEqual(['perguntar'])
+    expect(por('n35').esperado.uf).toEqual([null])
+    expect(por('n36').esperado.uf).toEqual(['SC'])
     expect(por('g10').esperado.desvios).toEqual([3])
   })
   it('n05, n16 e n17 partem de historico semeado que ja tem o agente, para a conversa seguir aberta', () => {

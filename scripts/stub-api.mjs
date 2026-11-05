@@ -11,6 +11,7 @@ const saidaValida = {
   tipo_servico: 'manutencao',
   segmento: null,
   cidade: null,
+  uf: null,
   nome: null,
   telefone: null,
   ja_cliente: null,

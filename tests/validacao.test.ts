@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
 import { validarSaida } from '../src/validacao/saida'
-import { validarContrato, type Mensagem, type ResultadoValidacao } from '../src/validacao/contrato'
+import { cidadeParecida, validarContrato, type Mensagem, type ResultadoValidacao } from '../src/validacao/contrato'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
 
@@ -13,6 +13,7 @@ const base = (): Record<string, unknown> => ({
   nome: 'Carlos',
   telefone: '48 99999-0001',
   ja_cliente: null,
+  uf: null,
   email: null,
   urgencia: null,
   dados_faltantes: [],
@@ -304,6 +305,11 @@ describe('endurecimento do contrato', () => {
   it('UF errada com telefone: qualificado=false e encaminhar_humano e valido', () => {
     const h = u('Santa Maria-DF, 48 99999-0001')
     expect(validar({ cidade: 'Santa Maria-DF', ...humano }, h).ok).toBe(true)
+  })
+
+  it('UF errada dita (DF) e recusa: encaminhar_humano com telefone e invalido', () => {
+    const h = u('Santa Maria-DF, 48 99999-0001')
+    expect(regras(validar({ cidade: 'Santa Maria-DF', uf: 'DF', ...humano }, h))).toContain('fora_uf_exige_encerrar')
   })
 
   it('cidade que nenhum turno do lead cita nao qualifica', () => {
@@ -688,5 +694,71 @@ describe('escadas de silencio de desvios e vagos (spec 006, fatia 2)', () => {
     expect(r1).toEqual([])
     const r2 = regras(validar({ ...faltaCidade, vagos: 2, proxima_acao: 'ignorar', resposta: '' }, historicoComPerguntas(8)))
     expect(r2).toEqual([])
+  })
+})
+
+describe('spec 006-5: area de atendimento por UF', () => {
+  const u = (c: string): Mensagem => ({ role: 'user', content: c })
+  const MANAUS = 'Infelizmente não atendemos em Manaus: atuamos em regiões do RS e de SC.'
+  const recusa = { ...NADA6(), tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Manaus', uf: 'AM', dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'responder_e_encerrar', resposta: MANAUS }
+  function NADA6() { return { nome: null, telefone: null, email: null } }
+  const hManaus = [u('Preciso de manutenção no ar da minha loja em Manaus')]
+  const hCuritiba = [u('Instalação de split na minha empresa em Curitiba-PR, 41 99999-0002')]
+
+  it('T25: uf fora encerra sem violacao; perguntar vira fora_uf_exige_encerrar', () => {
+    expect(regras(validar(recusa, hManaus))).toEqual([])
+    const r = regras(validar({ ...recusa, proxima_acao: 'perguntar', resposta: 'Qual o tamanho do local?' }, hManaus))
+    expect(r).toContain('fora_uf_exige_encerrar')
+  })
+
+  it('T26: com telefone, encerrar e isento; encaminhar_vendas viola', () => {
+    const o = { ...recusa, cidade: 'Curitiba-PR', uf: 'PR', telefone: '41999990002' }
+    expect(regras(validar(o, hCuritiba))).toEqual([])
+    const v = regras(validar({ ...o, proxima_acao: 'encaminhar_vendas', resposta: 'Vou passar ao time.' }, hCuritiba))
+    expect(v).toContain('fora_uf_exige_encerrar')
+    const h = regras(validar({ ...o, proxima_acao: 'encaminhar_humano', resposta: 'Um colega liga.' }, hCuritiba))
+    expect(h).toContain('fora_uf_exige_encerrar')
+  })
+
+  it('T27: resposta que cita o contato da empresa viola; qualificado=true viola', () => {
+    const r = regras(validar({ ...recusa, resposta: `Não atendemos em Manaus. Fale com ${cfg.empresa.contato}.` }, hManaus))
+    expect(r).toContain('fora_uf_exige_encerrar')
+    expect(regras(validar({ ...recusa, qualificado: true }, hManaus))).toContain('fora_uf_exige_encerrar')
+  })
+
+  it('T28: cidade da lista com uf da lista, perguntar, sem violacao', () => {
+    const o = { ...NADA6(), tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'São José', uf: 'SC', dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'perguntar', resposta: 'Qual o melhor telefone para falarmos?' }
+    expect(regras(validar(o, [u('Quero instalar um ar na minha loja em São José')]))).toEqual([])
+  })
+
+  it('T29: uf null com perguntar nao dispara fora_uf_exige_encerrar', () => {
+    const o = { ...NADA6(), tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'Bom Jesus', uf: null, dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'perguntar', resposta: 'Qual estado fica Bom Jesus?' }
+    expect(regras(validar(o, [u('Quero orçamento de ar pra minha loja em Bom Jesus')]))).toEqual([])
+  })
+
+  it('T30: uf contradiz a lista sem a sigla no historico; com a sigla passa; cidadeParecida falsa', () => {
+    const o = { ...recusa, cidade: 'Santa Maria', uf: 'DF' }
+    expect(regras(validar(o, [u('Manutenção na minha loja em Santa Maria')]))).toContain('uf_contradiz_lista')
+    expect(regras(validar(o, [u('Manutenção na minha loja em Santa Maria-DF')]))).not.toContain('uf_contradiz_lista')
+    expect(regras(validar(o, [u('Manutenção na minha loja em Santa Maria, Distrito Federal')]))).not.toContain('uf_contradiz_lista')
+    expect(cidadeParecida('Santa Maria-DF', cfg)).toBe(false)
+    expect(regras(validar({ ...o, cidade: 'Santa Maria-DF', qualificado: true }, [u('Santa Maria-DF')]))).toContain('cidade_fora_exige_nao_qualificado')
+  })
+
+  it('T31: cidadeParecida com e sem sufixo', () => {
+    expect(cidadeParecida('Santa Mria-RS', cfg)).toBe(true)
+    expect(cidadeParecida('Santa Mria', cfg)).toBe(true)
+    expect(cidadeParecida('Santa Maria-DF', cfg)).toBe(false)
+  })
+
+  it('foraUf governa: desvios=2 e vagos=2 com responder_e_encerrar nao violam', () => {
+    expect(regras(validar({ ...recusa, desvios: 2 }, hManaus))).toEqual([])
+    expect(regras(validar({ ...recusa, vagos: 2 }, hManaus))).toEqual([])
+    expect(regras(validar({ ...recusa, desvios: 1 }, hManaus))).toEqual([])
+  })
+
+  it('uf em minusculas ou com espaco conta; uf vazia e dentro nao recusam', () => {
+    expect(regras(validar({ ...recusa, uf: ' pr ', proxima_acao: 'perguntar', resposta: 'Qual?' }, hManaus))).toContain('fora_uf_exige_encerrar')
+    expect(regras(validar({ ...NADA6(), tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'Joinville', uf: 'SC', dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'perguntar', resposta: 'Qual o telefone?' }, [u('Joinville')]))).toEqual([])
   })
 })

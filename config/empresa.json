@@ -9,6 +9,7 @@
   "segmentos": ["residencial", "comercial", "industrial"],
   "segmentos_aceitos": ["comercial", "industrial"],
   "regiao": {
+    "ufs_atendidas": ["RS", "SC"],
     "cidades": [
       "Florianópolis", "São José", "Palhoça", "Biguaçu", "Santo Amaro da Imperatriz",
       "Governador Celso Ramos", "Antônio Carlos", "São Pedro de Alcântara", "Tijucas",

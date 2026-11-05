@@ -12,6 +12,7 @@ export type Saida = {
   tipo_servico: string | null
   segmento: string | null
   cidade: string | null
+  uf: string | null
   nome: string | null
   telefone: string | null
   ja_cliente: boolean | null
@@ -36,6 +37,7 @@ function montarSchema(cfg: Config) {
     tipo_servico: enumDe([...cfg.servicos, 'fora_escopo']).nullable(),
     segmento: enumDe(cfg.segmentos).nullable(),
     cidade: texto,
+    uf: texto,
     nome: texto,
     telefone: texto,
     ja_cliente: z.boolean().nullable(),
@@ -49,6 +51,14 @@ function montarSchema(cfg: Config) {
     proxima_acao: z.enum(['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano', 'ignorar']),
     resposta: z.string(),
   })
+}
+
+const NOMES_UF: Record<string, string> = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal',
+  ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul',
+  MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí',
+  RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima',
+  SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
 }
 
 export const normalizar = (s: string) =>
@@ -83,11 +93,14 @@ function distancia(a: string, b: string): number {
 }
 
 /** Cidade fora da lista, mas a ate 2 edicoes de uma cidade atendida: provavel erro de digitacao ou transcricao. */
-function cidadeParecida(cidade: string, cfg: Config): boolean {
+export function cidadeParecida(cidade: string, cfg: Config): boolean {
   const n = normalizar(cidade)
   const m = SUFIXO_UF.exec(n)
-  const alvos = m ? [n, m[1]!] : [n]
-  return cfg.regiao.cidades.some((c) => alvos.some((a) => distancia(a, normalizar(c)) <= 2))
+  if (m) {
+    // Com sufixo, so conta a cidade da lista cuja UF e a do sufixo.
+    return cfg.regiao.cidades.some((c) => normalizar(cfg.regiao.ufs[c] ?? '') === m[2] && distancia(m[1]!, normalizar(c)) <= 2)
+  }
+  return cfg.regiao.cidades.some((c) => distancia(n, normalizar(c)) <= 2)
 }
 
 /** Telefones do lead, sem os da propria empresa. */
@@ -191,6 +204,29 @@ export function analisarContrato(
   const recusa = foraEscopo || (s.segmento !== null && !aceito)
   const cidadeFora = cidade !== null && !cidadeOk
   const citaContato = normalizar(s.resposta).includes(normalizar(contato))
+  const ufDita = s.uf !== null && s.uf.trim() !== '' ? s.uf.trim().toUpperCase() : null
+  const foraUf = ufDita !== null && !cfg.regiao.ufs_atendidas.includes(ufDita)
+
+  if (foraUf && (s.proxima_acao !== 'responder_e_encerrar' || s.qualificado || citaContato)) {
+    cruz('fora_uf_exige_encerrar', 'Estado fora da area atendida (RS e SC) exige proxima_acao=responder_e_encerrar, qualificado=false e resposta de uma frase que avisa e nao cita o contato da empresa.')
+  }
+
+  // Anti-invencao: cidade da lista (sem sufixo) com uf diferente da lista exige a sigla ou o nome do estado numa fala do lead.
+  if (cidade !== null && ufDita !== null) {
+    const nc = normalizar(cidade)
+    const daLista = cfg.regiao.cidades.find((c) => normalizar(c) === nc)
+    const ufLista = daLista !== undefined ? cfg.regiao.ufs[daLista] : undefined
+    if (ufLista !== undefined && ufLista.toUpperCase() !== ufDita) {
+      const nome = normalizar(NOMES_UF[ufDita] ?? '')
+      const sigla = new RegExp(`(^|[^a-z])${ufDita.toLowerCase()}($|[^a-z])`)
+      const dito = historico.some((m) => {
+        if (m.role !== 'user') return false
+        const t = normalizar(m.content)
+        return sigla.test(t) || (nome !== '' && t.includes(nome))
+      })
+      if (!dito) cruz('uf_contradiz_lista', 'uf difere da UF da cidade da lista e o lead nao disse o estado. Use a UF da lista, ou null se nao souber.')
+    }
+  }
 
   if (cidadeFora && s.qualificado && !cidadeParecida(cidade, cfg)) {
     cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
@@ -277,7 +313,7 @@ export function analisarContrato(
   const semDado = [s.tipo_servico, s.segmento, s.cidade, s.nome, s.telefone, s.email].every((c) => c === null || c.trim() === '')
   // Quando uma regra de silencio governa o turno, o roteamento do teto nao se aplica.
   const limiteGoverna = s.desvios >= 2 || s.vagos === 3 || (s.vagos === 2 && !semDado)
-  const precisaRotear = !foraEscopo && !limiteGoverna && tetoAtingido && faltaDado
+  const precisaRotear = !foraEscopo && !foraUf && !limiteGoverna && tetoAtingido && faltaDado
   if (precisaRotear) {
     const motivo = 'teto de perguntas atingido com dados obrigatorios faltando'
     if (temContato) {
@@ -294,7 +330,7 @@ export function analisarContrato(
   const contadorNoLimite = s.desvios === 3 || s.vagos === 3
 
   // R5: lead dentro do escopo nunca e dispensado com um simples encerramento.
-  if (!foraEscopo && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
+  if (!foraEscopo && !foraUf && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
     if (temContato && s.desvios !== 3) {
       cruz('encerrar_com_telefone_exige_humano', 'Lead dentro do escopo com telefone ou e-mail nao pode ser encerrado: use proxima_acao=encaminhar_vendas ou encaminhar_humano.')
     } else if ((servido || aceito || cidadeOk || contadorNoLimite) && !citaContato) {
@@ -316,13 +352,13 @@ export function analisarContrato(
     if (!abertura && s.desvios !== 2 && !fimSilencioso && !vagoSemDado && !vagoComDado && !vagoNoLimite) {
       cruz('ignorar_fora_do_permitido', 'ignorar so vale em: abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone); desvios=2; desvios=3 com telefone; vagos=1 sem nenhum dado e sem contato; vagos=2 com dado e nao qualificado; vagos=3 com lead qualificado.')
     }
-  } else if ((s.desvios === 1 || (s.vagos === 1 && !semDado) || (s.vagos === 2 && semDado)) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
+  } else if (!foraUf && (s.desvios === 1 || (s.vagos === 1 && !semDado) || (s.vagos === 2 && semDado)) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
     cruz('desvio_exige_pergunta', 'Com desvios=1, vagos=1 (com dado) ou vagos=2 (sem dado), a proxima_acao deve ser perguntar (reconduza o lead com uma pergunta).')
   }
-  if (s.desvios === 2 && s.proxima_acao !== 'ignorar') {
+  if (!foraUf && s.desvios === 2 && s.proxima_acao !== 'ignorar') {
     cruz('desvio_exige_silencio', 'desvios=2 exige silencio: use proxima_acao=ignorar com resposta vazia.')
   }
-  if (s.vagos === 2 && !semDado) {
+  if (!foraUf && s.vagos === 2 && !semDado) {
     const ok = s.qualificado
       ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
       : s.proxima_acao === 'ignorar'
@@ -332,7 +368,7 @@ export function analisarContrato(
         : 'vagos=2 com dado e lead nao qualificado fica em silencio: use proxima_acao=ignorar com resposta vazia.')
     }
   }
-  if (s.desvios === 3) {
+  if (!foraUf && s.desvios === 3) {
     const esperada = !temTelefone
       ? s.proxima_acao === 'responder_e_encerrar'
       : !s.qualificado
@@ -347,7 +383,7 @@ export function analisarContrato(
       cruz('limite_exige_encerrar', detalhe)
     }
   }
-  if (s.vagos === 3) {
+  if (!foraUf && s.vagos === 3) {
     const esperada = !temContato ? 'responder_e_encerrar' : s.qualificado ? 'ignorar' : 'encaminhar_humano'
     if (s.proxima_acao !== esperada) {
       const detalhe = !temContato

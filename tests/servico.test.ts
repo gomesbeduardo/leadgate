@@ -112,7 +112,7 @@ describe('servico HTTP (porta interna)', () => {
   it('saida valida do modelo encerra com origem modelo', async () => {
     const t: any = await (await post('/preparar', corpo)).json()
     const saida = {
-      tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, ja_cliente: null, email: null, urgencia: null,
+      tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, ja_cliente: null, uf: null, email: null, urgencia: null,
       dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
       qualificado: false, confianca: 0.5, desvios: 0, vagos: 0, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
     }

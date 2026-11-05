@@ -30,6 +30,7 @@ const saidaBase = (extra: Record<string, unknown> = {}) =>
     nome: null,
     telefone: null,
     ja_cliente: null,
+    uf: null,
     email: null,
     urgencia: null,
     dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
@@ -162,10 +163,10 @@ describe('montarRequisicao', () => {
 
 describe('schemaSaida', () => {
   const s: any = schemaSaida(cfg)
-  it('fecha o objeto e exige os 15 campos', () => {
+  it('fecha o objeto e exige os 16 campos', () => {
     expect(s.type).toBe('object')
     expect(s.additionalProperties).toBe(false)
-    expect(s.required).toHaveLength(15)
+    expect(s.required).toHaveLength(16)
     expect([...s.required].sort()).toEqual(Object.keys(s.properties).sort())
   })
   it('enums vem da config e nulaveis usam anyOf', () => {

@@ -15,6 +15,7 @@ const saidaOk = {
   proxima_acao: 'responder_e_encerrar',
   confianca: 0.9,
   ja_cliente: null,
+  uf: null,
   email: null,
 }
 const turno = (over: any = {}) => ({
@@ -64,6 +65,15 @@ describe('item 7 n/a sem mensagem fora do tema (T19)', () => {
   it('itens_na continua valendo', () => {
     const r = avaliarCaso(com({ tipo: 'desvio', itens_na: [7] }, { desvios: [1] }), { turnos: [turno()] }, { '7': true })
     expect(r.itens[7]).toBe('na')
+  })
+})
+
+describe('uf', () => {
+  it('uf acerta, erra ou fica ausente do esperado', () => {
+    const c = com({}, { uf: ['AM'] })
+    expect(avaliarCaso(c, { turnos: [turno({ saida: { ...saidaOk, uf: 'AM' } })] }).campos.uf).toBe(true)
+    expect(avaliarCaso(c, { turnos: [turno({ saida: { ...saidaOk, uf: 'PR' } })] }).campos.uf).toBe(false)
+    expect('uf' in avaliarCaso(com(), { turnos: [turno()] }).campos).toBe(false)
   })
 })
 

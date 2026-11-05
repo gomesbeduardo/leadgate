@@ -26,11 +26,24 @@
         false
       ],
       "proxima_acao": [
-        "encaminhar_humano"
+        "responder_e_encerrar"
+      ],
+      "uf": [
+        "DF"
       ]
     },
     "itens_na": [
       8
+    ],
+    "resposta_nao_contem": [
+      "3307-7010",
+      "3364-9840",
+      "telefone",
+      "e-mail"
+    ],
+    "resposta_contem_um": [
+      "não atendemos",
+      "não atuamos"
     ]
   },
   {

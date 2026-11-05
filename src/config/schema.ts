@@ -9,7 +9,7 @@ export const ConfigSchema = z
     servicos: textos.min(1),
     segmentos: textos.min(1),
     segmentos_aceitos: textos,
-    regiao: z.object({ cidades: textos.min(1), ufs: z.record(z.string(), z.string().length(2)) }),
+    regiao: z.object({ ufs_atendidas: textos.min(1), cidades: textos.min(1), ufs: z.record(z.string(), z.string().length(2)) }),
     conversa: z.object({
       teto_perguntas: z.number().int().positive(),
       perguntas_curtas: textos,

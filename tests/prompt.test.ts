@@ -56,7 +56,7 @@ describe('arquivo do prompt', () => {
   })
 
   it('G: orienta a nao citar prazo e a usar "atendimento automatizado"', () => {
-    expect(modelo).toMatch(/versao:\s*1.4.0/)
+    expect(modelo).toMatch(/versao:\s*1.5.0/)
     expect(modelo).toMatch(/nunca cite prazo/i)
     expect(modelo).toContain('atendimento automatizado')
     expect(modelo).toMatch(/palavras "atendimento automatizado"/)
@@ -152,7 +152,7 @@ function trocas(): { blocos: number; itens: Troca[] } {
   return { blocos: (sec.match(/^Troca [A-I]\b/gm) ?? []).length, itens }
 }
 
-describe('T20: prompt 1.4.0', () => {
+describe('T20: prompt 1.5.0', () => {
   it('correções da primeira medição, no prompt e no README', () => {
     for (const t of ['uma pessoa do time, se preferir', 'com 4 ou mais, o lead já foi a vendas']) {
       expect(modelo).toContain(t)
@@ -161,7 +161,7 @@ describe('T20: prompt 1.4.0', () => {
     expect(modelo).not.toContain('atendido por alguém do time')
   })
   it('versão, seções e frases antigas', () => {
-    expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.4\.0/)
+    expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.5\.0/)
     expect([...modelo.matchAll(/^## /gm)]).toHaveLength(7)
     expect(modelo).not.toContain('Que bom que escreveu')
     expect(modelo).not.toContain('Pra eu registrar certinho')
@@ -255,5 +255,14 @@ describe('periodoDoDia', () => {
     expect(periodoDoDia(br('12:00'))).toBe('tarde')
     expect(periodoDoDia(br('17:59'))).toBe('tarde')
     expect(periodoDoDia(br('18:00'))).toBe('noite')
+  })
+})
+
+describe('T32: prompt 1.5.0, area por UF', () => {
+  it('versao, uf no contrato e marcador de estados atendidos', () => {
+    expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.5\.0/)
+    expect(modelo).toContain('"uf": "sigla de duas letras | null"')
+    expect(modelo).toContain('{{regiao.ufs_atendidas}}')
+    expect(modelo).toContain('Infelizmente não atendemos em Manaus')
   })
 })
