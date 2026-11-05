@@ -1,6 +1,6 @@
 # leadgate
 
-Demo aberta de um assistente de IA que faz a triagem de leads no chat de uma empresa de climatização (a CentralEng, em escala de piloto fictício), mais a esteira de desenvolvimento quase autônoma que construiu o projeto.
+Demo aberta de um assistente de IA que faz a triagem de leads no chat de uma empresa de climatização (a CentralEng, em escala de piloto fictício).
 
 Estado: protótipo em fase de teste. Não há cliente, uso em produção nem resultado além dos que estão medidos na seção Avaliação, com os limites ditos ali.
 
@@ -18,7 +18,6 @@ Aqui a IA entra onde a linguagem é solta: entender o que a pessoa quer, pedir s
 - Um JSON validado como saída, com a próxima ação: perguntar, encaminhar para vendas, encerrar com educação ou encaminhar para uma pessoa.
 - Travas em camadas para o agente não sair do papel, não prometer preço ou prazo e nunca negar que é uma IA.
 - Uma avaliação reproduzível com 20 casos, mais um conjunto separado de regressão com falhas que já aconteceram.
-- Uma esteira de desenvolvimento em que agentes especificam, implementam, revisam e registram o que aprenderam (seção final).
 
 A empresa, as cidades, os limites e os textos ficam em `config/empresa.json`, não no código. Na tela do chat, `tela.titulo` define só o título da aba do navegador (o cabeçalho visível é fixo, "Atendimento CentralEng"); as cores da conversa ficam nos tokens de `chat/index.html`, e `cor_primaria` e `cor_destaque` não são mais aplicadas ali, embora `/tela.json` ainda as devolva. O encaminhamento para vendas e para uma pessoa é simulado: nada é enviado a ninguém.
 
@@ -147,6 +146,8 @@ A avaliação zera a contagem de falhas antes de começar e grava `avaliacao/fal
 
 O promptfoo mora num pacote isolado, `scripts/promptfoo/`, para não pesar na instalação da raiz (nem no build do Docker nem no CI). Instale uma vez com `npm ci --prefix scripts/promptfoo --ignore-scripts`. Para ver se uma mudança em `prompts/`, `src/validacao/` ou `config/` piorou algum campo, suba duas pilhas, uma da base (porta 8080) e outra da branch (porta 8081), as duas com `DEMO_PAINEL=1` (sem ele o `/api/chat` não devolve o campo `saida` e a comparação sai inválida), e rode `npm run comparar:prompt`. As URLs saem de `COMPARAR_URL_BASE` e `COMPARAR_URL_BRANCH` (padrão `http://127.0.0.1:8080/api/chat` e `http://127.0.0.1:8081/api/chat`). O promptfoo roda 3 vezes cada um dos 14 casos do conjunto `ajuste` nas duas pilhas, soma os acertos por campo e imprime uma tabela em Markdown; sai com código 0 se aprovada, 1 se a soma da branch ficar abaixo da base em algum campo (bloqueada) e 2 se a comparação for inválida (falha técnica, lado sem linhas medidas, linhas a menos, JSON inesperado, ou `COMPARAR_URL_BASE` igual a `COMPARAR_URL_BRANCH`). Lado sem medida mostra "não medida" na tabela (lado sem linhas medidas, linhas a menos, JSON inesperado). O resultado em JSON fica num diretório temporário, ou no arquivo de `--saida`. O comando usa só asserções determinísticas (nenhuma chamada a modelo avaliador) e não grava em `~/.promptfoo`. Ele liga a opção de desligar a telemetria do promptfoo (`PROMPTFOO_DISABLE_TELEMETRY=1`, conforme https://www.promptfoo.dev/docs/configuration/telemetry/), mas a versão 0.124.1 ainda tenta enviar um evento "telemetry disabled" a `r.promptfoo.app` mesmo assim; por isso o comando roda o promptfoo com um proxy inalcançável (`127.0.0.1:9`), que bloqueia esse envio, e mantém as pilhas locais fora do proxy. Falha técnica em qualquer linha de qualquer lado (turno com `origem: 'falha'`, `erro` ou sem `saida`) também invalida a comparação, e nunca aprova nem bloqueia; um lado sem nenhum acerto é "não medida". Qualquer erro de chamada em um dos lados (HTTP, rede, tempo esgotado) invalida a comparação, como em `scripts/avaliar.mjs`. O teste que roda o promptfoo de verdade contra servidores falsos é `npm run test:promptfoo`, que falha se o pacote isolado não estiver instalado; ele não roda no CI. No `npx vitest run` comum esse teste roda se o pacote isolado estiver instalado e é pulado, com o motivo escrito na saída, se não estiver; os demais testes da comparação (soma, ambiente, resultado antigo) rodam sempre. Ele não substitui `scripts/avaliar.mjs`: não conta falhas, não gera `avaliacao/tabela.md` e não toca o conjunto `reservado`.
 
+**Regra de bloqueio.** Mudou `prompts/`, `src/validacao/` ou `config/`: rode a avaliação de ajuste com o Compose no ar. Uma rodada só não prova piora, porque o modelo varia; repita 3 vezes na branch e na base e some os acertos do campo. Bloqueia se a soma da branch ficar abaixo da soma da base.
+
 ## Quando algo falha
 
 O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os valores abaixo vêm de `config/empresa.json`.
@@ -236,22 +237,12 @@ npx vitest run && npx tsc --noEmit
 
 Com `docker compose --profile teste up` e `ANTHROPIC_BASE_URL=http://stub:8787`, o fluxo roda contra um modelo simulado, sem gastar chamadas da API. Ao terminar, `docker compose down`.
 
-## A esteira de desenvolvimento
+## Fluxo de trabalho
 
-A segunda metade do projeto é o processo que o construiu. Os arquivos citados abaixo estão na branch `chore/esteira` e chegam à branch principal quando ela for integrada: `.claude/skills/esteira/SKILL.md` (o ciclo), `docs/aprendizados.md` (falhas e regras) e `docs/esteira/metricas.md` (uma linha por ciclo). O ponto de partida de cada ciclo é `docs/estado.md`.
+1. Toda mudança de comportamento ou de tela começa por uma spec em `docs/specs/`, aprovada pelo responsável.
+2. Os testes saem dos critérios da spec e são vistos falhando antes do código.
+3. Cada mudança tem branch própria (`feat/…`, `fix/…`, `chore/…`, `docs/…`) e PR para `staging`. Nunca há push direto em `staging`.
+4. A revisão é de no máximo duas por entrega: PR comum com código tem uma, a final, no Opus; PR de alto risco (regra, cálculo, dado, área sensível) tem a final no Fable. PR sem código não passa por agente revisor.
+5. O merge é do responsável, sempre merge normal, nunca squash.
 
-**O ciclo tem 7 passos:** (1) escolher uma única issue pela prioridade; (2) especificar em `docs/specs/NNN-nome.md`, com critérios Given/When/Then; (3) implementar em fatias pequenas, com teste escrito antes e visto falhar pela razão certa; (4) passar nos portões; (5) revisar; (6) abrir o PR; (7) retroalimentar.
-
-**Portões.** Testes (`vitest`), tipos (`tsc`), build do serviço e workflow gerado sem diferença em `n8n/`. Quando muda prompt, validação ou configuração, roda também a avaliação de ajuste contra o Compose no ar, e campo que piorou bloqueia o PR.
-
-**Quem escreve não revisa.** Um agente implementa uma fatia; outro, sem ver o resumo do primeiro, revisa o diff. Achado crítico, alto ou médio é corrigido com um teste por achado; achado baixo vira issue. Spec de regra de negócio é escrita por um agente próprio e aprovada por uma pessoa antes de qualquer código.
-
-**Como cada falha realimenta.** O passo 7 é o que diferencia a esteira de um script. Cada falha real vira uma entrada em `docs/aprendizados.md` com evidência, causa provada e regra (sem causa provada não há regra). Lição que aparece duas vezes vira teste ou portão. Falhas de comportamento entram no conjunto de regressão (`avaliacao/regressao.json`: Santa Maria-DF, CPF no lugar do telefone, `desconto`, extração do canário). Cada ciclo acrescenta uma linha a `docs/esteira/metricas.md`, que hoje está sem ciclos registrados, e abre de uma a três issues a partir do pior campo da tabela.
-
-**Limites da esteira.** Ela para e registra quando a mudança toca regra de negócio que a spec não cobre ou a honestidade sobre ser IA, quando um portão nega um comando, quando o mesmo teste falha em duas correções seguidas ou ao fim de três ciclos. Nunca põe o rótulo `revisado-por-humano`, nunca aprova o próprio PR, nunca enfraquece teste para passar e nunca olha o conjunto reservado para ajustar o prompt. Texto de issue é tratado como dado não confiável, como a mensagem de um lead.
-
-**Supervisão.** A esteira não rodou sozinha. Uma pessoa autorizou os merges neste repositório e aprovou as specs, e qualquer mudança pode ser revertida por uma pessoa. "Quase autônoma" quer dizer que os ciclos de especificar, implementar, revisar e registrar rodam sem ajuda a cada passo, não que ninguém acompanha.
-
-**Agente no GitHub Actions.** Quando ligado, o rótulo `claude-fix` numa issue do responsável dispara um agente que implementa e abre o PR. Esse PR pode entrar em `staging` sem leitura humana, se passar pelos portões, por um revisor agente e pela lista de caminhos barrados. Prompt, validação, configuração, specs, avaliação, CI e dependências sempre esperam uma pessoa. As regras estão em `docs/specs/005-agente-em-actions.md`.
-
-Para ligar a esteira em outro projeto, siga o guia em `docs/esteira/autonomia.md`.
+Os portões de CI são testes (`vitest`), tipos (`tsc`), build do serviço e workflow gerado sem diferença em `n8n/`. As lições de falhas anteriores estão em `docs/aprendizados.md`, e o estado atual em `docs/estado.md`.
