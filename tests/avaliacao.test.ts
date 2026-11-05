@@ -545,13 +545,13 @@ describe('review: item 11, aberturas, desvios/vagos na tabela, dados', () => {
     expect(avaliarCaso({ ...caso11, itens_na: [7, 8, 11] }, exec, 0.7, { '11': false }).itens[11]).toBe('na')
   })
   it('item 11 entra na contagem e ganha coluna na tabela', () => {
-    const av = avaliarCaso(caso11, { turnos: [T()] }, 0.7, { '5': true, '6': true, '9': true, '10': true, '11': false })
+    const av = avaliarCaso(caso11, { turnos: [T()] }, 0.7, { '5': true, '6': true, '9': true, '10': true, '11': false, '12': null })
     const r = resumir({ ajuste: [av], reservado: null })
     expect(r.ajuste!.casos[0]!.aplicaveis).toBe(8)
     expect(r.ajuste!.casos[0]!.aprovados).toBe(7)
     const md = tabelaMarkdown(r)
-    expect(md).toContain('| Caso | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | Aprovados |')
-    expect(md).toContain('| falhou | 7/8 |')
+    expect(md).toContain('| Caso | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | Aprovados |')
+    expect(md).toContain('| falhou | n/a | 7/8 |')
   })
   it('abertura silenciosa ou vazia nao forma par: 7 silenciosos dao zero; duas iguais nao vazias dao 1', () => {
     const mudos = Array.from({ length: 7 }, (_, i) => ok(`m${i}`, { abertura: '' }))

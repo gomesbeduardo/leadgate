@@ -2,17 +2,18 @@
 
 /**
  * @typedef {'tipo_servico'|'segmento'|'cidade'|'urgencia'|'qualificado'|'proxima_acao'} Campo
- * @typedef {{ resposta: string, saida: any, tentativas: number, origem: string, erro: boolean, violacoes: {regra: string}[] }} Turno
- * @typedef {{ id: string, esperado: Record<string, unknown[]>, itens_na?: number[] }} Caso
+ * @typedef {{ resposta: string, ressalvas?: string[], saida: any, tentativas: number, origem: string, erro: boolean, violacoes: {regra: string}[] }} Turno
+ * @typedef {{ id: string, esperado: Record<string, unknown[]>, itens_na?: number[], tipo?: string }} Caso
  * @typedef {'acerto_alta'|'acerto_baixa'|'erro_alta'|'erro_baixa'} Quadrante
  */
 
 /** @type {Campo[]} */
 export const CAMPOS = ['tipo_servico', 'segmento', 'cidade', 'urgencia', 'qualificado', 'proxima_acao']
 export const QUADRANTES = ['acerto_alta', 'acerto_baixa', 'erro_alta', 'erro_baixa']
-// desvios e vagos (spec 006) so entram na pontuacao quando o esperado os traz.
-export const CAMPOS_FALAS = ['desvios', 'vagos']
-export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+// Campos da spec 006: so entram na pontuacao quando o esperado os traz.
+// 'resposta' nao vem da saida: e a checagem de texto (resposta_nao_contem, resposta_nao_comeca, resposta_contem_um).
+export const CAMPOS_FALAS = ['desvios', 'vagos', 'ja_cliente', 'email', 'ressalvas', 'resposta']
+export const ITENS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 /** @param {unknown} v */
 function normalizar(v) {
@@ -25,6 +26,8 @@ function normalizar(v) {
  * @param {unknown[]} aceitos
  */
 export function acertoCampo(campo, valor, aceitos) {
+  // ressalvas: lista de listas aceitas, comparadas pelo conteudo.
+  if (campo === 'ressalvas') return aceitos.some((a) => JSON.stringify(a) === JSON.stringify(valor))
   const v = campo === 'cidade' ? normalizar(valor) : valor
   return aceitos.some((a) => (campo === 'cidade' ? normalizar(a) : a) === v)
 }
@@ -35,10 +38,30 @@ export function acertoCampo(campo, valor, aceitos) {
  */
 
 /**
+ * Checagem de texto da resposta (spec 006): so roda se o caso traz alguma das tres chaves.
+ * @param {any} caso
+ * @param {Turno[]} turnos
+ * @returns {boolean|null} null = o caso nao pede checagem
+ */
+function checarTexto(caso, turnos) {
+  const { resposta_nao_contem: naoContem, resposta_nao_comeca: naoComeca, resposta_contem_um: contemUm } = caso
+  if (!naoContem && !naoComeca && !contemUm) return null
+  const textos = turnos.map((t) => normalizar(t.resposta ?? '') || '')
+  const norm = (/** @type {string[]} */ l) => l.map((x) => normalizar(x))
+  if (naoContem && textos.some((t) => norm(naoContem).some((x) => t.includes(x)))) return false
+  if (naoComeca && textos.some((t) => norm(naoComeca).some((x) => t.startsWith(x)))) return false
+  if (contemUm) {
+    const ultima = textos.filter((t) => t !== '').at(-1) ?? ''
+    if (!norm(contemUm).some((x) => ultima.includes(x))) return false
+  }
+  return true
+}
+
+/**
  * @param {Caso} caso
  * @param {{ turnos: Turno[] }} resultado
  * @param {number} limiar
- * @param {Record<string, boolean|null|undefined>} leitura itens 5-11: true/false, null = n/a, ausente = pendente
+ * @param {Record<string, boolean|null|undefined>} leitura itens 5-12: true/false, null = n/a, ausente = pendente
  * @param {Verificador} verificar itens 2 e 3: mesmos detectores de prazo e vazamento da camada 2
  */
 export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
@@ -49,12 +72,20 @@ export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
   // Resposta nula so e legitima com `ignorar` esperado ou `encaminhar_vendas` com desvios = 3 esperado (spec 006, R6).
   const nulaPermitida =
     (caso.esperado.proxima_acao ?? []).includes('ignorar') ||
-    ((caso.esperado.proxima_acao ?? []).includes('encaminhar_vendas') && (caso.esperado.desvios ?? []).includes(3))
+    ((caso.esperado.proxima_acao ?? []).includes('encaminhar_vendas') &&
+      ((caso.esperado.desvios ?? []).includes(3) || (caso.esperado.vagos ?? []).includes(2)))
   const nulaIndevida = (t) => t.resposta_nula === true && !nulaPermitida
   const valido = Boolean(ultimo && ultimo.origem !== 'falha' && !ultimo.erro && ultimo.saida && !nulaIndevida(ultimo))
   const campos = /** @type {Record<Campo, boolean>} */ ({})
   for (const c of CAMPOS) campos[c] = valido && acertoCampo(c, ultimo.saida[c], caso.esperado[c] ?? [])
-  for (const c of CAMPOS_FALAS) if (Array.isArray(caso.esperado[c])) campos[c] = valido && acertoCampo(c, ultimo.saida[c], caso.esperado[c])
+  for (const c of CAMPOS_FALAS) {
+    if (c === 'resposta' || !Array.isArray(caso.esperado[c])) continue
+    // ressalvas vem do painel, nao da saida do modelo.
+    const valor = c === 'ressalvas' ? (ultimo?.ressalvas ?? []) : ultimo?.saida?.[c]
+    campos[c] = valido && acertoCampo(c, valor, caso.esperado[c])
+  }
+  const texto = checarTexto(caso, turnos)
+  if (texto !== null) campos.resposta = valido && texto
   const acertou = Object.values(campos).every(Boolean)
   const confianca = valido && typeof ultimo.saida.confianca === 'number' ? ultimo.saida.confianca : null
   const alta = confianca !== null && confianca >= limiar
@@ -71,8 +102,10 @@ export function avaliarCaso(caso, resultado, limiar, leitura, verificar) {
   const regenerados = turnos.filter((t) => t.tentativas > 1)
   itens[4] = regenerados.length === 0 ? 'na' : regenerados.every((t) => t.origem !== 'falha')
   const na = caso.itens_na ?? []
-  for (const i of [5, 6, 7, 8, 9, 10, 11]) {
-    if (na.includes(i)) itens[i] = 'na'
+  // Item 7 (mensagem fora do tema) so se aplica a caso com desvio esperado.
+  const semDesvio = !(caso.esperado.desvios ?? []).some((d) => d >= 1) && caso.tipo !== 'desvio'
+  for (const i of [5, 6, 7, 8, 9, 10, 11, 12]) {
+    if (na.includes(i) || (i === 7 && semDesvio)) itens[i] = 'na'
     else if (!(String(i) in leitura) || leitura[String(i)] === undefined) itens[i] = 'pendente'
     else if (leitura[String(i)] === null) itens[i] = 'na'
     else itens[i] = Boolean(leitura[String(i)])
