@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { carregarConfig } from '../src/config/schema'
-import { ErroMontagem, montarPrompt } from '../src/prompt/montar'
+import { ErroMontagem, montarPrompt, periodoDoDia } from '../src/prompt/montar'
 import { validarResposta } from '../src/validacao/resposta'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
@@ -205,5 +205,17 @@ describe('T12: prompt 1.3.0', () => {
   it('campo já informado persiste nos turnos seguintes', () => {
     expect(modelo).toContain('Campo que o lead já informou continua preenchido nos turnos seguintes')
     expect(modelo).toContain('lendo a conversa inteira')
+  })
+})
+
+describe('periodoDoDia', () => {
+  const br = (hhmm: string) => Date.parse(`2026-11-05T${hhmm}:00-03:00`)
+  it('respeita os limites das faixas em Brasilia', () => {
+    expect(periodoDoDia(br('04:59'))).toBe('noite')
+    expect(periodoDoDia(br('05:00'))).toBe('manhã')
+    expect(periodoDoDia(br('11:59'))).toBe('manhã')
+    expect(periodoDoDia(br('12:00'))).toBe('tarde')
+    expect(periodoDoDia(br('17:59'))).toBe('tarde')
+    expect(periodoDoDia(br('18:00'))).toBe('noite')
   })
 })

@@ -21,9 +21,18 @@ function resolver(caminho: string, cfg: Config): string | null {
   return null
 }
 
-export function montarPrompt(modelo: string, cfg: Config): string {
+export function periodoDoDia(agora: number): 'manhã' | 'tarde' | 'noite' {
+  const hora = Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', hour: 'numeric', hourCycle: 'h23' }).format(agora),
+  )
+  if (hora >= 5 && hora < 12) return 'manhã'
+  if (hora >= 12 && hora < 18) return 'tarde'
+  return 'noite'
+}
+
+export function montarPrompt(modelo: string, cfg: Config, agora: number = Date.now()): string {
   const saida = modelo.replace(MARCADOR, (_inteiro, caminho: string) => {
-    const valor = resolver(caminho, cfg)
+    const valor = caminho === 'periodo_do_dia' ? periodoDoDia(agora) : resolver(caminho, cfg)
     if (valor === null) throw new ErroMontagem(`Marcador sem valor na config: {{${caminho}}}`)
     return valor
   })

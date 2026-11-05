@@ -134,7 +134,7 @@ export function iniciarTurno(entrada: unknown, modelo: string, cfg: Config, agor
   }
   const historico = parsed.data.historico as Mensagem[]
   try {
-    const promptMontado = montarPrompt(modelo, cfg)
+    const promptMontado = montarPrompt(modelo, cfg, agora())
     return {
       fim: false,
       esperar_ms: 0,

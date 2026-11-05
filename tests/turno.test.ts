@@ -59,6 +59,21 @@ const semReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: '' } }
 const oi: Mensagem[] = [{ role: 'user', content: 'Oi, preciso de um orcamento' }]
 
 describe('iniciarTurno', () => {
+  it('T12: informa ao prompt o periodo do dia em Brasilia', () => {
+    const casos: [string, string][] = [
+      ['2026-11-05T18:00:00Z', 'tarde'], // 15h em Brasilia
+      ['2026-11-06T00:00:00Z', 'noite'], // 21h
+      ['2026-11-05T11:00:00Z', 'manhã'], // 8h
+      ['2026-11-05T07:00:00Z', 'noite'], // 4h
+    ]
+    for (const [iso, periodo] of casos) {
+      const p = iniciarTurno({ historico: oi }, modelo, cfg, () => Date.parse(iso))
+      if (p.fim) throw new Error('esperava passo')
+      const system = (montarRequisicao(p.estado, cfg) as { system: string }).system
+      expect(system).toMatch(new RegExp(`Período do dia agora[^\\n]*: ${periodo}\\n`))
+    }
+  })
+
   it('Estado nao tem historico_bruto; user longo + user curto passa pelo EstadoSchema (achado 4)', () => {
     const h: Mensagem[] = [{ role: 'user', content: 'x'.repeat(5000) }, { role: 'user', content: 'ok' }]
     const p = iniciarTurno({ historico: h }, modelo, cfg)
