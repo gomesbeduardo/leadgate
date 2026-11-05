@@ -48,9 +48,10 @@ Casos novos (ajuste, salvo nota; telefones e e-mails fictícios):
 | n29 | a01 + agente pede contato / lead: "não quero passar contato nenhum" | `responder_e_encerrar`, qualificado false, cita contato, sem "?" |
 | n30 | cidade e segmento ditos, sem telefone; agente pergunta; lead "asdfg"; agente "Não entendi, pode repetir?"; lead "qwerty" | `ignorar`, resposta vazia, vagos 2 |
 | n31 | "Me dá uma receita de bolo de cenoura" (só isso, primeira mensagem) | `ignorar`, desvios 1 |
+| n32 | lead qualificado; 1º fora de assunto respondido; 2º silenciado (sem fala do agente); `silencio_ocorrido`; lead: "ah fala do jogo" | `encaminhar_vendas`, qualificado true, desvios 3, resposta vazia |
 | g11 (regressão) | igual a n20 | `encaminhar_vendas`, qualificado false |
 
-`scripts/avaliar.mjs`: `CAMPOS` ganha `ja_cliente` e `email` quando o `esperado` os traz; aceita `resposta` nula também com vendas e `vagos = 2`. Tabela (`scripts/tabela-avaliacao.mjs`): item 7 é n/a quando o caso não tem `esperado.desvios ≥ 1` nem `tipo: "fora_assunto"` (recomendação de mecanismo; a regra é a decisão do responsável).
+`scripts/avaliar.mjs`: `CAMPOS` ganha `ja_cliente` e `email` quando o `esperado` os traz; aceita `resposta` nula também com vendas e `vagos = 2`. Tabela (`scripts/tabela-avaliacao.mjs`): item 7 é n/a quando o caso não tem `esperado.desvios ≥ 1` nem `tipo: "desvio"` (recomendação de mecanismo; a regra é a decisão do responsável).
 
 ## Prompt (versão 1.4.0; linhas do `prompts/agente.md` 1.3.0)
 
@@ -81,7 +82,7 @@ Depois de 3 rodadas da branch, o responsável lê a tabela do conjunto de ajuste
 | T11 | C1 | n20, n21, g11 | avaliar | ação e `qualificado` iguais ao esperado em 3 rodadas | avaliação |
 | T12 | C5 | turno iniciado com `agora` em 15h de Brasília | iniciar turno | prompt montado contém "tarde"; às 21h, "noite"; às 8h, "manhã"; às 4h, "noite" | unidade, `tests/turno.test.ts` |
 | T13 | C6 | n07, n19, n19b, n24, n30 | avaliar | ação e `vagos` iguais ao esperado em 3 rodadas; n24 nunca `encaminhar_vendas` | avaliação |
-| T14 | C7 | n01, n02, n03, n25 | avaliar | ação e `desvios` iguais; n01 sem "climatização"; n03 e n25 sem "encerrar" | avaliação |
+| T14 | C7 | n01, n02, n03, n25, n32 | avaliar | ação e `desvios` iguais; n01 sem "climatização"; n03 e n25 sem "encerrar"; n32 `encaminhar_vendas` com resposta vazia | avaliação |
 | T15 | C8 | a10, n23, n27, n27b | avaliar | a10 com marcador e "pessoa" ou "humano"; n23 e n27b `encaminhar_humano`; n27 `perguntar` | avaliação |
 | T16 | C9 | a09 | avaliar | `perguntar`, um "?", resposta não começa por "Valores" nem "Preço" | avaliação |
 | T17 | C10 | a02, a13 | avaliar | `perguntar`; a02 sem "atendemos" nem "São José" | avaliação |

@@ -113,14 +113,14 @@ Validação cruzada (códigos de `src/validacao/contrato.ts` e `resposta.ts`; su
 | `cidade_fora_exige_nao_qualificado` | só dentro de `precisaRotear` | sempre que `cidade` fora da lista e não parecida |
 | `duvida_com_telefone_exige_humano`, `duvida_sem_telefone_exige_encerrar`, `duvida_sem_telefone_exige_contato` | cidade fora (abaixo do teto, salvo parecida) ou teto com dado faltando | cidade fora **deixa de disparar**; só teto com dado faltando. Nesse teto, com contato real e `ressalvas` não vazia, `encaminhar_vendas` também vale |
 | `humano_exige_telefone` | telefone real | vira `humano_exige_contato`: telefone ou e-mail real |
-| `encerrar_com_telefone_exige_humano` | telefone real | contato real (telefone ou e-mail) |
+| `encerrar_com_telefone_exige_humano` | telefone real | contato real (telefone ou e-mail), salvo `desvios = 3` sem telefone: a RE8 encerra, inclusive com só e-mail |
 | `encerrar_sem_telefone_exige_contato`, `confianca_baixa_sem_vendas`, `ignorar_exige_resposta_vazia`, `telefone_nao_confere` | existentes | sem mudança; `email_nao_confere` novo, mesma lógica do telefone |
-| `urgencia_alta_exige_vendas` | `urgencia = alta`, qualificado, `desvios = 0` → vendas | só com `ja_cliente = true` a mais; sem isso, `urgencia = alta` não obriga nada |
+| `urgencia_alta_exige_vendas` | `urgencia = alta`, qualificado, `desvios = 0` → vendas | só com `ja_cliente = true` e `vagos = 0` a mais; sem isso, `urgencia = alta` não obriga nada |
 | `qualificado_exige_acao` | qualificado: `perguntar`, vendas, ou `ignorar` com `silencio_ocorrido` | aceita `ignorar` também com `desvios = 2` e `vagos = 3` |
 | `ignorar_fora_do_permitido` | abertura fora de assunto ou fim silencioso | acrescenta: `vagos = 1` com todos os campos de dado `null` e sem contato; `vagos = 2` com dado e `qualificado = false`; `vagos = 3` com `qualificado = true`; `desvios = 2` em qualquer estado; `desvios = 3` com telefone (qualificado ou não) |
 | `desvio_exige_pergunta` | `desvios`/`vagos` 1 ou 2 exigem `perguntar` | só `desvios = 1`, `vagos = 1` (com dado) e `vagos = 2` (sem dado) |
 | `desvio_exige_silencio` | não existe | `desvios = 2` → `ignorar`; `vagos = 2` com dado: qualificado → `encaminhar_vendas` com `resposta` vazia, não qualificado → `ignorar` |
-| `limite_exige_encerrar` (`desvios = 3`) | sem telefone encerrar; com telefone vendas vazio se qualificado sem silêncio, senão `ignorar` | sem mudança na ação; o texto suave é leitura |
+| `limite_exige_encerrar` (`desvios = 3`) | sem telefone encerrar; com telefone vendas vazio se qualificado sem silêncio, senão `ignorar` | sem telefone encerrar; com telefone e não qualificado `ignorar`; qualificado sem silêncio, vendas vazio; qualificado com `silencio_ocorrido`, vendas vazio **ou** `ignorar` (RE8: o silêncio da 2ª já liga o sinal, e o modelo conta pelo histórico); o texto suave é leitura |
 | `limite_exige_encerrar` (`vagos = 3`) | sem telefone encerrar; qualificado vendas; senão humano | sem contato → `responder_e_encerrar` com contato; qualificado → `ignorar`; com dado sem qualificar e contato → `encaminhar_humano` |
 | `resposta_vazia` (`resposta.ts`, `vazioPermitido`) | vazia só com `ignorar` ou vendas com `desvios = 3` | acrescenta vendas com `vagos = 2` |
 | `resposta_sem_telefone_do_lead` | não existe | RE7 |
@@ -148,7 +148,7 @@ As linhas do `prompts/agente.md` 1.3.0 a reescrever, por regra, estão na 006-4 
 
 ## Fora do escopo
 
-Spec 007: faixa quente/morno/frio, cartão do lead, resumo, extração de porte, decisor e prazo. Base de clientes ou conferência de `ja_cliente`. Mapeamento geográfico. Envio real a vendas (continua simulado). Canal WhatsApp real (número do canal como telefone): só a intenção em RE1. Extração de e-mail pelo serviço; guarda contra ecoar o e-mail. Mudança na tela de conversa ou em `app.ts` (`silencio_ocorrido` fica como está). Validador de "frase genérica" ou de abertura (só leitura humana). Casos `reservado`.
+Spec 007: faixa quente/morno/frio, cartão do lead, resumo, extração de porte, decisor e prazo. Base de clientes ou conferência de `ja_cliente`. Mapeamento geográfico. Envio real a vendas (continua simulado). Canal WhatsApp real (número do canal como telefone): só a intenção em RE1. Extração de e-mail pelo serviço; guarda contra ecoar o e-mail. Mudança na tela de conversa ou em `app.ts` (`silencio_ocorrido` fica como está; a única linha nova em `app.ts` é `ressalvas` no retorno só de painel, para a avaliação ler). Validador de "frase genérica" ou de abertura (só leitura humana). Casos `reservado`.
 
 ## Confirmado, inferido e pendente
 
@@ -159,7 +159,7 @@ Spec 007: faixa quente/morno/frio, cartão do lead, resumo, extração de porte,
 
 ## Perguntas abertas
 
-- Nenhuma. P1 (e-mail sozinho qualifica?) fechada em 05/11/2026. Resposta do responsável: "Não qualifica automaticamente, mas já sobe o nível um pouco."
+- Nenhuma. Em 05/11, na implementação, o responsável decidiu pela RE8 contra a linha antiga de `limite_exige_encerrar` (`desvios = 3`). P1 (e-mail sozinho qualifica?) fechada em 05/11/2026. Resposta do responsável: "Não qualifica automaticamente, mas já sobe o nível um pouco."
 
 ## Emendas às specs anteriores
 
