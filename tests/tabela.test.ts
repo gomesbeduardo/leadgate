@@ -44,8 +44,7 @@ const com = (extra: any = {}, esperado: any = {}) => ({ ...base, ...extra, esper
 describe('item 7 n/a sem mensagem fora do tema (T19)', () => {
   const casos = JSON.parse(readFileSync('avaliacao/casos.json', 'utf8'))
   const lista = Array.isArray(casos) ? casos : casos.casos
-  // itens_na dos casos reais muda na fatia 6; aqui so a regra derivada conta.
-  const real = (id: string) => ({ ...lista.find((c: any) => c.id === id), itens_na: [] })
+  const real = (id: string) => lista.find((c: any) => c.id === id)
   it('a02 (sem desvio) tem item 7 n/a e n01 (desvio) e avaliado', () => {
     const a02 = avaliarCaso(real('a02'), { turnos: [turno()] }, { '7': false })
     const n01 = avaliarCaso(real('n01'), { turnos: [turno()] }, { '7': true })

@@ -30,7 +30,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -65,7 +64,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -101,7 +99,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -138,7 +135,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -172,9 +168,7 @@
         "perguntar"
       ]
     },
-    "itens_na": [
-      7
-    ]
+    "itens_na": []
   },
   {
     "id": "g06",
@@ -207,7 +201,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -242,7 +235,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -321,7 +313,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ]
   },
   {
@@ -361,9 +354,57 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
+    "resposta_nao_contem": [
+      "encerrar"
+    ],
     "nota": "cita o contato da empresa na resposta"
+  },
+  {
+    "id": "g11",
+    "conjunto": "regressao",
+    "teste": "residencial dá o telefone e vai a vendas com ressalva",
+    "tipo": "claro",
+    "mensagens": [
+      "Preciso instalar um split no meu apartamento em Florianópolis",
+      "pode ser, 48 99999-0004"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "residencial"
+      ],
+      "cidade": [
+        "Florianópolis"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ressalvas": [
+        [
+          "residencial"
+        ]
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "99999-0004",
+      "999990004",
+      "não atendemos",
+      "não atende"
+    ]
   }
 ]

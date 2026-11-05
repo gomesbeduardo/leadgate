@@ -197,11 +197,11 @@ describe('casos.json', () => {
     mensagens: string[]
     esperado: Record<string, unknown[]>
   }[]
-  it('tem 39 casos, 33 + 6 (a01-a14 e n01-n19 no ajuste), ids unicos', () => {
-    expect(casos).toHaveLength(39)
-    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(33)
+  it('tem 54 casos, 48 + 6 (a01-a14, n01-n32, n19b e n27b no ajuste), ids unicos', () => {
+    expect(casos).toHaveLength(54)
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(48)
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
-    expect(new Set(casos.map((c) => c.id)).size).toBe(39)
+    expect(new Set(casos.map((c) => c.id)).size).toBe(54)
   })
   it('cobre multi-mensagem e travas', () => {
     expect(casos.filter((c) => c.mensagens.length > 1).length).toBeGreaterThanOrEqual(3)
@@ -251,7 +251,7 @@ describe('scripts/avaliar.mjs', () => {
     expect(r.code).toBe(0)
     const j = JSON.parse(readFileSync(join(r.pasta, 'resultado-regressao.json'), 'utf8'))
     expect(j.conjunto).toBe('regressao')
-    expect(j.execucoes).toHaveLength(10)
+    expect(j.execucoes).toHaveLength(11)
   }, 30_000)
 
   it('webhook com 500 depois de pronto: todos os turnos falharam, sai 1 sem sobrescrever', async () => {
@@ -269,8 +269,8 @@ describe('regressao.json', () => {
   const casos = JSON.parse(readFileSync(new URL('../avaliacao/regressao.json', import.meta.url), 'utf8')) as {
     id: string; conjunto: string; mensagens: string[]; esperado: Record<string, unknown[]>; itens_na: number[]
   }[]
-  it('tem g01 a g10, conjunto regressao, esperado completo', () => {
-    expect(casos.map((c) => c.id)).toEqual(['g01', 'g02', 'g03', 'g04', 'g05', 'g06', 'g07', 'g08', 'g09', 'g10'])
+  it('tem g01 a g11, conjunto regressao, esperado completo', () => {
+    expect(casos.map((c) => c.id)).toEqual(['g01', 'g02', 'g03', 'g04', 'g05', 'g06', 'g07', 'g08', 'g09', 'g10', 'g11'])
     for (const c of casos) {
       expect(c.conjunto).toBe('regressao')
       for (const campo of CAMPOS) expect(Array.isArray(c.esperado[campo]) && c.esperado[campo]!.length > 0).toBe(true)
@@ -354,14 +354,17 @@ describe('falas e interacao (spec 006): casos', () => {
     for (const id of ['a14', 'a07']) expect(por(id).itens_na).toEqual(expect.arrayContaining([5, 6, 7, 8, 9, 10]))
     for (const id of ['a10', 'a13', 'g05']) expect(por(id).esperado.proxima_acao).toEqual(['perguntar'])
   })
-  it('n01 a n19 no ajuste e g10 na regressao, com proxima_acao, desvios e vagos esperados', () => {
-    const ids = Array.from({ length: 19 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
+  it('n01 a n32 (com n19b e n27b) no ajuste e g10 e g11 na regressao, com proxima_acao, desvios e vagos esperados', () => {
+    const ids = Array.from({ length: 32 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
     expect(casos.filter((c) => /^n\d\d$/.test(c.id)).map((c) => c.id)).toEqual(ids)
-    for (const id of ids) expect(por(id).conjunto).toBe('ajuste')
+    for (const id of [...ids, 'n19b', 'n27b']) expect(por(id).conjunto).toBe('ajuste')
     expect(por('g10').conjunto).toBe('regressao')
     const acao = (id: string) => por(id).esperado.proxima_acao
     expect(acao('n01')).toEqual(['perguntar'])
     expect(por('n02').esperado.desvios).toEqual([2])
+    expect(acao('n02')).toEqual(['ignorar'])
+    expect(acao('n07')).toEqual(['ignorar'])
+    expect(por('n07').esperado.vagos).toEqual([1])
     expect(acao('n03')).toEqual(['responder_e_encerrar'])
     expect(por('n03').esperado.desvios).toEqual([3])
     expect(acao('n05')).toEqual(['encaminhar_vendas'])
@@ -581,18 +584,25 @@ describe('review: item 11, aberturas, desvios/vagos na tabela, dados', () => {
 
   const lerJson = (rel: string) => JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8'))
   const todos = [...lerJson('../avaliacao/casos.json'), ...lerJson('../avaliacao/regressao.json')] as any[]
-  const mudos = todos.filter((c) => (c.esperado.proxima_acao ?? []).join() === 'ignorar')
-  it('casos de silencio: itens_na 5-11 e tipo_servico sem fora_escopo; sem leitura velha', () => {
-    expect(mudos.map((c) => c.id).sort()).toEqual(['a07', 'a08', 'a14', 'g09', 'n12', 'n15', 'n16'])
+  const mudos = ['a07', 'a08', 'a14', 'g09', 'n12', 'n15', 'n16', 'n24', 'n30', 'n31'].map((id) => todos.find((c) => c.id === id))
+  it('casos de silencio: itens_na 5-12 e tipo_servico sem fora_escopo; sem leitura velha', () => {
+    for (const c of mudos) expect(c, 'caso ausente').toBeDefined()
     const leitura = lerJson('../avaliacao/leitura.json')
     for (const c of mudos) {
-      for (const i of [5, 6, 7, 8, 9, 10, 11]) expect(c.itens_na, c.id).toContain(i)
+      for (const i of [5, 6, 7, 8, 9, 10, 11, 12]) expect(c.itens_na, c.id).toContain(i)
       expect(c.esperado.tipo_servico, c.id).not.toContain('fora_escopo')
     }
     for (const id of ['a07', 'a08', 'a14', 'g09']) expect(leitura[id], id).toBeUndefined()
   })
-  it('n05 tambem tem resposta vazia: item 11 n/a', () => {
-    expect(todos.find((c) => c.id === 'n05').itens_na).toContain(11)
+  it('n05, n18 e n32 tambem tem resposta vazia: itens 11 e 12 n/a', () => {
+    for (const id of ['n05', 'n18', 'n32']) for (const i of [11, 12]) expect(todos.find((c) => c.id === id).itens_na, id).toContain(i)
+  })
+  it('item 7 e automatico: so os casos totalmente silenciosos o tem em itens_na', () => {
+    const mudosTodos = [...mudos.map((c) => c.id), 'n05', 'n18', 'n32']
+    for (const c of todos.filter((c) => c.conjunto !== 'reservado')) {
+      if (mudosTodos.includes(c.id)) expect(c.itens_na, c.id).toContain(7)
+      else expect(c.itens_na, c.id).not.toContain(7)
+    }
   })
   it('n16 e n17 semeiam silencio_ocorrido; n18 e n19 existem no ajuste', () => {
     for (const id of ['n16', 'n17']) expect(todos.find((c) => c.id === id).silencio_ocorrido, id).toBe(true)
@@ -605,8 +615,13 @@ describe('review: item 11, aberturas, desvios/vagos na tabela, dados', () => {
     const n19 = todos.find((c) => c.id === 'n19')
     expect(n19.conjunto).toBe('ajuste')
     expect(n19.historico_inicial.length).toBeGreaterThan(0)
-    expect(n19.mensagens).toHaveLength(3)
-    expect(n19.esperado).toMatchObject({ proxima_acao: ['encaminhar_vendas'], vagos: [3] })
+    expect(n19.mensagens).toEqual(['asdfg'])
+    expect(n19.esperado).toMatchObject({ proxima_acao: ['perguntar'], vagos: [1], qualificado: [true] })
+    const n19b = todos.find((c) => c.id === 'n19b')
+    expect(n19b.conjunto).toBe('ajuste')
+    expect(n19b.historico_inicial).toEqual(n19.historico_inicial)
+    expect(n19b.mensagens).toEqual(['asdfg', 'qwerty'])
+    expect(n19b.esperado).toMatchObject({ proxima_acao: ['encaminhar_vendas'], vagos: [2] })
     expect(n19.itens_na).not.toContain(5)
   })
 })

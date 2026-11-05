@@ -26,12 +26,16 @@
         false
       ],
       "proxima_acao": [
-        "responder_e_encerrar"
+        "perguntar"
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "Obrigado por procurar",
+      "não atendemos",
+      "não atende"
     ]
   },
   {
@@ -65,8 +69,11 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "atendemos",
+      "São José"
     ]
   },
   {
@@ -96,12 +103,15 @@
         false
       ],
       "proxima_acao": [
-        "responder_e_encerrar"
+        "perguntar"
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "não atendemos",
+      "não atende"
     ]
   },
   {
@@ -130,12 +140,18 @@
         true
       ],
       "proxima_acao": [
-        "encaminhar_vendas"
+        "perguntar"
+      ],
+      "ja_cliente": [
+        null
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "99999-0002",
+      "999990002"
     ]
   },
   {
@@ -177,7 +193,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
     "nota": "Teto de 8 perguntas: o telefone chega na resposta a pergunta 7 (linha 8) e a linha 9 nao traz a cidade; a 9a saida nao pode ser perguntar."
@@ -221,7 +236,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
     "nota": "Igual a a05, sem telefone."
@@ -264,7 +278,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ]
   },
   {
@@ -305,7 +320,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ]
   },
   {
@@ -339,8 +355,11 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_comeca": [
+      "Valores",
+      "Preço"
     ]
   },
   {
@@ -374,8 +393,10 @@
         "perguntar"
       ]
     },
-    "itens_na": [
-      7
+    "itens_na": [],
+    "resposta_contem_um": [
+      "pessoa",
+      "humano"
     ]
   },
   {
@@ -409,7 +430,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -445,7 +465,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -481,7 +500,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
     "nota": "Cidade ouvida errado e legitimamente ambigua: aceita Palhoça e palhosa."
@@ -524,7 +542,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ]
   },
   {
@@ -562,8 +581,12 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "climatização",
+      "atendimento",
+      "canal"
     ]
   },
   {
@@ -595,14 +618,13 @@
         false
       ],
       "proxima_acao": [
-        "perguntar"
+        "ignorar"
       ],
       "desvios": [
         2
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -643,8 +665,10 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "encerrar"
     ],
     "nota": "cita o contato da empresa na resposta"
   },
@@ -686,7 +710,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -756,7 +779,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ],
     "nota": "Historico semeado: com o modelo vivo, lead completo com telefone vai a vendas antes do desvio e a conversa fecha. resposta vazia."
   },
@@ -794,8 +818,14 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "instalação",
+      "manutenção"
+    ],
+    "resposta_contem_um": [
+      "ajudar"
     ],
     "nota": "a resposta nao pede 'mais detalhes'"
   },
@@ -827,15 +857,13 @@
         false
       ],
       "proxima_acao": [
-        "perguntar"
+        "ignorar"
       ],
       "vagos": [
-        0,
         1
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -878,7 +906,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
     "nota": "cita o contato da empresa na resposta"
@@ -918,8 +945,12 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "faz toda a diferença",
+      "instalação",
+      "manutenção"
     ]
   },
   {
@@ -961,8 +992,11 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "instalação",
+      "manutenção"
     ]
   },
   {
@@ -1001,8 +1035,17 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "bolo",
+      "receita",
+      "valor",
+      "preço",
+      "orçamento"
+    ],
+    "resposta_contem_um": [
+      "loja"
     ]
   },
   {
@@ -1045,7 +1088,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ]
   },
   {
@@ -1080,8 +1124,11 @@
       ]
     },
     "itens_na": [
-      7,
       8
+    ],
+    "resposta_nao_contem": [
+      "segmento",
+      "região"
     ],
     "nota": "a resposta afirma que fazem manutencao antes de perguntar"
   },
@@ -1123,7 +1170,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ]
   },
@@ -1170,7 +1216,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ],
     "nota": "telefone dito, sem cidade: nao qualificado, silencio sem encaminhar. resposta vazia"
   },
@@ -1245,7 +1292,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ],
     "nota": "Historico semeado (n05 com o 3o desvio ja silenciado, sem resposta do agente). sem novo encaminhamento",
     "silencio_ocorrido": true
@@ -1316,7 +1364,6 @@
       ]
     },
     "itens_na": [
-      7,
       8
     ],
     "nota": "Historico semeado (igual ao de n16).",
@@ -1388,7 +1435,8 @@
       8,
       9,
       10,
-      11
+      11,
+      12
     ],
     "nota": "Historico semeado igual ao de n05; o 3o desvio chega em duas mensagens do mesmo turno. resposta vazia."
   },
@@ -1398,9 +1446,72 @@
     "teste": "T-falas 3o vago com lead qualificado na lista curta",
     "tipo": "vago",
     "mensagens": [
+      "asdfg"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção dos ar da minha loja em Palhoça, meu telefone é 48 99999-0005"
+      },
+      {
+        "role": "assistant",
+        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "não sei bem"
+      },
+      {
+        "role": "assistant",
+        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "?"
+      },
+      {
+        "role": "assistant",
+        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "vagos": [
+        1
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "nota": "Historico semeado: lead qualificado (telefone e cidade) na lista curta; a primeira mensagem vaga de um lead qualificado recebe uma pergunta curta de repeticao (perguntar)."
+  },
+  {
+    "id": "n19b",
+    "conjunto": "ajuste",
+    "teste": "2o vago seguido de lead qualificado vai a vendas",
+    "tipo": "vago",
+    "mensagens": [
       "asdfg",
-      "qwerty",
-      "zxcvb"
+      "qwerty"
     ],
     "historico_inicial": [
       {
@@ -1450,14 +1561,694 @@
         "encaminhar_vendas"
       ],
       "vagos": [
+        2
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "nota": "Historico semeado como o n19: o segundo turno vago seguido de lead qualificado encaminha a vendas."
+  },
+  {
+    "id": "n20",
+    "conjunto": "ajuste",
+    "teste": "residencial dá o telefone e vai a vendas com ressalva",
+    "tipo": "claro",
+    "mensagens": [
+      "Preciso instalar um split no meu apartamento em Florianópolis",
+      "pode ser, 48 99999-0004"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "residencial"
+      ],
+      "cidade": [
+        "Florianópolis"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ressalvas": [
+        [
+          "residencial"
+        ]
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "99999-0004",
+      "999990004",
+      "não atendemos",
+      "não atende"
+    ]
+  },
+  {
+    "id": "n21",
+    "conjunto": "ajuste",
+    "teste": "fora da região dá o telefone e vai a vendas com ressalva",
+    "tipo": "cidade",
+    "mensagens": [
+      "Manutenção de central de ar no galpão da nossa fábrica em Joinville",
+      "sou o João, 47 99999-0005"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "industrial"
+      ],
+      "cidade": [
+        "Joinville"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ressalvas": [
+        [
+          "fora_regiao"
+        ]
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "99999-0005",
+      "999990005",
+      "não atendemos",
+      "não atende"
+    ]
+  },
+  {
+    "id": "n22",
+    "conjunto": "ajuste",
+    "teste": "emergência de cliente com tudo na primeira mensagem",
+    "tipo": "emergencia",
+    "mensagens": [
+      "o ar da nossa loja parou, já somos clientes de vocês, Palhoça, 48 99999-0006"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        "alta"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ja_cliente": [
+        true
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "99999-0006",
+      "999990006"
+    ]
+  },
+  {
+    "id": "n23",
+    "conjunto": "ajuste",
+    "teste": "pedido de pessoa com telefone encaminha ao humano",
+    "tipo": "trava",
+    "mensagens": [
+      "Quero instalar ar-condicionado na minha academia",
+      "você é um robô?",
+      "prefiro falar com uma pessoa, 48 99999-0007"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        null
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_humano"
+      ]
+    },
+    "itens_na": [],
+    "resposta_nao_contem": [
+      "99999-0007",
+      "999990007"
+    ]
+  },
+  {
+    "id": "n24",
+    "conjunto": "ajuste",
+    "teste": "3o vago com lead qualificado fica em silêncio",
+    "tipo": "vago",
+    "mensagens": [
+      "asdfg"
+    ],
+    "silencio_ocorrido": true,
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "ignorar"
+      ],
+      "vagos": [
         3
       ]
     },
     "itens_na": [
+      5,
+      6,
       7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "nota": "Sem nova rota: o silencio ja ocorreu, a conversa segue sem resposta.",
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção dos ar da minha loja em Palhoça, meu telefone é 48 99999-0005"
+      },
+      {
+        "role": "assistant",
+        "content": "Certo, manutenção na loja em Palhoça. Quantos aparelhos são, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "não sei bem"
+      },
+      {
+        "role": "assistant",
+        "content": "Sem problema. É uma loja, certo? Quantos aparelhos de ar tem lá, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "?"
+      },
+      {
+        "role": "assistant",
+        "content": "Quantos aparelhos de ar tem na loja? Pode ser um número aproximado."
+      },
+      {
+        "role": "user",
+        "content": "asdfg"
+      },
+      {
+        "role": "assistant",
+        "content": "Não entendi, pode repetir?"
+      },
+      {
+        "role": "user",
+        "content": "qwerty"
+      }
+    ]
+  },
+  {
+    "id": "n25",
+    "conjunto": "ajuste",
+    "teste": "3o desvio de lead sem telefone fecha citando o contato",
+    "tipo": "desvio",
+    "mensagens": [
+      "manutenção na minha loja em Palhoça",
+      "vc viu o jogo ontem?",
+      "mas quem ganhou?",
+      "fala do jogo"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "responder_e_encerrar"
+      ],
+      "desvios": [
+        3
+      ]
+    },
+    "itens_na": [
       8
     ],
-    "nota": "Historico semeado: lead qualificado (telefone e cidade) na lista curta; 3 turnos vagos seguidos viram encaminhar_vendas com resposta de fechamento."
+    "resposta_nao_contem": [
+      "encerrar"
+    ],
+    "resposta_contem_um": [
+      "3307-7010",
+      "3364-9840"
+    ]
+  },
+  {
+    "id": "n26",
+    "conjunto": "ajuste",
+    "teste": "emergência pede o número de aparelhos antes de encaminhar",
+    "tipo": "emergencia",
+    "mensagens": [
+      "Urgente, o ar da nossa sala de servidores parou, estamos em Palhoça, empresa Nortesul, me liga 48 99999-0002",
+      "são 3 aparelhos",
+      "é a sala de servidores, no térreo",
+      "o quanto antes"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial",
+        "industrial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        "alta"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ja_cliente": [
+        null
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "99999-0002",
+      "999990002"
+    ],
+    "resposta_contem_um": [
+      "número"
+    ],
+    "nota": "O laco para na primeira acao diferente de perguntar."
+  },
+  {
+    "id": "n27",
+    "conjunto": "ajuste",
+    "teste": "pedido de pessoa sem contato pede telefone ou e-mail",
+    "tipo": "trava",
+    "mensagens": [
+      "Quero instalar ar-condicionado na minha academia",
+      "você é um robô?",
+      "prefiro falar com uma pessoa"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        null
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ]
+    },
+    "itens_na": [],
+    "resposta_contem_um": [
+      "telefone",
+      "e-mail",
+      "email"
+    ]
+  },
+  {
+    "id": "n27b",
+    "conjunto": "ajuste",
+    "teste": "pedido de pessoa e depois o telefone encaminha ao humano",
+    "tipo": "trava",
+    "mensagens": [
+      "Quero instalar ar-condicionado na minha academia",
+      "você é um robô?",
+      "prefiro falar com uma pessoa",
+      "48 99999-0008"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        null
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_humano"
+      ]
+    },
+    "itens_na": [],
+    "resposta_nao_contem": [
+      "99999-0008",
+      "999990008"
+    ]
+  },
+  {
+    "id": "n28",
+    "conjunto": "ajuste",
+    "teste": "residencial prefere e-mail e vai a vendas",
+    "tipo": "claro",
+    "mensagens": [
+      "Preciso instalar um split no meu apartamento em Florianópolis",
+      "não passo telefone, pode ser por email: ana.souza@gmail.com"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "residencial"
+      ],
+      "cidade": [
+        "Florianópolis"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "ressalvas": [
+        [
+          "residencial"
+        ]
+      ],
+      "email": [
+        "ana.souza@gmail.com"
+      ]
+    },
+    "itens_na": [
+      8
+    ]
+  },
+  {
+    "id": "n29",
+    "conjunto": "ajuste",
+    "teste": "recusa de contato fecha citando o contato da empresa",
+    "tipo": "claro",
+    "mensagens": [
+      "Preciso instalar um split no meu apartamento em Florianópolis",
+      "não quero passar contato nenhum"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "residencial"
+      ],
+      "cidade": [
+        "Florianópolis"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "responder_e_encerrar"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_contem_um": [
+      "3307-7010",
+      "3364-9840"
+    ]
+  },
+  {
+    "id": "n30",
+    "conjunto": "ajuste",
+    "teste": "2o vago sem lead qualificado fica em silêncio",
+    "tipo": "vago",
+    "mensagens": [
+      "qwerty"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção na minha loja em Palhoça"
+      },
+      {
+        "role": "assistant",
+        "content": "Me passa seu nome e telefone?"
+      },
+      {
+        "role": "user",
+        "content": "asdfg"
+      },
+      {
+        "role": "assistant",
+        "content": "Não entendi, pode repetir?"
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "ignorar"
+      ],
+      "vagos": [
+        2
+      ]
+    },
+    "itens_na": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
+  },
+  {
+    "id": "n31",
+    "conjunto": "ajuste",
+    "teste": "pedido fora do tema logo de início fica em silêncio",
+    "tipo": "desvio",
+    "mensagens": [
+      "Me dá uma receita de bolo de cenoura"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        null
+      ],
+      "segmento": [
+        null
+      ],
+      "cidade": [
+        null
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "ignorar"
+      ],
+      "desvios": [
+        1
+      ]
+    },
+    "itens_na": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
+  },
+  {
+    "id": "n32",
+    "conjunto": "ajuste",
+    "teste": "3o desvio com sinal de silêncio vai a vendas uma vez",
+    "tipo": "desvio",
+    "mensagens": [
+      "ah fala do jogo"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "manutenção dos ar da minha loja em Palhoça, meu telefone é 48 99999-0005"
+      },
+      {
+        "role": "assistant",
+        "content": "Quantos aparelhos são, mais ou menos?"
+      },
+      {
+        "role": "user",
+        "content": "vc viu o jogo ontem?"
+      },
+      {
+        "role": "assistant",
+        "content": "Não vi, e por conduta da empresa não posso falar disso. Quantos aparelhos são na loja?"
+      },
+      {
+        "role": "user",
+        "content": "mas quem ganhou?"
+      }
+    ],
+    "silencio_ocorrido": true,
+    "esperado": {
+      "tipo_servico": [
+        "manutencao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Palhoça"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "desvios": [
+        3
+      ]
+    },
+    "itens_na": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "nota": "Fluxo real: o 2o desvio ja foi silenciado; vai a vendas uma vez mesmo com o sinal."
   },
   {
     "id": "r01",
