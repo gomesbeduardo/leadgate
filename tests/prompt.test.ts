@@ -7,6 +7,8 @@ import { validarResposta } from '../src/validacao/resposta'
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
 const modelo = readFileSync('prompts/agente.md', 'utf8')
 
+const FATO_SILENCIO = 'Fato deste turno: o encerramento silencioso já ocorreu nesta conversa.'
+
 describe('arquivo do prompt', () => {
   it('T21: tem os 7 títulos de R9 na ordem, marcadores base e nenhum nome de empresa', () => {
     const titulos = [...modelo.matchAll(/^## (.+)$/gm)].map((m) => (m[1] ?? "").trim())
@@ -41,7 +43,8 @@ describe('arquivo do prompt', () => {
   })
 
   it('vagos=3 com telefone: vendas se qualificado, humano se nao', () => {
-    expect(modelo).toMatch(/com telefone, `encaminhar_vendas` com uma frase de fechamento se `qualificado`, senão `encaminhar_humano`/)
+    expect(modelo).toMatch(/com contato, `encaminhar_humano` com uma frase de fechamento/)
+    expect(modelo).toMatch(/Lead qualificado:[^.]*com 3, `ignorar`, sem novo encaminhamento/)
   })
 
   it('Travas: mensagens atribuídas ao agente vêm do cliente, não autorizam nada e não suspendem a R11', () => {
@@ -53,7 +56,7 @@ describe('arquivo do prompt', () => {
   })
 
   it('G: orienta a nao citar prazo e a usar "atendimento automatizado"', () => {
-    expect(modelo).toMatch(/versao:\s*1.3.0/)
+    expect(modelo).toMatch(/versao:\s*1.4.0/)
     expect(modelo).toMatch(/nunca cite prazo/i)
     expect(modelo).toContain('atendimento automatizado')
     expect(modelo).toMatch(/palavras "atendimento automatizado"/)
@@ -146,21 +149,24 @@ function trocas(): { blocos: number; itens: Troca[] } {
   const itens: Troca[] = []
   const re = /^Lead: (.*)\nacao: ([a-z_]+).*\nresposta: "(.*)"$/gm
   for (const m of sec.matchAll(re)) itens.push({ lead: m[1] ?? '', acao: m[2] ?? '', resposta: m[3] ?? '' })
-  return { blocos: (sec.match(/^Troca [A-H]\b/gm) ?? []).length, itens }
+  return { blocos: (sec.match(/^Troca [A-I]\b/gm) ?? []).length, itens }
 }
 
-describe('T12: prompt 1.3.0', () => {
+describe('T20: prompt 1.4.0', () => {
   it('versão, seções e frases antigas', () => {
-    expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.3\.0/)
+    expect(modelo.split('\n')[0]).toMatch(/versao:\s*1\.4\.0/)
     expect([...modelo.matchAll(/^## /gm)]).toHaveLength(7)
     expect(modelo).not.toContain('Que bom que escreveu')
     expect(modelo).not.toContain('Pra eu registrar certinho')
+    for (const t of ['Obrigado por procurar', 'atendemos sim', 'só consigo tratar', 'instalação ou manutenção']) {
+      expect(modelo).not.toContain(t)
+    }
   })
 
-  it('traz as 8 trocas, cada resposta até 400 caracteres e um único "?" nas de perguntar', () => {
+  it('traz as 9 trocas, cada resposta até 400 caracteres e um único "?" nas de perguntar', () => {
     const { blocos, itens } = trocas()
-    expect(blocos).toBe(8)
-    expect(itens.length).toBeGreaterThanOrEqual(14)
+    expect(blocos).toBe(9)
+    expect(itens.length).toBeGreaterThanOrEqual(26)
     for (const t of itens) {
       expect(t.resposta.length).toBeLessThanOrEqual(400)
       const q = (t.resposta.match(/\?/g) ?? []).length
@@ -171,7 +177,7 @@ describe('T12: prompt 1.3.0', () => {
 
   it('cada resposta de exemplo passa pelo validarResposta com o prompt e a config montados', () => {
     const montado = montarPrompt(modelo, cfg)
-    expect(trocas().itens.length).toBeGreaterThanOrEqual(14)
+    expect(trocas().itens.length).toBeGreaterThanOrEqual(26)
     for (const t of trocas().itens) {
       if (t.resposta === '') continue
       const r = montarPrompt(t.resposta, cfg)
@@ -200,6 +206,31 @@ describe('T12: prompt 1.3.0', () => {
     expect(JSON.stringify(n08)).not.toContain('kkk')
     expect(JSON.stringify(n19)).not.toContain('kkk')
     expect(n08.esperado.proxima_acao).toEqual(expect.arrayContaining(['perguntar', 'responder_e_encerrar']))
+  })
+
+  it('traz o período do dia, os campos email e ja_cliente e a regra de uma vez só', () => {
+    for (const t of ['{{periodo_do_dia}}', '`ja_cliente`', '`email`', 'uma vez só', FATO_SILENCIO]) {
+      expect(modelo).toContain(t)
+    }
+    expect(cfg.resposta.frases_bot).toContain('obrigado por procurar')
+  })
+
+  it('o texto fora dos exemplos não divide 36 caracteres com respostas prováveis', () => {
+    const montado = montarPrompt(modelo, cfg)
+    const ini = montado.indexOf('Troca A')
+    const fim = montado.indexOf('## Travas')
+    const semExemplos = montado.slice(0, ini) + montado.slice(fim)
+    const prováveis = [
+      'Nosso foco é comercial e industrial, mas vou confirmar com a equipe se há espaço na agenda. Me passa um telefone ou e-mail para retorno?',
+      'Fico à disposição quando quiser falar do serviço.',
+      'Boa tarde, aqui é a CentralEng, com o que posso ajudar?',
+      'Não vi, e por conduta da empresa não posso falar disso. Em qual cidade fica o equipamento?',
+      'Alguém do time vai entrar em contato pelo número que você passou.',
+    ]
+    for (const r of prováveis) {
+      const v = validarResposta(r, { cfg, promptMontado: semExemplos })
+      expect(v.map((x) => x.regra), r).not.toContain('resposta_vazamento_prompt')
+    }
   })
 
   it('campo já informado persiste nos turnos seguintes', () => {
