@@ -1,6 +1,8 @@
 # 006-2 — Falas e modo de interação do agente: prompt, avaliação e testes
 
 **Status:** aprovada pelo responsável em 04/11/2026, com as suposições S5 a S9.
+
+**Emendada em 05/11/2026 por [006-3](006-3-emenda-regras.md) e [006-4](006-4-emenda-casos.md), que valem por cima deste texto.** Trocas A, B, D, E e H; tabela de casos, linhas a01, a03, a04, n02, n07, n11 e n19; T6, T14 e T15 apontam para os `esperado` da 006-4.
 **Partes:** esta é a 2ª de 2. Regras, critérios e perguntas abertas estão na [006-1](006-1-regras.md).
 
 ## Prompt (`prompts/agente.md`, versão 1.3.0)

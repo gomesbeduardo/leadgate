@@ -4,6 +4,8 @@
 **Pedido:** "Quero que a resposta seja mais humana possível, as respostas sejam feitas de forma dinâmica, nada pré-gravado e deve haver bastante foco no padrão de prompt do agente e locks para ele não sair do papel e não demonstrar ser IA, fora isso, aprovo a spec e vamos seguir"
 **Decisões ligadas:** esta spec consolida as decisões de domínio, arquitetura, avaliação e prioridades tomadas antes da publicação do repositório. Ela é a fonte de regra, contrato e testes de aceite.
 
+**Emendada em 05/11/2026 por [006-3](006-3-emenda-regras.md) e [006-4](006-4-emenda-casos.md), que valem por cima deste texto.** § Contrato ganha `ja_cliente`, `email` e `ressalvas`, e a validação cruzada segue a tabela da 006-3. C1, T1 e T5 passam a `perguntar`; T6, a lista curta e depois vendas. O checklist ganha o item 12.
+
 ## Problema
 
 A CentralEng (climatização, HVAC) recebe pedidos pela landing page sem triagem: pedidos residenciais, de fora da região e spam chegam ao time de vendas junto com os leads bons. O protótipo, com uso planejado na LP, conversa com o lead como um atendente da empresa, coleta o mínimo, decide se o lead é qualificado e entrega um JSON validado para o próximo passo (vendas ou humano). O projeto é um produto de teste, lido por quem decide e por uma pessoa técnica; o diferencial é a avaliação medida, não a integração.
@@ -26,7 +28,7 @@ Lead qualificado quando, ao mesmo tempo:
 3. `cidade` ∈ lista de cidades da configuração (R2);
 4. há contato: `telefone` preenchido. O `nome` é pedido, mas sua falta não impede qualificar.
 
-Qualquer pedido fora disso é `fora_escopo` ou segmento recusado; `qualificado = false`.
+Emendado pela spec 006-3: `qualificado = false` não recusa o lead; residencial e cidade fora da lista seguem a 006-3 RE1.
 
 ### R2 — Região (confirmado)
 
@@ -36,19 +38,19 @@ Lista configurada das principais cidades em torno de Florianópolis-SC e de Sant
 
 - Dinâmica, com teto configurável de perguntas do agente (padrão 8). Conta como pergunta cada mensagem do agente que pede dado ao lead.
 - Ordem: serviço, segmento e cidade primeiro; `nome` e `telefone` só depois que os três estão fechados e o lead ainda está em escopo (minimização de dados). A ordem vale para o que o agente pede: dado que o lead der antes por conta própria é guardado. Se a primeira mensagem já traz tudo, o agente não repete pergunta.
-- Lead invalidado (residencial, fora de escopo, cidade recusada): o agente encerra na mesma resposta, sem pedir telefone.
+- Emendado pela spec 006-3: lead `fora_escopo` encerra na mesma resposta, sem pedir telefone. Residencial e cidade fora da lista seguem a coleta (RE1); recusa de dado não encerra, salvo o pedido único de contato da RE1.
 - Lead válido com os dados obrigatórios: o agente faz a lista curta configurável (hoje: tamanho ou quantidade, tipo de local, prazo desejado), uma pergunta por mensagem, e para. Para antes se o lead disser que quer parar ou pedir para ser chamado.
 - Histórico inteiro vai em cada chamada ao modelo (o chat reenvia; nada depende de Supabase).
 
 ### R4 — Emergência (confirmado)
 
-Emergência não é tipo de serviço: é `urgencia = alta`. Atalho: o agente coleta só os obrigatórios (R1), pula a lista curta e devolve `proxima_acao = encaminhar_vendas` assim que os obrigatórios fecham.
+Emergência não é tipo de serviço: é `urgencia = alta`. Atalho, emendado pela spec 006-3: só com `ja_cliente = true` (RE2), o agente coleta só os obrigatórios (R1), pula a lista curta e devolve `proxima_acao = encaminhar_vendas` assim que os obrigatórios fecham.
 
 ### R5 — Dúvida e teto (confirmado)
 
-Confiança baixa no meio da conversa leva primeiro a perguntar, dentro do teto. Dúvida que uma pergunta não resolve (`confianca < limiar` sem pergunta útil restante, ou cidade fora da lista) ou teto de perguntas atingido sem os obrigatórios:
-- com `telefone`: `proxima_acao = encaminhar_humano`, a conversa inteira vai junto;
-- sem `telefone`: `proxima_acao = responder_e_encerrar` e a resposta cita o contato da empresa (telefone/WhatsApp da configuração).
+Confiança baixa no meio da conversa leva primeiro a perguntar, dentro do teto. Dúvida que uma pergunta não resolve (`confianca < limiar` sem pergunta útil restante; emendado pela spec 006-3: cidade fora da lista deixa de ser dúvida) ou teto de perguntas atingido sem os obrigatórios:
+- com contato (telefone ou e-mail, spec 006-3): `proxima_acao = encaminhar_humano`, a conversa inteira vai junto;
+- sem contato: `proxima_acao = responder_e_encerrar` e a resposta cita o contato da empresa (telefone/WhatsApp da configuração).
 
 ### R6 — Decisão da IA e validação determinística (confirmado)
 

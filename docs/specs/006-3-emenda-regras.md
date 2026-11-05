@@ -1,6 +1,6 @@
 # 006-3 — Falas e modo de interação: emenda após a leitura humana (regras)
 
-**Status:** rascunho (aguarda aprovação do responsável; reabre a 006 antes do PR).
+**Status:** aprovada pelo responsável em 05/11/2026, com as suposições S1 a S11; reabre a 006 antes do PR.
 **Partes:** 3ª de 4. Ordem de leitura: [006-1](006-1-regras.md), [006-2](006-2-prompt-e-avaliacao.md), esta (regras, contrato, prompt, critérios) e [006-4](006-4-emenda-casos.md) (casos, linhas do prompt, testes T1–T24 e emendas às specs anteriores). Onde esta parte diz "substitui", o texto daqui vence o das duas e o da [001](001-filtro-leads.md).
 **Issue:** #11.
 **Pedido:** notas literais do responsável na leitura de 33 conversas (T18 reprovado). As que fixam regra:
@@ -99,8 +99,8 @@ A `resposta` não contém os dígitos do `telefone` extraído (comparação só 
 
 - Saída do modelo ganha `ja_cliente: true | false | null` e `email: string | null` (obrigatórios no schema Zod de `contrato.ts` e no JSON Schema de `schemaSaida`, `turno.ts`). `vagos` e `desvios` continuam 0–3.
 - `email`: o e-mail que o lead escreveu, ou `null`. Regra anti-invenção `email_nao_confere` (S11): o valor, sem maiúsculas e sem espaços nas pontas, aparece literalmente em alguma mensagem `user` do histórico; senão, violação cruzada. O serviço não extrai e-mail.
-- **Contato real** = `telefone` real (regra `telefone_nao_confere` de hoje) ou `email` real. Vale para vendas com `ressalvas` e para `encaminhar_humano`. E-mail sozinho qualificando (R1 item 4): pendente (P1).
-- Saída do serviço (não do modelo) ganha `ressalvas: string[]`, calculada em `contrato.ts`: `"residencial"` quando `segmento` informado e fora de `segmentos_aceitos`; `"fora_regiao"` quando `cidade` preenchida, fora da lista e não parecida (até 2 edições, `cidadeParecida` de hoje). Vazia nos demais casos. Vai junto na rota de vendas e humano do n8n; nenhum nó novo. (Nome e lugar: recomendação, S1.)
+- **Contato real** = `telefone` real (regra `telefone_nao_confere` de hoje) ou `email` real. Vale para vendas com `ressalvas` e para `encaminhar_humano`. E-mail sozinho não qualifica: lead em escopo com só e-mail fica `qualificado = false`, ressalva `so_email`, e vai a vendas (a 001 R1 item 4 segue exigindo `telefone`). A subida de nível por ter e-mail é da faixa da spec 007.
+- Saída do serviço (não do modelo) ganha `ressalvas: string[]`, calculada em `contrato.ts`: `"residencial"` quando `segmento` informado e fora de `segmentos_aceitos`; `"fora_regiao"` quando `cidade` preenchida, fora da lista e não parecida (até 2 edições, `cidadeParecida` de hoje); `"so_email"` quando há `email` real sem `telefone` e os outros obrigatórios estão fechados. Vazia nos demais casos. Vai junto na rota de vendas e humano do n8n; nenhum nó novo. (Nome e lugar: recomendação, S1.)
 - Período do dia: entrada do turno, não do contrato de saída.
 
 Validação cruzada (códigos de `src/validacao/contrato.ts` e `resposta.ts`; substitui as linhas citadas da 001 e da 006-1 R9):
@@ -142,7 +142,7 @@ As linhas do `prompts/agente.md` 1.3.0 a reescrever, por regra, estão na 006-4 
 - C9 — Dado pedido com preço ("Quanto custa a instalação e dá pra fazer amanhã?"), então `perguntar` sobre a necessidade, sem abrir com a frase de valores (T16).
 - C10 — Dado lead que descreve o pedido, então a resposta não confirma atendimento nem repete cidade/endereço já ditos (T17, leitura).
 - C11 — Dado a tabela, então o item 7 fica n/a em caso sem mensagem fora de assunto; a nova leitura humana aprova todos os itens aplicáveis em todos os casos não silenciados (T18, T19).
-- C12 — Dado lead residencial ou fora da região perguntado uma vez por contato: se passa e-mail dito literalmente, `encaminhar_vendas` com `email` preenchido e `telefone` nulo; se recusa, `responder_e_encerrar` citando `empresa.contato`; `email` ausente das mensagens do lead é rejeitado; e-mail real vale como contato para `encaminhar_humano` e impede `responder_e_encerrar` (T21, T22, T24). E-mail sozinho com `qualificado = true`: pendente (P1).
+- C12 — Dado lead residencial ou fora da região perguntado uma vez por contato: se passa e-mail dito literalmente, `encaminhar_vendas` com `email` preenchido e `telefone` nulo; se recusa, `responder_e_encerrar` citando `empresa.contato`; `email` ausente das mensagens do lead é rejeitado; e-mail real vale como contato para `encaminhar_humano` e impede `responder_e_encerrar` (T21, T22, T24). Lead em escopo com só e-mail: `qualificado = false`, ressalva `so_email`, `encaminhar_vendas`; com `qualificado = true` e `telefone` nulo o validador rejeita (`qualificado_exige_telefone` não muda).
 - C13 — Dado primeira mensagem mista (n11), então `perguntar`, `desvios = 0`, resposta sem "bolo", "receita", "valor", "preço" nem "orçamento"; dado primeira mensagem só aleatória, `ignorar` (T23).
 - C14 — Dado prompt 1.4.0, então passa no teste de prompt e não contém as frases vetadas (T20).
 
@@ -155,11 +155,11 @@ Spec 007: faixa quente/morno/frio, cartão do lead, resumo, extração de porte,
 - Confirmado (responsável, grilling e rodada de respostas): RE1 inclusive o pedido único de contato na demonstração; RE2 inclusive lista curta e fechamento "pelo número que nos passou" para lead novo; RE3 com a ordem da 001 R3; RE5; RE6 inclusive silêncio na 2ª vaga de lead com dado; RE8 inclusive `silencio_ocorrido` sem mudança; RE9 inclusive pedir contato antes de humano; RE10; item 7 n/a sem fora de assunto; reabrir a 006 na mesma branch com nova medição e nova leitura.
 - Confirmado (código, lido nesta rodada): regras e códigos de `contrato.ts` da tabela; `resposta.ts` (`frases_bot`, `vazaPrompt` com exclusão das Trocas, `vazioPermitido`); `turno.ts` sem período do dia e com `agora` injetável; `config/empresa.json` `frases_bot`; linhas do prompt 1.3.0 citadas em § Prompt.
 - Inferido: S1 — `ressalvas` calculada pelo serviço (nome e lugar são recomendação). S2 — contagem de `desvios` por mensagem já é o que n18 faz; `silencio_ocorrido` só libera `ignorar` (RE8). S3 — lead que pede pessoa vai por `encaminhar_humano`, mesmo caminho simulado (RE9). S4 — 3ª vaga do lead sem dado continua encerrando com contato (n08 aprovado). S5 — oferta de humano é oração, não pergunta: continua um "?" (RE9). S6 — `ja_cliente = false` só registra. S7 — faixas do período do dia (RE5). S8 — frase base só nas Trocas por causa de `resposta_vazamento_prompt` (RE5). S9 — 3ª vaga de lead com dado não qualificado segue a 001 R5 (RE6). S10 — recusa de contato ao pedir pessoa encerra como na RE1 (RE9). S11 — `email_nao_confere` espelha `telefone_nao_confere` (§ Contrato).
-- Pendente: P1 (§ Contrato, C12, T21).
+- Pendente: nada.
 
 ## Perguntas abertas
 
-- **P1 — E-mail sozinho qualifica?** A 001 R1 item 4 exige `telefone`. Na demonstração, lead em escopo pode dar só e-mail. Ex.: "instalação, loja em São José, não passo telefone, me manda no joao@loja.com" → (a) `qualificado = true`, lista curta e `encaminhar_vendas`, com `telefone` nulo e `email` preenchido (`qualificado_exige_telefone` vira `qualificado_exige_contato`; `dados_faltantes` sem `telefone` quando há e-mail); (b) `qualificado = false`, o agente insiste no telefone até o teto e, sem ele, `responder_e_encerrar` com o contato. Recomendação: (a); (b) se desfaz de um lead em escopo que deu uma via de contato, contra a nota a01. No canal real o telefone sempre existe, então (a) só muda a demonstração.
+- Nenhuma. P1 (e-mail sozinho qualifica?) fechada em 05/11/2026. Resposta do responsável: "Não qualifica automaticamente, mas já sobe o nível um pouco."
 
 ## Emendas às specs anteriores
 

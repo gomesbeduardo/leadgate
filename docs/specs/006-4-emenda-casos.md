@@ -1,7 +1,7 @@
 # 006-4 — Falas e modo de interação: emenda após a leitura humana (casos e testes)
 
-**Status:** rascunho (aguarda aprovação do responsável; reabre a 006 antes do PR).
-**Partes:** 4ª de 4. Ordem de leitura: [006-1](006-1-regras.md), [006-2](006-2-prompt-e-avaliacao.md), [006-3](006-3-emenda-regras.md) (regras RE1–RE10, contrato, prompt, critérios C1–C14, pergunta aberta P1) e esta (casos de avaliação, linhas do prompt, testes de aceite e emendas às specs anteriores). As regras, os critérios e a pergunta citados aqui são os da 006-3.
+**Status:** aprovada pelo responsável em 05/11/2026; reabre a 006 antes do PR.
+**Partes:** 4ª de 4. Ordem de leitura: [006-1](006-1-regras.md), [006-2](006-2-prompt-e-avaliacao.md), [006-3](006-3-emenda-regras.md) (regras RE1–RE10, contrato, prompt, critérios C1–C14) e esta (casos de avaliação, linhas do prompt, testes de aceite e emendas às specs anteriores). As regras, os critérios citados aqui são os da 006-3.
 **Issue:** #11.
 
 ## Casos de avaliação
@@ -88,13 +88,13 @@ Depois de 3 rodadas da branch, o responsável lê a tabela do conjunto de ajuste
 | T18 | C11 | tabela de 3 rodadas | leitura humana | itens 6, 7, 11 e 12 "sim" em todo caso aplicável; sem "não" | manual |
 | T19 | C11 | caso a02 na tabela | gerar tabela | item 7 = n/a; n01 item 7 avaliado | unidade, `tests/tabela.test.ts` |
 | T20 | C14 | prompt 1.4.0 | validar prompt | versão 1.4.0, 7 seções, trocas com ≤ 400 caracteres e um "?" em `perguntar`; zero "Obrigado por procurar", "atendemos sim", "só consigo tratar", "instalação ou manutenção" | unidade, `tests/prompt.test.ts` |
-| T21 | C12 | `email:'ana.souza@gmail.com'`, `telefone:null`, residencial, `encaminhar_vendas`, histórico com o e-mail numa fala do lead; o mesmo sem o e-mail no histórico; `email` preenchido, em escopo, `qualificado:true`, `telefone:null` | validar | válida, `ressalvas = ['residencial']`; `email_nao_confere`; pendente (P1) | unidade |
+| T21 | C12 | `email:'ana.souza@gmail.com'`, `telefone:null`, residencial, `encaminhar_vendas`, histórico com o e-mail numa fala do lead; o mesmo sem o e-mail no histórico; `email` preenchido, em escopo, `qualificado:true`, `telefone:null`; o mesmo com `qualificado:false` e `encaminhar_vendas` | validar | válida, `ressalvas = ['residencial']`; `email_nao_confere`; `qualificado_exige_telefone`; válida, `ressalvas = ['so_email']` | unidade |
 | T22 | C12 | n28, n29 | avaliar | n28 `encaminhar_vendas` com `email`; n29 `responder_e_encerrar` citando contato, em 3 rodadas | avaliação |
 | T23 | C13 | n11, n31 | avaliar | n11 `perguntar`, `desvios = 0`, sem as palavras vetadas; n31 `ignorar` | avaliação |
 | T24 | C12 | `encaminhar_humano` com `email` real e `telefone:null`; `responder_e_encerrar` com `email` real e `ressalvas` vazia | validar | válida; `encerrar_com_telefone_exige_humano` | unidade |
 
 ## Emendas às specs anteriores (edições curtas após a aprovação)
 
-- 001: R1, trocar a última frase por "`qualificado = false` não recusa o lead; residencial e cidade fora da lista seguem a 006-3 RE1" (item 4 depende de P1). R3: tirar "Lead invalidado (…) encerra na mesma resposta, sem pedir telefone" e deixar só `fora_escopo`; recusa de dado continua não encerrando, salvo o pedido único de contato da RE1. R4: "só com `ja_cliente = true` (006-3 RE2)". R5: cidade fora da lista deixa de ser dúvida; "com telefone" vira "com contato (telefone ou e-mail)". § Contrato: `ja_cliente`, `email`, `ressalvas`, validação cruzada pela tabela da 006-3. C1 e T1: `perguntar`; T5: `perguntar`; T6: lista curta e depois vendas. Checklist: item 12.
+- 001: R1, trocar a última frase por "`qualificado = false` não recusa o lead; residencial e cidade fora da lista seguem a 006-3 RE1" (item 4 não muda). R3: tirar "Lead invalidado (…) encerra na mesma resposta, sem pedir telefone" e deixar só `fora_escopo`; recusa de dado continua não encerrando, salvo o pedido único de contato da RE1. R4: "só com `ja_cliente = true` (006-3 RE2)". R5: cidade fora da lista deixa de ser dúvida; "com telefone" vira "com contato (telefone ou e-mail)". § Contrato: `ja_cliente`, `email`, `ressalvas`, validação cruzada pela tabela da 006-3. C1 e T1: `perguntar`; T5: `perguntar`; T6: lista curta e depois vendas. Checklist: item 12.
 - 006-1: R1 (abertura e "responde antes de perguntar") → RE4/RE5; R4 itens 1–2 → RE8; R5 itens `vagos` → RE6; R7 (`silencio_ocorrido`) → RE8 (só permissão de `ignorar`); R9 → tabela da 006-3; C3, C4 e C9 → C6, C7, C11 da 006-3.
 - 006-2: Trocas A, B, D, E, H; tabela de casos (linhas a01, a03, a04, n02, n07, n11, n19); T6, T14, T15 apontam para os `esperado` novos desta parte.
