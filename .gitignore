@@ -5,6 +5,7 @@ dist/
 !.env.example
 .claude/*
 !.claude/pr-review.json
+!.claude/time-de-agentes.json
 docs/privado/
 .idea
 .vscode

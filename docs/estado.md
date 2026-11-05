@@ -16,3 +16,4 @@ Atualizado em 04/11/2026.
 - CI integrado no PR #17: `Portões` roda em PR e em `staging`.
 - Comparação de versões com promptfoo (#15): `npm run comparar:prompt`, em pacote isolado em `scripts/promptfoo/`. O teste com o executável real roda em `npm run test:promptfoo`, fora do CI.
 - O projeto segue o pipeline padrão descrito em `CLAUDE.md`.
+- Em `staging`, o único check obrigatório é `portoes`.
