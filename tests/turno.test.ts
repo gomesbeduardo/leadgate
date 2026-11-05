@@ -29,6 +29,8 @@ const saidaBase = (extra: Record<string, unknown> = {}) =>
     cidade: null,
     nome: null,
     telefone: null,
+    ja_cliente: null,
+    email: null,
     urgencia: null,
     dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
     qualificado: false,
@@ -145,10 +147,10 @@ describe('montarRequisicao', () => {
 
 describe('schemaSaida', () => {
   const s: any = schemaSaida(cfg)
-  it('fecha o objeto e exige os 13 campos', () => {
+  it('fecha o objeto e exige os 15 campos', () => {
     expect(s.type).toBe('object')
     expect(s.additionalProperties).toBe(false)
-    expect(s.required).toHaveLength(13)
+    expect(s.required).toHaveLength(15)
     expect([...s.required].sort()).toEqual(Object.keys(s.properties).sort())
   })
   it('enums vem da config e nulaveis usam anyOf', () => {
@@ -234,6 +236,7 @@ describe('loop de regeneracao', () => {
     })
     const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], semReserva)
     expect(resultado.proxima_acao).toBe('encaminhar_humano')
+    expect(resultado.ressalvas).toEqual([])
     expect(resultado.erro).toBe(true)
     expect(resultado.resposta).toBeNull()
     expect(resultado.conversa).toEqual(hist)

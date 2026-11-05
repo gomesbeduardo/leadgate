@@ -12,6 +12,8 @@ const base = (): Record<string, unknown> => ({
   cidade: 'São José',
   nome: 'Carlos',
   telefone: '48 99999-0001',
+  ja_cliente: null,
+  email: null,
   urgencia: null,
   dados_faltantes: [],
   qualificado: true,
@@ -99,9 +101,9 @@ describe('regras extras', () => {
     expect(r.ok).toBe(false)
   })
 
-  it('cidade fora da lista com telefone e perguntar e invalida', () => {
-    const r = validar({ cidade: 'Joinville', qualificado: false })
-    expect(r.ok).toBe(false)
+  it('cidade fora da lista com qualificado=true e invalida; perguntar nao qualificado e valido', () => {
+    expect(regras(validar({ cidade: 'Joinville' }))).toContain('cidade_fora_exige_nao_qualificado')
+    expect(validar({ cidade: 'Joinville', qualificado: false }).ok).toBe(true)
   })
 
   it('cidade casa ignorando acento e caixa', () => {
@@ -142,8 +144,8 @@ describe('regras extras', () => {
   })
 
   it('R4: urgencia alta, qualificado e perguntar e invalido; encaminhar_vendas valido', () => {
-    expect(validar({ urgencia: 'alta' }).ok).toBe(false)
-    expect(validar({ urgencia: 'alta', proxima_acao: 'encaminhar_vendas', resposta: 'Vou passar para vendas.' }).ok).toBe(true)
+    expect(validar({ urgencia: 'alta', ja_cliente: true }).ok).toBe(false)
+    expect(validar({ urgencia: 'alta', ja_cliente: true, proxima_acao: 'encaminhar_vendas', resposta: 'Vou passar para vendas.' }).ok).toBe(true)
   })
 
   it('perguntar com zero ou duas interrogacoes e invalido', () => {
@@ -165,8 +167,14 @@ describe('regras extras', () => {
     expect(regras(r)).toContain('dados_completos_exigem_qualificado')
   })
 
-  it('segmento recusado exige qualificado=false e responder_e_encerrar', () => {
+  it('segmento recusado com telefone nao encerra: vai a vendas com ressalva (slice 1)', () => {
     const r = validar({ segmento: 'residencial', qualificado: false, proxima_acao: 'responder_e_encerrar', resposta: 'Nao atendemos.' })
+    expect(regras(r)).toContain('encerrar_com_telefone_exige_humano')
+  })
+
+  it('segmento recusado exige qualificado=false e responder_e_encerrar', () => {
+    expect(regras(validar({ segmento: 'residencial', proxima_acao: 'responder_e_encerrar', resposta: 'Nao atendemos.' }))).toContain('recusa_exige_nao_qualificado')
+    const r = validar({ tipo_servico: 'fora_escopo', qualificado: false, proxima_acao: 'responder_e_encerrar', resposta: 'Nao atendemos.' })
     expect(r.ok).toBe(true)
     const r2 = validar({ tipo_servico: 'fora_escopo', qualificado: false })
     expect(regras(r2)).toContain('recusa_exige_encerrar')
@@ -174,7 +182,7 @@ describe('regras extras', () => {
 
   it('encaminhar_humano sem telefone e invalido', () => {
     const r = validar({ telefone: null, dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'encaminhar_humano', resposta: 'ok' })
-    expect(regras(r)).toContain('humano_exige_telefone')
+    expect(regras(r)).toContain('humano_exige_contato')
   })
 
   it('violacoes sao todas devolvidas', () => {
@@ -266,14 +274,15 @@ describe('cada regra cruzada tem um teste com o seu slug', () => {
     ['recusa_exige_encerrar', { tipo_servico: 'fora_escopo', qualificado: false }],
     ['vendas_exige_qualificado', { qualificado: false, proxima_acao: 'encaminhar_vendas', resposta: 'Vendas.' }],
     ['confianca_baixa_sem_vendas', { confianca: 0.5, proxima_acao: 'encaminhar_vendas', resposta: 'Vendas.' }],
-    ['humano_exige_telefone', { telefone: null, qualificado: false, ...humano }],
+    ['humano_exige_contato', { telefone: null, qualificado: false, ...humano }],
     ['perguntar_exige_uma_interrogacao', { resposta: 'Qual o tamanho.' }],
-    ['urgencia_alta_exige_vendas', { urgencia: 'alta' }],
+    ['urgencia_alta_exige_vendas', { urgencia: 'alta', ja_cliente: true }],
+    ['email_nao_confere', { email: 'ana@x.com', qualificado: false, ...humano }],
     ['teto_perguntas_atingido', {}, historicoComPerguntas(cfg.conversa.teto_perguntas)],
     ['cidade_fora_exige_nao_qualificado', { cidade: 'Joinville', ...humano }],
-    ['duvida_com_telefone_exige_humano', { cidade: 'Joinville', qualificado: false }],
-    ['duvida_sem_telefone_exige_encerrar', { cidade: 'Joinville', telefone: null, qualificado: false }],
-    ['duvida_sem_telefone_exige_contato', { cidade: 'Joinville', telefone: null, ...fechar, resposta: 'Nao atendemos.' }],
+    ['duvida_com_telefone_exige_humano', { dados_faltantes: ['segmento'], qualificado: false }, historicoComPerguntas(cfg.conversa.teto_perguntas)],
+    ['duvida_sem_telefone_exige_encerrar', { telefone: null, qualificado: false }, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1)],
+    ['duvida_sem_telefone_exige_contato', { telefone: null, ...fechar, resposta: 'Nao atendemos.' }, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1)],
   ]
   it.each(casos)('%s', (slug, over, h) => {
     expect(regras(validar(over, h))).toContain(slug)
@@ -351,17 +360,17 @@ describe('cidade parecida com a lista (a13)', () => {
   it('perto da lista (distancia ate 2) abaixo do teto: perguntar e valido', () => {
     expect(validar(duvida, h).ok).toBe(true)
   })
-  it('perto da lista, mas encerrar sem telefone ainda roteia como hoje', () => {
+  it('perto da lista, encerrar sem telefone exige citar o contato', () => {
     const r = validar({ ...duvida, proxima_acao: 'responder_e_encerrar', resposta: 'Fora da regiao.' }, h)
-    expect(regras(r)).toContain('duvida_sem_telefone_exige_contato')
+    expect(regras(r)).toContain('encerrar_sem_telefone_exige_contato')
   })
   it('no teto, perguntar com cidade parecida e invalido', () => {
     const r = validar(duvida, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1).concat(h))
     expect(regras(r)).toContain('teto_perguntas_atingido')
   })
-  it('cidade longe da lista continua roteando', () => {
+  it('cidade longe da lista abaixo do teto: perguntar segue valido (nao roteia mais)', () => {
     const r = validar({ ...duvida, cidade: 'Porto Alegre', resposta: 'Qual o prazo?' }, h)
-    expect(regras(r)).toContain('duvida_sem_telefone_exige_encerrar')
+    expect(regras(r)).toEqual([])
   })
 })
 
@@ -463,7 +472,7 @@ describe('falas: ignorar, desvios e vagos (spec 006)', () => {
       expect(regras(validarS({ urgencia: 'alta', desvios: 3, proxima_acao: 'ignorar', resposta: '' }, h, true))).toEqual([])
     })
     it('desvios=0: continua exigindo encaminhar_vendas', () => {
-      expect(regras(validar({ urgencia: 'alta' }))).toContain('urgencia_alta_exige_vendas')
+      expect(regras(validar({ urgencia: 'alta', ja_cliente: true }))).toContain('urgencia_alta_exige_vendas')
     })
   })
 
@@ -526,5 +535,89 @@ describe('falas: ignorar, desvios e vagos (spec 006)', () => {
     const r = validarSaida(JSON.stringify({ ...base(), ...ign }), { historico: h, cfg, promptMontado: 'x' })
     expect(r.ok).toBe(false)
     expect(regras(r)).toContain('resposta_sem_marcador_ia')
+  })
+})
+
+const ressalvasDe = (r: ResultadoValidacao) => (r.ok ? r.ressalvas : null)
+
+describe('slice 1 (spec 006-3): ressalvas, contato real e ja_cliente', () => {
+  const vendas = { qualificado: false, proxima_acao: 'encaminhar_vendas', resposta: 'Vou passar para o time de vendas.' }
+  const EMAIL = 'ana.souza@gmail.com'
+  const hEmail: Mensagem[] = [{ role: 'user', content: `sou de Sao Jose, meu email e ${EMAIL}` }]
+  const comEmail = { email: EMAIL, telefone: null, ...vendas }
+
+  it('T1: residencial com telefone vai a vendas com ressalva residencial', () => {
+    const r = validar({ segmento: 'residencial', ...vendas })
+    expect(regras(r)).toEqual([])
+    expect(ressalvasDe(r)).toEqual(['residencial'])
+  })
+  it('T2: cidade fora vai a vendas com fora_regiao; sem contato de ressalva continua invalido', () => {
+    const h: Mensagem[] = [{ role: 'user', content: 'sou de Joinville, 48 99999-0001' }]
+    const r = validar({ cidade: 'Joinville', ...vendas }, h)
+    expect(regras(r)).toEqual([])
+    expect(ressalvasDe(r)).toEqual(['fora_regiao'])
+    expect(regras(validar({ ...vendas }))).toContain('vendas_exige_qualificado')
+  })
+  it('T3: residencial e cidade fora podem continuar perguntando', () => {
+    expect(regras(validar({ segmento: 'residencial', qualificado: false }))).toEqual([])
+    expect(regras(validar({ cidade: 'Joinville', qualificado: false }))).toEqual([])
+  })
+  it('residencial que recusa contato pode encerrar citando o contato; fora_escopo segue exigindo encerrar', () => {
+    const enc = { segmento: 'residencial', qualificado: false, telefone: null, proxima_acao: 'responder_e_encerrar' }
+    expect(regras(validar({ ...enc, resposta: `Fale com a gente: ${cfg.empresa.contato}.` }))).toEqual([])
+    expect(regras(validar({ ...enc, resposta: 'Obrigado.' }))).toContain('encerrar_sem_telefone_exige_contato')
+    expect(regras(validar({ tipo_servico: 'fora_escopo', qualificado: false }))).toContain('recusa_exige_encerrar')
+  })
+  it('T4: urgencia alta so obriga vendas com ja_cliente=true', () => {
+    expect(regras(validar({ urgencia: 'alta', ja_cliente: null }))).toEqual([])
+    expect(regras(validar({ urgencia: 'alta', ja_cliente: true }))).toContain('urgencia_alta_exige_vendas')
+    expect(regras(validar({ urgencia: 'alta', ja_cliente: true, vagos: 1 }))).not.toContain('urgencia_alta_exige_vendas')
+  })
+  it('T21: email real com residencial vai a vendas; email inventado e rejeitado', () => {
+    const r = validar({ segmento: 'residencial', ...comEmail }, hEmail)
+    expect(regras(r)).toEqual([])
+    expect(ressalvasDe(r)).toEqual(['residencial'])
+    expect(regras(validar({ segmento: 'residencial', ...comEmail }, [FALA_TEL]))).toContain('email_nao_confere')
+  })
+  it('T21: email e comparado sem maiusculas e sem espacos nas pontas', () => {
+    const h: Mensagem[] = [{ role: 'user', content: 'Meu email: ANA.Souza@Gmail.com, sou de Sao Jose' }]
+    expect(regras(validar({ ...comEmail, email: ' ana.souza@gmail.com ' }, h))).toEqual([])
+  })
+  it('T21: so email nao qualifica; vai a vendas com so_email', () => {
+    expect(regras(validar({ email: EMAIL, telefone: null, dados_faltantes: ['telefone'] }, hEmail))).toContain('qualificado_exige_telefone')
+    const r = validar(comEmail, hEmail)
+    expect(regras(r)).toEqual([])
+    expect(ressalvasDe(r)).toEqual(['so_email'])
+  })
+  it('ressalvas vazia no caso comum e na ordem fixa quando ha varias', () => {
+    expect(ressalvasDe(validar({}))).toEqual([])
+    const h: Mensagem[] = [{ role: 'user', content: `sou de Joinville, ${EMAIL}` }]
+    expect(ressalvasDe(validar({ segmento: 'residencial', cidade: 'Joinville', ...comEmail }, h))).toEqual(['residencial', 'fora_regiao'])
+  })
+  it('T24: encaminhar_humano aceita email real; encerrar com email real e invalido', () => {
+    const humano = { qualificado: false, telefone: null, email: EMAIL, proxima_acao: 'encaminhar_humano', resposta: 'Um colega vai ligar.' }
+    expect(regras(validar(humano, hEmail))).toEqual([])
+    expect(regras(validar({ ...humano, email: null }, hEmail))).toContain('humano_exige_contato')
+    const enc = { ...humano, proxima_acao: 'responder_e_encerrar', resposta: `Fale com a gente: ${cfg.empresa.contato}.` }
+    expect(regras(validar(enc, hEmail))).toContain('encerrar_com_telefone_exige_humano')
+  })
+  it('desvios=3 com so email real encerra citando o contato, sem impasse', () => {
+    const r = validar({
+      email: EMAIL, telefone: null, qualificado: false, desvios: 3,
+      proxima_acao: 'responder_e_encerrar', resposta: `Fale com a gente: ${cfg.empresa.contato}.`,
+    }, hEmail)
+    expect(regras(r)).toEqual([])
+  })
+  it('teto com dado faltando e contato real: vendas vale com ressalvas, senao so humano', () => {
+    const h = historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1).concat(hEmail)
+    const falta = { segmento: 'residencial', email: EMAIL, telefone: null, dados_faltantes: ['telefone'], qualificado: false }
+    expect(regras(validar({ ...falta, ...vendas }, h))).toEqual([])
+    expect(regras(validar({ ...falta, proxima_acao: 'encaminhar_humano', resposta: 'Um colega vai ligar.' }, h))).toEqual([])
+    const semRessalva = { segmento: null, email: EMAIL, telefone: null, dados_faltantes: ['segmento'], qualificado: false }
+    expect(regras(validar({ ...semRessalva, ...vendas }, h))).toContain('duvida_com_telefone_exige_humano')
+  })
+  it('cidade fora deixa de rotear no teto quando nada falta', () => {
+    const h: Mensagem[] = [{ role: 'user', content: 'sou de Joinville, 48 99999-0001' }]
+    expect(regras(validar({ cidade: 'Joinville', qualificado: false }, h))).toEqual([])
   })
 })

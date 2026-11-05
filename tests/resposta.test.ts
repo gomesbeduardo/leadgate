@@ -17,7 +17,7 @@ const ok = (r: string) => expect(regrasDe(r)).toEqual([])
 
 const base = (): Record<string, unknown> => ({
   tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'São José', nome: 'Carlos',
-  telefone: '48 99999-0001', urgencia: null, dados_faltantes: [], qualificado: true,
+  telefone: '48 99999-0001', ja_cliente: null, email: null, urgencia: null, dados_faltantes: [], qualificado: true,
   confianca: 0.9, desvios: 0, vagos: 0, proxima_acao: 'perguntar', resposta: 'Perfeito, qual o tamanho do local?',
 })
 const saida = (over: Record<string, unknown>) =>
@@ -244,5 +244,17 @@ describe('frases naturais não disparam vazamento com o prompt completo montado'
     const p = 'Instrucao. Voce precisa de instalacao ou de manutencao de ar-condicionado em qual local?'
     const regras = validarResposta('Voce precisa de instalacao ou de manutencao de ar-condicionado em qual local?', { cfg, promptMontado: p }).map((v) => v.regra)
     expect(regras).toContain('resposta_vazamento_prompt')
+  })
+})
+
+describe('RE7: a resposta nao ecoa o telefone do lead', () => {
+  const r = (resposta: string) =>
+    validarSaida(JSON.stringify({ ...base(), telefone: '48 99999-0002', resposta }), {
+      historico: [{ role: 'user', content: 'sou de Sao Jose, meu telefone 48 99999-0002' }], cfg, promptMontado,
+    })
+  it('T6: digitos do telefone na resposta violam; referencia generica e valida', () => {
+    expect(regrasSaida(r('Ligamos para 48999990002 hoje.'))).toContain('resposta_sem_telefone_do_lead')
+    expect(regrasSaida(r('Ligamos para (48) 99999-0002 hoje.'))).toContain('resposta_sem_telefone_do_lead')
+    expect(regrasSaida(r('Ligamos pelo número que você passou.'))).not.toContain('resposta_sem_telefone_do_lead')
   })
 })

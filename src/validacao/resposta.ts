@@ -141,7 +141,7 @@ function termoPromessa(norm: string, termo: string): boolean {
 
 export function validarResposta(
   resposta: string,
-  ctx: { cfg: Config; promptMontado: string; ultimaMsgLead?: string; vazioPermitido?: boolean },
+  ctx: { cfg: Config; promptMontado: string; ultimaMsgLead?: string; vazioPermitido?: boolean; telefone?: string | null },
 ): Violacao[] {
   const { cfg, promptMontado } = ctx
   const v: Violacao[] = []
@@ -187,6 +187,12 @@ export function validarResposta(
     if (new RegExp(`(?<![a-z0-9])${escapar(normalizar(p))}(?![a-z0-9])`).test(norm)) {
       add('resposta_provedor', `A resposta cita o provedor ou modelo de IA ("${p}"). Nao revele isso.`)
     }
+  }
+
+  // RE7: a resposta nao repete o telefone do lead (compara so os digitos, a partir de 8 seguidos).
+  const digTel = (ctx.telefone ?? '').replace(/\D/g, '')
+  if (digTel.length >= 8 && resposta.replace(/\D/g, '').includes(digTel.slice(-8))) {
+    add('resposta_sem_telefone_do_lead', 'A resposta repete o telefone do lead. Nao escreva o numero; diga apenas "o numero que voce passou".')
   }
 
   for (const frase of cfg.resposta.frases_bot) {

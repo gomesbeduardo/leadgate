@@ -14,6 +14,8 @@ export type Saida = {
   cidade: string | null
   nome: string | null
   telefone: string | null
+  ja_cliente: boolean | null
+  email: string | null
   urgencia: 'alta' | 'media' | 'baixa' | null
   dados_faltantes: ('tipo_servico' | 'segmento' | 'cidade' | 'telefone')[]
   qualificado: boolean
@@ -23,7 +25,8 @@ export type Saida = {
   proxima_acao: Acao
   resposta: string
 }
-export type ResultadoValidacao = { ok: true; saida: Saida } | { ok: false; violacoes: Violacao[] }
+export type Ressalva = 'residencial' | 'fora_regiao' | 'so_email'
+export type ResultadoValidacao = { ok: true; saida: Saida; ressalvas: Ressalva[] } | { ok: false; violacoes: Violacao[] }
 
 const enumDe = (valores: string[]) => z.enum(valores as [string, ...string[]])
 
@@ -35,6 +38,8 @@ function montarSchema(cfg: Config) {
     cidade: texto,
     nome: texto,
     telefone: texto,
+    ja_cliente: z.boolean().nullable(),
+    email: texto,
     urgencia: z.enum(['alta', 'media', 'baixa']).nullable(),
     dados_faltantes: z.array(z.enum(['tipo_servico', 'segmento', 'cidade', 'telefone'])),
     qualificado: z.boolean(),
@@ -102,6 +107,27 @@ function telefoneReal(telefone: string | null, historico: Mensagem[], contato: s
     .some((m) => telefonesDoLead(m.content, contato).some((t) => digitosTelefone(t) === alvo))
 }
 
+/** O e-mail so conta se aparece literalmente (sem maiusculas, sem espacos nas pontas) numa fala do lead. */
+function emailReal(email: string | null, historico: Mensagem[]): boolean {
+  const alvo = email === null ? '' : email.trim().toLowerCase()
+  if (alvo === '') return false
+  return historico.some((m) => m.role === 'user' && m.content.toLowerCase().includes(alvo))
+}
+
+/** Ressalvas calculadas pelo servico, na ordem fixa residencial, fora_regiao, so_email. */
+export function calcularRessalvas(s: Saida, ctx: { historico: Mensagem[]; cfg: Config }): Ressalva[] {
+  const { cfg, historico } = ctx
+  const r: Ressalva[] = []
+  const servido = s.tipo_servico !== null && cfg.servicos.includes(s.tipo_servico)
+  const aceito = s.segmento !== null && cfg.segmentos_aceitos.includes(s.segmento)
+  const cidade = s.cidade !== null && s.cidade.trim() !== '' ? s.cidade : null
+  const cidadeOk = cidade !== null && cidadeAtendida(cidade, cfg) !== null
+  if (s.segmento !== null && !aceito) r.push('residencial')
+  if (cidade !== null && !cidadeOk && !cidadeParecida(cidade, cfg)) r.push('fora_regiao')
+  if (emailReal(s.email, historico) && !telefoneReal(s.telefone, historico, cfg.empresa.contato) && servido && aceito && cidadeOk) r.push('so_email')
+  return r
+}
+
 function schemaViol(regra: string, detalhe: string): Violacao {
   return { tipo: 'schema', regra, detalhe }
 }
@@ -110,15 +136,15 @@ export function validarContrato(
   textoModelo: string,
   ctx: { historico: Mensagem[]; cfg: Config; silencioOcorrido?: boolean },
 ): ResultadoValidacao {
-  const { saida, violacoes } = analisarContrato(textoModelo, ctx)
-  return violacoes.length > 0 || !saida ? { ok: false, violacoes } : { ok: true, saida }
+  const { saida, violacoes, ressalvas } = analisarContrato(textoModelo, ctx)
+  return violacoes.length > 0 || !saida ? { ok: false, violacoes } : { ok: true, saida, ressalvas: ressalvas ?? [] }
 }
 
 /** Schema + regras cruzadas; `saida` vem preenchida sempre que o JSON passou no schema. */
 export function analisarContrato(
   textoModelo: string,
   ctx: { historico: Mensagem[]; cfg: Config; silencioOcorrido?: boolean },
-): { saida?: Saida; violacoes: Violacao[] } {
+): { saida?: Saida; violacoes: Violacao[]; ressalvas?: Ressalva[] } {
   const { cfg, historico } = ctx
 
   let bruto: unknown
@@ -155,13 +181,28 @@ export function analisarContrato(
   const cidadeDita = cidadeBase !== null && historico.some((m) => m.role === 'user' && normalizar(m.content).includes(cidadeBase))
   const temTelefone = telefoneReal(s.telefone, historico, contato)
   const telefoneInventado = s.telefone !== null && s.telefone.trim() !== '' && !temTelefone
-  const recusa = s.tipo_servico === 'fora_escopo' || (s.segmento !== null && !aceito)
+  const temEmail = emailReal(s.email, historico)
+  const emailInventado = s.email !== null && s.email.trim() !== '' && !temEmail
+  // Contato real: telefone ou e-mail que o lead de fato escreveu.
+  const temContato = temTelefone || temEmail
+  const ressalvas = calcularRessalvas(s, ctx)
+  const foraEscopo = s.tipo_servico === 'fora_escopo'
+  // recusa so vale para a regra de qualificado; encerrar e rotear usam foraEscopo.
+  const recusa = foraEscopo || (s.segmento !== null && !aceito)
   const cidadeFora = cidade !== null && !cidadeOk
   const citaContato = normalizar(s.resposta).includes(normalizar(contato))
+
+  if (cidadeFora && s.qualificado && !cidadeParecida(cidade, cfg)) {
+    cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
+  }
 
   // telefone preenchido tem de ser um unico numero dito pelo lead
   if (telefoneInventado) {
     cruz('telefone_nao_confere', 'telefone deve ser exatamente um numero que o lead informou. Use null se ele nao informou.')
+  }
+
+  if (emailInventado) {
+    cruz('email_nao_confere', 'email deve ser exatamente o que o lead escreveu numa mensagem. Use null se ele nao informou.')
   }
 
   // confianca no intervalo
@@ -192,16 +233,20 @@ export function analisarContrato(
   // recusa
   if (recusa) {
     if (s.qualificado) cruz('recusa_exige_nao_qualificado', 'Servico fora do escopo ou segmento nao aceito exige qualificado=false.')
-    if (s.proxima_acao !== 'responder_e_encerrar') cruz('recusa_exige_encerrar', 'Servico fora do escopo ou segmento nao aceito exige proxima_acao=responder_e_encerrar.')
+  }
+  if (foraEscopo && s.proxima_acao !== 'responder_e_encerrar') {
+    cruz('recusa_exige_encerrar', 'Servico fora do escopo exige proxima_acao=responder_e_encerrar.')
   }
 
   // acoes
   if (s.proxima_acao === 'encaminhar_vendas') {
-    if (!s.qualificado) cruz('vendas_exige_qualificado', 'encaminhar_vendas exige qualificado=true. Mude a acao ou qualifique o lead.')
+    if (!s.qualificado && !(ressalvas.length > 0 && temContato)) {
+      cruz('vendas_exige_qualificado', 'encaminhar_vendas exige qualificado=true, ou ressalva (segmento nao aceito, cidade fora da regiao ou so e-mail) com telefone ou e-mail do lead. Mude a acao ou qualifique o lead.')
+    }
     if (s.confianca < limiar) cruz('confianca_baixa_sem_vendas', `confianca abaixo do limiar (${limiar}) proibe encaminhar_vendas.`)
   }
-  if (s.proxima_acao === 'encaminhar_humano' && !temTelefone) {
-    cruz('humano_exige_telefone', 'encaminhar_humano exige telefone preenchido. Sem telefone, use responder_e_encerrar citando o contato da empresa.')
+  if (s.proxima_acao === 'encaminhar_humano' && !temContato) {
+    cruz('humano_exige_contato', 'encaminhar_humano exige telefone ou e-mail do lead. Sem contato, use responder_e_encerrar citando o contato da empresa.')
   }
   if (s.proxima_acao === 'perguntar') {
     const n = contarInterrogacoes(s.resposta)
@@ -214,8 +259,8 @@ export function analisarContrato(
   }
 
   // R4
-  if (s.urgencia === 'alta' && s.qualificado && s.desvios === 0 && s.proxima_acao !== 'encaminhar_vendas') {
-    cruz('urgencia_alta_exige_vendas', 'urgencia alta com lead qualificado exige proxima_acao=encaminhar_vendas.')
+  if (s.urgencia === 'alta' && s.ja_cliente === true && s.qualificado && s.desvios === 0 && s.vagos === 0 && s.proxima_acao !== 'encaminhar_vendas') {
+    cruz('urgencia_alta_exige_vendas', 'urgencia alta de cliente existente qualificado exige proxima_acao=encaminhar_vendas.')
   }
 
   // R5: duvida que pergunta nao resolve
@@ -225,20 +270,20 @@ export function analisarContrato(
   const perguntasFeitas = Math.max(turnosAssistant, turnosUser - 1)
   const tetoAtingido = perguntasFeitas >= cfg.conversa.teto_perguntas
   if (tetoAtingido && s.proxima_acao === 'perguntar') {
-    cruz('teto_perguntas_atingido', `O teto de ${cfg.conversa.teto_perguntas} perguntas foi atingido: nao pergunte mais. Encaminhe a um humano (com telefone) ou encerre citando o contato.`)
+    cruz('teto_perguntas_atingido', `O teto de ${cfg.conversa.teto_perguntas} perguntas foi atingido: nao pergunte mais. Encaminhe a um humano (com telefone ou e-mail) ou encerre citando o contato.`)
   }
   const faltaDado = s.dados_faltantes.length > 0 || s.tipo_servico === null || s.segmento === null || s.cidade === null || !temTelefone
-  // Cidade parecida com a lista ainda nao e fora da regiao: abaixo do teto, perguntar para confirmar e valido.
-  const cidadeEmDuvida = cidadeFora && !tetoAtingido && s.proxima_acao === 'perguntar' && cidade !== null && cidadeParecida(cidade, cfg)
   const limiteGoverna = s.desvios === 3 || s.vagos === 3
-  const precisaRotear = !recusa && !limiteGoverna && ((cidadeFora && !cidadeEmDuvida) || (tetoAtingido && faltaDado))
+  const precisaRotear = !foraEscopo && !limiteGoverna && tetoAtingido && faltaDado
   if (precisaRotear) {
-    const motivo = cidadeFora && !cidadeEmDuvida ? 'cidade fora da regiao atendida' : 'teto de perguntas atingido com dados obrigatorios faltando'
-    if (cidadeFora && s.qualificado) cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
-    if (temTelefone) {
-      if (s.proxima_acao !== 'encaminhar_humano') cruz('duvida_com_telefone_exige_humano', `Motivo: ${motivo}. Com telefone, use proxima_acao=encaminhar_humano.`)
+    const motivo = 'teto de perguntas atingido com dados obrigatorios faltando'
+    if (temContato) {
+      const vendasOk = s.proxima_acao === 'encaminhar_vendas' && ressalvas.length > 0
+      if (s.proxima_acao !== 'encaminhar_humano' && !vendasOk) {
+        cruz('duvida_com_telefone_exige_humano', `Motivo: ${motivo}. Com telefone ou e-mail, use proxima_acao=encaminhar_humano (ou encaminhar_vendas se houver ressalva).`)
+      }
     } else {
-      if (s.proxima_acao !== 'responder_e_encerrar') cruz('duvida_sem_telefone_exige_encerrar', `Motivo: ${motivo}. Sem telefone, use proxima_acao=responder_e_encerrar.`)
+      if (s.proxima_acao !== 'responder_e_encerrar') cruz('duvida_sem_telefone_exige_encerrar', `Motivo: ${motivo}. Sem telefone nem e-mail, use proxima_acao=responder_e_encerrar.`)
       else if (!citaContato) cruz('duvida_sem_telefone_exige_contato', `Motivo: ${motivo}. A resposta deve citar o contato da empresa: ${contato}.`)
     }
   }
@@ -246,9 +291,9 @@ export function analisarContrato(
   const contadorNoLimite = s.desvios === 3 || s.vagos === 3
 
   // R5: lead dentro do escopo nunca e dispensado com um simples encerramento.
-  if (!recusa && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
-    if (temTelefone) {
-      cruz('encerrar_com_telefone_exige_humano', 'Lead nao recusado com telefone nao pode ser encerrado: use proxima_acao=encaminhar_humano.')
+  if (!foraEscopo && !precisaRotear && s.proxima_acao === 'responder_e_encerrar') {
+    if (temContato && s.desvios !== 3) {
+      cruz('encerrar_com_telefone_exige_humano', 'Lead dentro do escopo com telefone ou e-mail nao pode ser encerrado: use proxima_acao=encaminhar_vendas ou encaminhar_humano.')
     } else if ((servido || aceito || cidadeOk || contadorNoLimite) && !citaContato) {
       cruz('encerrar_sem_telefone_exige_contato', `Lead dentro do escopo sem telefone: a resposta deve citar o contato da empresa: ${contato}.`)
     }
@@ -297,5 +342,5 @@ export function analisarContrato(
     }
   }
 
-  return { saida: s, violacoes: v }
+  return { saida: s, violacoes: v, ressalvas }
 }

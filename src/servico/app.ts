@@ -140,7 +140,7 @@ function criar(perfil: Perfil, cfg: Config, modelo: string, opcoes: OpcoesChat):
     estado: j.estado_conversa ?? j.estado,
     tipo: j.tipo,
     // A avaliacao le estes campos pelo proxy; so com DEMO_PAINEL=1. Conversa nunca sai.
-    ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas, erro: j.erro, violacoes: j.violacoes } : {}),
+    ...(opcoes.painel ? { saida: j.saida, tentativas: j.tentativas, erro: j.erro, violacoes: j.violacoes, ressalvas: j.ressalvas } : {}),
   })
 
   const chat = async (corpo: unknown): Promise<unknown> => {

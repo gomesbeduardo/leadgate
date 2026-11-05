@@ -36,6 +36,7 @@ export type Resultado = {
   origem: 'modelo' | 'falha'
   erro: boolean
   violacoes: Violacao[]
+  ressalvas: string[]
   conversa: Mensagem[]
   tipo: Tipo | null
   modelo_respondeu: ModeloAtual | null
@@ -116,6 +117,7 @@ function silencio(
     origem: 'falha',
     erro: true,
     violacoes,
+    ressalvas: [],
     conversa: historico,
     tipo,
     modelo_respondeu: null,
@@ -156,6 +158,8 @@ export function schemaSaida(cfg: Config): object {
     cidade: nulavel({ type: 'string' }),
     nome: nulavel({ type: 'string' }),
     telefone: nulavel({ type: 'string' }),
+    ja_cliente: nulavel({ type: 'boolean' }),
+    email: nulavel({ type: 'string' }),
     urgencia: nulavel(enumStr(['alta', 'media', 'baixa'])),
     dados_faltantes: { type: 'array', items: enumStr(['tipo_servico', 'segmento', 'cidade', 'telefone']) },
     qualificado: { type: 'boolean' },
@@ -185,7 +189,7 @@ export function montarRequisicao(estado: Estado, cfg: Config): object {
 
 type RespostaN8n = { status?: number; cabecalhos?: Record<string, string>; corpo?: unknown; erro?: string }
 export type Classe =
-  | { tipo: null; saida: Saida }
+  | { tipo: null; saida: Saida; ressalvas: string[] }
   | { tipo: Tipo; violacoes: Violacao[]; retryAfterMs?: number; limiteGasto?: boolean }
 
 const ehObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -241,7 +245,7 @@ export function classificar(estado: Estado, resposta: unknown, cfg: Config): Cla
   const bloco = blocos.find((b) => b?.type === 'text' && typeof b.text === 'string')
   if (!bloco) return { tipo: 'schema', violacoes: viol('A resposta anterior veio sem texto. Responda somente com o JSON do contrato.', 'sem_texto') }
   const v = validarSaida(bloco.text as string, { historico: estado.historico, cfg, promptMontado: estado.promptMontado, silencioOcorrido: estado.silencio_ocorrido })
-  if (v.ok) return { tipo: null, saida: v.saida }
+  if (v.ok) return { tipo: null, saida: v.saida, ressalvas: v.ressalvas }
   return { tipo: 'schema', violacoes: v.violacoes }
 }
 
@@ -277,6 +281,7 @@ function decidir(estado: Estado, resposta: unknown, cfg: Config, agora: () => nu
         origem: 'modelo',
         erro: false,
         violacoes: [],
+        ressalvas: cl.ressalvas,
         conversa: estado.historico,
         tipo: null,
         modelo_respondeu: estado.modelo_atual,

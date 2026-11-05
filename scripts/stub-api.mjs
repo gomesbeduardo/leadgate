@@ -13,6 +13,8 @@ const saidaValida = {
   cidade: null,
   nome: null,
   telefone: null,
+  ja_cliente: null,
+  email: null,
   urgencia: null,
   dados_faltantes: ['segmento', 'cidade', 'telefone'],
   qualificado: false,

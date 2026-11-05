@@ -112,13 +112,14 @@ describe('servico HTTP (porta interna)', () => {
   it('saida valida do modelo encerra com origem modelo', async () => {
     const t: any = await (await post('/preparar', corpo)).json()
     const saida = {
-      tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, urgencia: null,
+      tipo_servico: null, segmento: null, cidade: null, nome: null, telefone: null, ja_cliente: null, email: null, urgencia: null,
       dados_faltantes: ['tipo_servico', 'segmento', 'cidade', 'telefone'],
       qualificado: false, confianca: 0.5, desvios: 0, vagos: 0, proxima_acao: 'perguntar', resposta: 'Qual servico voce precisa?',
     }
     const r: any = await (await post('/validar', { estado: t.estado, resposta: resp(200, JSON.stringify(saida)) })).json()
     expect(r.fim).toBe(true)
     expect(r.resultado).toMatchObject({ origem: 'modelo', modelo_respondeu: 'primario', camada: 1 })
+    expect(r.resultado.ressalvas).toEqual([])
   })
 
   it('estado adulterado da 400 e contadores absurdos sao limitados', async () => {
@@ -173,7 +174,7 @@ describe('chat', () => {
         res.end(JSON.stringify({
           resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', saida: { cidade: 'X' }, tentativas: 2,
           estado_conversa: 'em_andamento', tipo: 'nenhum', registros: [{ tipo: '5xx' }], erro: false,
-          violacoes: [{ regra: 'segredo' }], conversa: [{ role: 'user', content: 'Oi' }],
+          violacoes: [{ regra: 'segredo' }], ressalvas: ['residencial'], conversa: [{ role: 'user', content: 'Oi' }],
         }))
       })
     })
@@ -225,7 +226,7 @@ describe('chat', () => {
     const r = await fetch(urlPainel + '/api/chat', { method: 'POST', body: JSON.stringify({ historico: h }) })
     expect(await r.json()).toEqual({
       resposta: 'ola', origem: 'modelo', proxima_acao: 'perguntar', estado: 'em_andamento', tipo: 'nenhum', saida: { cidade: 'X' }, tentativas: 2,
-      erro: false, violacoes: [{ regra: 'segredo' }],
+      erro: false, violacoes: [{ regra: 'segredo' }], ressalvas: ['residencial'],
     })
   })
 
