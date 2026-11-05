@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 04/11/2026.
+Atualizado em 05/11/2026.
 
 - Spec 001 (filtro de leads) integrada: `docs/specs/001-filtro-leads.md` é a fonte de regra, contrato e testes de aceite. Plano da prioridade 1: `docs/plano-001-p1.md`.
 - Spec 002 (dataset e fallbacks): `docs/specs/002-dataset-e-fallbacks.md`. Implementada, com motor de falhas (repetir, modelo menor, silêncio com humano assumindo), aviso ao vendedor e contagem de falhas por tipo.

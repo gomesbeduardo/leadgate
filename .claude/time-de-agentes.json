@@ -1,1 +1,1 @@
-{"opusCodaDireto": ["package.json", "package-lock.json", "tsconfig.json", "vitest.config.ts", "docker-compose.yml", ".env.example", "Dockerfile*", "docker/*"]}
+{"opusCodaDireto": ["package.json", "package-lock.json", "scripts/promptfoo/package.json", "scripts/promptfoo/package-lock.json", "tsconfig.json", "vitest.config.ts", "docker-compose.yml", ".env.example", "Dockerfile*", "docker/*", ".github/*"]}
