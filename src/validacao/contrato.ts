@@ -211,7 +211,7 @@ export function analisarContrato(
   }
 
   // qualificado = true
-  // Fim silencioso ja ocorrido: sinal explicito do chat, nao inferencia sobre o historico.
+  // silencio_ocorrido: sinal explicito do chat (ja houve silencio nesta conversa), nao inferencia sobre o historico. So permite ignorar para lead qualificado; nao forca desvios=3.
   const silencioJaOcorreu = ctx.silencioOcorrido === true
   if (s.qualificado) {
     if (!servido) cruz('qualificado_exige_servico', 'qualificado=true exige tipo_servico atendido pela empresa. Marque qualificado=false.')
@@ -220,8 +220,8 @@ export function analisarContrato(
     else if (!cidadeDita) cruz('qualificado_exige_cidade_dita', 'qualificado=true exige que o lead tenha dito a cidade. Pergunte a cidade e marque qualificado=false.')
     if (!temTelefone) cruz('qualificado_exige_telefone', 'qualificado=true exige telefone preenchido. Marque qualificado=false e pergunte o telefone.')
     if (s.dados_faltantes.length > 0) cruz('qualificado_exige_sem_faltantes', 'qualificado=true exige dados_faltantes vazio. Ajuste qualificado ou dados_faltantes.')
-    if (s.proxima_acao !== 'perguntar' && s.proxima_acao !== 'encaminhar_vendas' && !(s.proxima_acao === 'ignorar' && silencioJaOcorreu)) {
-      cruz('qualificado_exige_acao', 'qualificado=true exige proxima_acao perguntar ou encaminhar_vendas.')
+    if (s.proxima_acao !== 'perguntar' && s.proxima_acao !== 'encaminhar_vendas' && !(s.proxima_acao === 'ignorar' && (silencioJaOcorreu || s.desvios === 2 || s.vagos === 3))) {
+      cruz('qualificado_exige_acao', 'qualificado=true exige proxima_acao perguntar ou encaminhar_vendas (ignorar so em silencio: desvios=2, vagos=3 ou silencio ja ocorrido).')
     }
   }
 
@@ -273,7 +273,10 @@ export function analisarContrato(
     cruz('teto_perguntas_atingido', `O teto de ${cfg.conversa.teto_perguntas} perguntas foi atingido: nao pergunte mais. Encaminhe a um humano (com telefone ou e-mail) ou encerre citando o contato.`)
   }
   const faltaDado = s.dados_faltantes.length > 0 || s.tipo_servico === null || s.segmento === null || s.cidade === null || !temTelefone
-  const limiteGoverna = s.desvios === 3 || s.vagos === 3
+  // semDado: nenhum campo de dado preenchido (urgencia e ja_cliente nao contam).
+  const semDado = [s.tipo_servico, s.segmento, s.cidade, s.nome, s.telefone, s.email].every((c) => c === null || c.trim() === '')
+  // Quando uma regra de silencio governa o turno, o roteamento do teto nao se aplica.
+  const limiteGoverna = s.desvios >= 2 || s.vagos === 3 || (s.vagos === 2 && !semDado)
   const precisaRotear = !foraEscopo && !limiteGoverna && tetoAtingido && faltaDado
   if (precisaRotear) {
     const motivo = 'teto de perguntas atingido com dados obrigatorios faltando'
@@ -306,38 +309,52 @@ export function analisarContrato(
   if (s.proxima_acao === 'ignorar') {
     if (s.resposta.trim() !== '') cruz('ignorar_exige_resposta_vazia', 'proxima_acao=ignorar exige resposta vazia.')
     const abertura = !historico.some((m) => m.role === 'assistant') && s.desvios >= 1 && !s.qualificado && s.telefone === null
-    const fimSilencioso = s.desvios === 3 && temTelefone && (!s.qualificado || silencioJaOcorreu)
-    if (!abertura && !fimSilencioso) {
-      cruz('ignorar_fora_do_permitido', 'ignorar so vale na abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone) ou no fim silencioso (desvios=3, com telefone, nao qualificado ou com o fim silencioso ja ocorrido).')
+    const fimSilencioso = s.desvios === 3 && temTelefone
+    const vagoSemDado = s.vagos === 1 && semDado
+    const vagoComDado = s.vagos === 2 && !semDado && !s.qualificado
+    const vagoNoLimite = s.vagos === 3 && s.qualificado
+    if (!abertura && s.desvios !== 2 && !fimSilencioso && !vagoSemDado && !vagoComDado && !vagoNoLimite) {
+      cruz('ignorar_fora_do_permitido', 'ignorar so vale em: abertura fora do assunto (sem resposta anterior, desvios>=1, sem telefone); desvios=2; desvios=3 com telefone; vagos=1 sem nenhum dado e sem contato; vagos=2 com dado e nao qualificado; vagos=3 com lead qualificado.')
     }
-  } else if ((s.desvios === 1 || s.desvios === 2 || s.vagos === 1 || s.vagos === 2) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
-    cruz('desvio_exige_pergunta', 'Com desvios ou vagos em 1 ou 2, a proxima_acao deve ser perguntar (reconduza o lead com uma pergunta).')
+  } else if ((s.desvios === 1 || (s.vagos === 1 && !semDado) || (s.vagos === 2 && semDado)) && s.proxima_acao !== 'perguntar' && !tetoAtingido) {
+    cruz('desvio_exige_pergunta', 'Com desvios=1, vagos=1 (com dado) ou vagos=2 (sem dado), a proxima_acao deve ser perguntar (reconduza o lead com uma pergunta).')
+  }
+  if (s.desvios === 2 && s.proxima_acao !== 'ignorar') {
+    cruz('desvio_exige_silencio', 'desvios=2 exige silencio: use proxima_acao=ignorar com resposta vazia.')
+  }
+  if (s.vagos === 2 && !semDado) {
+    const ok = s.qualificado
+      ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
+      : s.proxima_acao === 'ignorar'
+    if (!ok) {
+      cruz('desvio_exige_silencio', s.qualificado
+        ? 'vagos=2 com lead qualificado encerra em silencio: use proxima_acao=encaminhar_vendas com resposta vazia.'
+        : 'vagos=2 com dado e lead nao qualificado fica em silencio: use proxima_acao=ignorar com resposta vazia.')
+    }
   }
   if (s.desvios === 3) {
     const esperada = !temTelefone
       ? s.proxima_acao === 'responder_e_encerrar'
-      : s.qualificado && !silencioJaOcorreu
-        ? s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === ''
-        : s.proxima_acao === 'ignorar'
+      : !s.qualificado
+        ? s.proxima_acao === 'ignorar'
+        : (s.proxima_acao === 'encaminhar_vendas' && s.resposta.trim() === '') || (s.proxima_acao === 'ignorar' && silencioJaOcorreu)
     if (!esperada) {
       const detalhe = !temTelefone
         ? 'desvios=3 sem telefone encerra: use proxima_acao=responder_e_encerrar e cite o contato da empresa na resposta.'
-        : silencioJaOcorreu
-          ? 'O encerramento silencioso ja ocorreu: o lead fora do assunto nao recebe nada e nao vai a vendas de novo. Use proxima_acao=ignorar, resposta vazia, desvios=3, mantendo os demais campos.'
-          : s.qualificado
-            ? 'desvios=3 com telefone e lead qualificado encerra em silencio: use proxima_acao=encaminhar_vendas com resposta vazia.'
-            : 'desvios=3 com telefone e lead nao qualificado encerra em silencio: use proxima_acao=ignorar com resposta vazia.'
+        : !s.qualificado
+          ? 'desvios=3 com telefone e lead nao qualificado encerra em silencio: use proxima_acao=ignorar com resposta vazia.'
+          : 'desvios=3 com telefone e lead qualificado: a 3a mensagem seguida fora do assunto vai a vendas, uma vez so: use proxima_acao=encaminhar_vendas com resposta vazia. Da 4a em diante use proxima_acao=ignorar com resposta vazia e desvios=3.'
       cruz('limite_exige_encerrar', detalhe)
     }
   }
   if (s.vagos === 3) {
-    const esperada = !temTelefone ? 'responder_e_encerrar' : s.qualificado ? 'encaminhar_vendas' : 'encaminhar_humano'
+    const esperada = !temContato ? 'responder_e_encerrar' : s.qualificado ? 'ignorar' : 'encaminhar_humano'
     if (s.proxima_acao !== esperada) {
-      const detalhe = !temTelefone
-        ? 'vagos=3 sem telefone encerra: use proxima_acao=responder_e_encerrar e cite o contato da empresa na resposta.'
+      const detalhe = !temContato
+        ? 'vagos=3 sem contato encerra: use proxima_acao=responder_e_encerrar e cite o contato da empresa na resposta.'
         : s.qualificado
-          ? 'vagos=3 com telefone e lead qualificado: use proxima_acao=encaminhar_vendas com uma frase de fechamento na resposta.'
-          : 'vagos=3 com telefone e lead nao qualificado: use proxima_acao=encaminhar_humano com uma frase de fechamento na resposta.'
+          ? 'vagos=3 com lead qualificado ja foi a vendas no turno anterior: use proxima_acao=ignorar com resposta vazia e vagos=3.'
+          : 'vagos=3 com contato e lead nao qualificado: use proxima_acao=encaminhar_humano com uma frase de fechamento na resposta.'
       cruz('limite_exige_encerrar', detalhe)
     }
   }
