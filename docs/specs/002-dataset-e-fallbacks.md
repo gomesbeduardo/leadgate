@@ -2,6 +2,7 @@
 
 **Status:** decisões P1–P4 tomadas pelo responsável em 03/11; implementação autorizada, texto final segue para a leitura dele no PR
 **Emendas:** R17, C9, C13, T16 e T22 aprovadas pelo responsável em 04/11/2026.
+**Emenda da spec 007 (06/11/2026):** `ia.modelo` passou a `claude-haiku-5-5` e `ia.modelo_reserva` ficou vazio, então a camada 2 está desligada por configuração; o código e os testes dela seguem valendo (T11 e T12 rodam com uma reserva de fixture).
 **Pedido:** "Faça uma rodada para gerar um dataset que pode ser usado para 'treinar' o modelo que vai ficar responsável pelas respostas. E precisamos de alguns fallbacks nele caso algo falhe ou até contar falha de conexão ou falhas comuns. No pior dos casos apenas não responde e espera o humano atuar sempre, mas com um aviso notificando o vendedor que o 'bot caiu'"
 **Decisões ligadas:** spec 001 (R8 respostas dinâmicas, R9 prompt, R10 travas e regeneração, R12 avaliação). Esta spec altera R8, R9, R10 e R12; o que muda está em R20.
 **Numeração:** regras começam em R13 para não colidir com a spec 001. C, T, S e P são desta spec.

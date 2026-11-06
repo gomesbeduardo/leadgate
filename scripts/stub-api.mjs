@@ -3,7 +3,7 @@ import { createServer } from 'node:http'
 const porta = Number(process.env.PORT ?? 8787)
 const cenario = process.env.STUB_CENARIO ?? 'padrao'
 const atrasoMs = Number(process.env.STUB_ATRASO_MS ?? 30000)
-const MODELO_RESERVA = 'claude-haiku-5-5'
+const MODELO_RESERVA = 'claude-sonnet-5-5'
 const chamadas = new Map()
 
 // Saida valida do contrato para a mensagem "Oi, quero manutenção na loja": uma pergunta so.

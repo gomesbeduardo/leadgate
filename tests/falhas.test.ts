@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { FalhasStore } from '../src/servico/falhas'
 
-const PRIMARIO = 'claude-opus-5-5'
+const PRIMARIO = 'claude-haiku-5-5'
 const reg = (tipo: string, tentativa = 1, camada = 1) => ({ ts: '2026-11-04T10:00:00Z', tipo, modelo: PRIMARIO, tentativa, camada })
 const ok = (registros: unknown[] = [], camada = 1, modelo: string | null = 'primario') => ({ origem: 'modelo', tipo: 'nenhum', modelo_respondeu: modelo, camada, registros })
 const falha = (tipo: string, registros: unknown[] = []) => ({ origem: 'falha', tipo, resposta: null, registros })

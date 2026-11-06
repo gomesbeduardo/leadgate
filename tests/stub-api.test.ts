@@ -62,8 +62,8 @@ describe('stub da API: cenarios', () => {
     expect((await chamar(s429, req)).status).toBe(200)
 
     const sRes = await stub('reserva_ok', 18794)
-    expect((await chamar(sRes, req)).status).toBe(503)
-    expect((await chamar(sRes, { ...req, model: 'claude-haiku-5-5' })).status).toBe(200)
+    expect((await chamar(sRes, { ...req, model: 'claude-haiku-5-5' })).status).toBe(503)
+    expect((await chamar(sRes, { ...req, model: 'claude-sonnet-5-5' })).status).toBe(200)
 
     const sRec = await stub('recusa_depois_ok', 18795)
     expect((await chamar(sRec, req)).corpo.stop_reason).toBe('refusal')

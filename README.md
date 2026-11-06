@@ -47,7 +47,7 @@ flowchart LR
     chat["Chat (chat/index.html)"] -->|POST /api/chat| servico["Serviço Node (porta 3000)"]
     servico -->|webhook| n8n["n8n (orquestra)"]
     n8n -->|"/preparar (porta interna 3001)"| prep["Montar prompt e histórico"]
-    prep --> claude["Claude (claude-opus-5-5, effort low)"]
+    prep --> claude["Claude (claude-haiku-5-5, effort low)"]
     claude --> valid["Validação (Zod + regras + checagem da resposta)"]
     valid -->|"reprovou, até 2 vezes"| regen["Regeneração com instrução de correção"]
     regen --> claude
@@ -85,7 +85,7 @@ Regras que o código impõe sobre esse contrato: `qualificado = true` só com se
 
 ## Avaliação
 
-Modelo: `claude-opus-5-5`, com `effort` em `low` (`config/empresa.json`). Limiar de confiança: 0,7. O gabarito está em `avaliacao/casos.json` e `avaliacao/regressao.json`; todos os dados são fictícios.
+Modelo: `claude-haiku-5-5`, com `effort` em `low` (`config/empresa.json`). As tabelas abaixo foram medidas no `claude-opus-5-5`, antes da troca de modelo da spec 007; a medição do Haiku nos 14 casos de ajuste entra quando a rodada com a API real for feita. Limiar de confiança: 0,7. O gabarito está em `avaliacao/casos.json` e `avaliacao/regressao.json`; todos os dados são fictícios.
 
 **Como os números devem ser lidos.** A divisão entre ajuste e reservado é desenho nosso, não um benchmark público, e a amostra é pequena: com 14 e 6 casos, um caso a mais ou a menos muda muito o percentual. O prompt foi ajustado olhando os 14 casos de ajuste, então o 14/14 deles não é independente. O conjunto reservado (6 casos) rodou exatamente uma vez, com a versão 1.2.0 do prompt, e só os números dele não foram usados para ajustar nada. O conjunto de regressão (9 casos) guarda falhas que já aconteceram e reúne falhas que já corrigimos no prompt e nas travas, por isso não entra nos números do ajuste nem do reservado.
 
@@ -153,7 +153,7 @@ O promptfoo mora num pacote isolado, `scripts/promptfoo/`, para não pesar na in
 O fluxo tem três camadas, e cada uma só entra quando a anterior se esgota. Os valores abaixo vêm de `config/empresa.json`.
 
 1. **Repetir.** Falha de rede, de DNS, de tempo esgotado, limite de taxa (429) ou erro 5xx repete a mesma chamada até 3 vezes, esperando 1 s e depois 3 s (ou o tempo que a resposta pedir no cabeçalho `retry-after`, até 30 s). Saída reprovada pela validação é regenerada até 2 vezes, com a instrução de correção. Erro 4xx do cliente e limite de gasto da conta não repetem: vão direto para a camada 2.
-2. **Modelo menor.** Esgotada a camada 1, o fluxo troca para o modelo de reserva (`claude-haiku-5-5`), com até 2 chamadas lógicas. Se a reserva responder e passar na validação, o lead recebe a resposta normalmente.
+2. **Modelo de reserva.** Esgotada a camada 1, o fluxo troca para o modelo de reserva (`ia.modelo_reserva`), com até 2 chamadas lógicas. Hoje essa camada está desligada por configuração (`ia.modelo_reserva` vazio, desde a spec 007): o Haiku já é o modelo principal, e o turno esgotado vai direto para o silêncio com humano. Com o campo preenchido, a reserva responde e, passando na validação, o lead recebe a resposta normalmente.
 3. **Silêncio e humano assume.** Se a reserva também falhar, ou se não houver modelo de reserva configurado, o lead não recebe resposta automática. O turno termina com `proxima_acao = encaminhar_humano` e `estado_conversa = aguardando_humano`, tenha o lead dado telefone ou não. Não há mais mensagem de falha técnica.
 
 **Aviso ao vendedor.** O serviço acompanha os turnos: duas falhas seguidas (`alerta.turnos_para_queda`) geram um aviso de queda, e uma falha do n8n ou do próprio serviço gera o aviso na hora. Enquanto a queda durar, o aviso se repete no máximo a cada 30 minutos (`alerta.intervalo_min`). Quando um turno volta a ser respondido pelo modelo, sai um aviso de recuperação com o número de conversas afetadas. O canal padrão é **simulado**: o aviso vai para o log e para `GET /alertas`. Há também um canal de e-mail pelo Resend, ativado com `ALERTA_CANAL=resend` e `RESEND_API_KEY`; ele está pronto, mas precisa de uma conta, e sem a chave o serviço fica só no canal simulado. Os textos dos avisos ficam em `textos.alerta_queda` e `textos.alerta_recuperado` na configuração.
@@ -179,7 +179,7 @@ A primeira rodada de validação, no modelo principal, deu estes acertos contra 
 
 Esses números não se comparam com os da avaliação escrita à mão, porque o gabarito também foi gerado por modelo e ninguém o revisou. Parte das divergências é do gabarito: urgência é julgamento, e pedido de spam pode ter `tipo_servico` nulo ou `fora_escopo`. Parte é do agente: em áudio mal transcrito, ele repete a cidade errada ("blume nau") em vez de confirmar. Na mesma rodada, 1 de 90 turnos terminou em falha, um caso de injeção em que a trava de vazamento barrou todas as tentativas; 14 turnos se recuperaram sozinhos, 1 deles pelo modelo reserva.
 
-O modelo reserva, `claude-haiku-5-5`, foi medido nos 14 casos de ajuste com o mesmo prompt: de 12 a 13 acertos por campo, e 1 caso barrado pela trava de vazamento. É suficiente para manter a conversa de pé durante uma falha, não para substituir o modelo principal.
+O `claude-haiku-5-5`, na época modelo reserva, foi medido nos 14 casos de ajuste com o mesmo prompt: de 12 a 13 acertos por campo, e 1 caso barrado pela trava de vazamento.
 
 ## Segurança e travas
 
