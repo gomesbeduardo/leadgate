@@ -1,6 +1,6 @@
 # 007 — Modelo principal mais barato
 
-**Status:** aguardando aprovação do responsável.
+**Status:** aprovada pelo responsável em 06/11/2026.
 **Pedido:** "Vamos usar modelos mais baratos, fiquei sem crédito de API em 2 dias de testes..."
 **Specs ligadas:** 001 (`ia.modelo`, R10), 002 (camada 2 de fallback, P4). Esta spec emenda o valor de `ia.modelo` e desliga a camada 2 por configuração.
 
@@ -52,9 +52,9 @@ Entra: `config/empresa.json`; os testes e o stub que supõem o Haiku como reserv
 - **Acerto menor que o do Opus.** A medição anterior foi de 12 a 13 acertos por campo em 14, contra 14/14 no Opus, e o prompt continua ajustado no Opus.
 - **Reprovou em T6:** nada é ajustado por conta própria. A decisão volta ao responsável.
 
-## Pergunta aberta
+## Exceção à comparação
 
-**P1. Como medir em T6.** O `CLAUDE.md` pede a comparação `npm run comparar:prompt` quando `config/` muda. Ela roda 3 vezes os 14 casos na base e 3 na branch, e a base é o Opus. Recomendação: abrir uma exceção nesta entrega e rodar só `avaliar` uma vez no Haiku, comparando com os números do Opus já registrados em `avaliacao/tabela.md`. A alternativa é seguir a comparação, que dá uma medida de variação mas volta a gastar no Opus.
+O `CLAUDE.md` pede a comparação `npm run comparar:prompt` quando `config/` muda. Ela roda 3 vezes os 14 casos na base e 3 na branch, e a base é o Opus. Nesta entrega, T6 roda só o `avaliar`, uma vez, no Haiku, e compara com os números do Opus já registrados em `avaliacao/tabela.md`.
 
 ## Dependência
 
