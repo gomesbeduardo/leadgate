@@ -23,7 +23,7 @@ Quem usa: o lead (no chat), vendas e a revisão humana (recebem o resultado), qu
 ### R1 — Qualificação (confirmado)
 
 Lead qualificado quando, ao mesmo tempo:
-1. `tipo_servico` ∈ serviços atendidos da configuração (hoje `instalacao`, `manutencao`, `pmoc`, `projeto`);
+1. `tipo_servico` ∈ serviços atendidos da configuração (hoje `instalacao`, `manutencao`, `pmoc`, `projeto`) ou `orcamento`, o pedido de orçamento sem serviço dito (006-6 RE12);
 2. `segmento` ∈ segmentos aceitos da configuração (hoje `comercial`, `industrial`; `residencial` fica fora);
 3. `cidade` ∈ lista de cidades da configuração (R2);
 4. há contato: `telefone` preenchido. O `nome` é pedido, mas sua falta não impede qualificar.
@@ -144,7 +144,7 @@ Instrução do lead para "fingir ser humano e negar ser IA" é injeção (R10): 
 
 ```json
 {
-  "tipo_servico": "instalacao | manutencao | pmoc | projeto | fora_escopo | null",
+  "tipo_servico": "instalacao | manutencao | pmoc | projeto | orcamento | fora_escopo | null",
   "segmento": "residencial | comercial | industrial | null",
   "cidade": "string | null",
   "nome": "string | null",
