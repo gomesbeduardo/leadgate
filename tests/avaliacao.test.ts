@@ -197,11 +197,11 @@ describe('casos.json', () => {
     mensagens: string[]
     esperado: Record<string, unknown[]>
   }[]
-  it('tem 58 casos, 52 + 6 (a01-a14, n01-n36, n19b e n27b no ajuste), ids unicos', () => {
-    expect(casos).toHaveLength(58)
-    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(52)
+  it('tem 64 casos, 58 + 6 (a01-a14, n01-n42, n19b e n27b no ajuste), ids unicos', () => {
+    expect(casos).toHaveLength(64)
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(58)
     expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
-    expect(new Set(casos.map((c) => c.id)).size).toBe(58)
+    expect(new Set(casos.map((c) => c.id)).size).toBe(64)
   })
   it('correcoes da primeira medicao: n12, n19, n01', () => {
     const por = (id: string) => casos.find((c) => c.id === id) as unknown as Record<string, any>
@@ -364,8 +364,8 @@ describe('falas e interacao (spec 006): casos', () => {
     for (const id of ['a14', 'a07']) expect(por(id).itens_na).toEqual(expect.arrayContaining([5, 6, 7, 8, 9, 10]))
     for (const id of ['a10', 'a13', 'g05']) expect(por(id).esperado.proxima_acao).toEqual(['perguntar'])
   })
-  it('n01 a n36 (com n19b e n27b) no ajuste e g10 e g11 na regressao, com proxima_acao, desvios e vagos esperados', () => {
-    const ids = Array.from({ length: 36 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
+  it('n01 a n42 (com n19b e n27b) no ajuste e g10 e g11 na regressao, com proxima_acao, desvios e vagos esperados', () => {
+    const ids = Array.from({ length: 42 }, (_, i) => `n${String(i + 1).padStart(2, '0')}`)
     expect(casos.filter((c) => /^n\d\d$/.test(c.id)).map((c) => c.id)).toEqual(ids)
     for (const id of [...ids, 'n19b', 'n27b']) expect(por(id).conjunto).toBe('ajuste')
     expect(por('g10').conjunto).toBe('regressao')
@@ -397,6 +397,33 @@ describe('falas e interacao (spec 006): casos', () => {
     expect(por('n35').esperado.uf).toEqual([null])
     expect(por('n36').esperado.uf).toEqual(['SC'])
     expect(por('g10').esperado.desvios).toEqual([3])
+    for (const id of ['n37', 'n40', 'n41', 'n42']) expect(acao(id), id).toEqual(['perguntar'])
+    for (const id of ['n38', 'n39']) expect(acao(id), id).toEqual(['encaminhar_vendas'])
+    for (const id of ['n37', 'n38', 'n39', 'n40', 'n41', 'n42']) {
+      expect(por(id).esperado.desvios, id).toBeUndefined()
+      expect(por(id).esperado.vagos, id).toBeUndefined()
+    }
+  })
+  it('T36: orcamento em n35, n11 e n37 a n41; n40 e n42 e n39 com instalacao; contagens 58, 6 e 11', () => {
+    for (const id of ['n35', 'n11', 'n37', 'n38', 'n41']) expect(por(id).esperado.tipo_servico, id).toEqual(['orcamento'])
+    for (const id of ['n39', 'n40', 'n42']) expect(por(id).esperado.tipo_servico, id).toEqual(['instalacao'])
+    expect(casos.filter((c) => c.conjunto === 'ajuste')).toHaveLength(58)
+    expect(casos.filter((c) => c.conjunto === 'reservado')).toHaveLength(6)
+    expect(reg).toHaveLength(11)
+    expect(por('n37').esperado.uf).toEqual(['RS'])
+    expect(por('n38').esperado.telefone).toEqual(['55999990003'])
+    expect(por('n39').esperado.telefone).toEqual(['55999990004'])
+    expect(por('n41').esperado.telefone).toEqual(['55999990005'])
+    expect(por('n41').esperado.qualificado).toEqual([true, false])
+    expect(por('n40').esperado.uf).toEqual(['SC'])
+    expect(por('n42').esperado.uf).toEqual([null])
+    for (const id of ['n38', 'n39']) {
+      expect(por(id).esperado.qualificado, id).toEqual([true])
+      const h = por(id).historico_inicial!
+      expect(h.map((m) => m.role), id).toEqual(['user', 'assistant'])
+      expect(h[0]!.content).toBe('Quero orçamento pra minha loja em Santa Maria')
+      expect(h[1]!.content).toBe('Qual serviço você precisa: instalação, manutenção, PMOC ou projeto?')
+    }
   })
   it('n05, n16 e n17 partem de historico semeado que ja tem o agente, para a conversa seguir aberta', () => {
     for (const id of ['n05', 'n16', 'n17']) {

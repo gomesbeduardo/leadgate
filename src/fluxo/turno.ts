@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { Config } from '../config/schema'
 import { montarPrompt, ErroMontagem } from '../prompt/montar'
 import { validarSaida } from '../validacao/saida'
-import type { Mensagem, Saida, Violacao } from '../validacao/contrato'
+import { TIPO_ORCAMENTO, type Mensagem, type Saida, type Violacao } from '../validacao/contrato'
 
 export type Tipo = 'rede' | 'dns' | 'timeout' | '429' | '5xx' | 'cliente' | 'refusal' | 'max_tokens' | 'schema' | 'servico'
 export type ModeloAtual = 'primario' | 'reserva'
@@ -153,7 +153,7 @@ export function schemaSaida(cfg: Config): object {
   const nulavel = (s: object) => ({ anyOf: [s, { type: 'null' }] })
   const enumStr = (valores: string[]) => ({ type: 'string', enum: valores })
   const properties = {
-    tipo_servico: nulavel(enumStr([...cfg.servicos, 'fora_escopo'])),
+    tipo_servico: nulavel(enumStr([...cfg.servicos, TIPO_ORCAMENTO, 'fora_escopo'])),
     segmento: nulavel(enumStr(cfg.segmentos)),
     cidade: nulavel({ type: 'string' }),
     uf: nulavel({ type: 'string' }),

@@ -2,6 +2,9 @@ import { z } from 'zod'
 import type { Config } from '../config/schema'
 import { digitosTelefone, extrairTelefones } from './telefone'
 
+/** Valor fixo de tipo_servico: pediu orcamento sem dizer o servico (fora de cfg.servicos). */
+export const TIPO_ORCAMENTO = 'orcamento'
+
 export type Mensagem = { role: 'user' | 'assistant'; content: string }
 // Para novos tipos de verificacao (ex.: 'resposta'), basta ampliar esta uniao.
 export type TipoViolacao = 'schema' | 'cruzada' | 'resposta'
@@ -34,7 +37,7 @@ const enumDe = (valores: string[]) => z.enum(valores as [string, ...string[]])
 function montarSchema(cfg: Config) {
   const texto = z.string().nullable()
   return z.object({
-    tipo_servico: enumDe([...cfg.servicos, 'fora_escopo']).nullable(),
+    tipo_servico: enumDe([...cfg.servicos, TIPO_ORCAMENTO, 'fora_escopo']).nullable(),
     segmento: enumDe(cfg.segmentos).nullable(),
     cidade: texto,
     uf: texto,
@@ -131,7 +134,7 @@ function emailReal(email: string | null, historico: Mensagem[]): boolean {
 export function calcularRessalvas(s: Saida, ctx: { historico: Mensagem[]; cfg: Config }): Ressalva[] {
   const { cfg, historico } = ctx
   const r: Ressalva[] = []
-  const servido = s.tipo_servico !== null && cfg.servicos.includes(s.tipo_servico)
+  const servido = s.tipo_servico !== null && (cfg.servicos.includes(s.tipo_servico) || s.tipo_servico === TIPO_ORCAMENTO)
   const aceito = s.segmento !== null && cfg.segmentos_aceitos.includes(s.segmento)
   const cidade = s.cidade !== null && s.cidade.trim() !== '' ? s.cidade : null
   const cidadeOk = cidade !== null && cidadeAtendida(cidade, cfg) !== null
@@ -185,7 +188,7 @@ export function analisarContrato(
 
   const limiar = cfg.ia.limiar_confianca
   const contato = cfg.empresa.contato
-  const servido = s.tipo_servico !== null && cfg.servicos.includes(s.tipo_servico)
+  const servido = s.tipo_servico !== null && (cfg.servicos.includes(s.tipo_servico) || s.tipo_servico === TIPO_ORCAMENTO)
   const aceito = s.segmento !== null && cfg.segmentos_aceitos.includes(s.segmento)
   const cidade = s.cidade !== null && s.cidade.trim() !== '' ? s.cidade : null
   const cidadeBase = cidade !== null ? cidadeAtendida(cidade, cfg) : null
@@ -254,6 +257,11 @@ export function analisarContrato(
 
   if (cidadeFora && s.qualificado && !cidadeParecida(cidade, cfg)) {
     cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
+  }
+
+  // orcamento sem servico dito: tem de ter perguntado uma vez antes de encaminhar
+  if (s.tipo_servico === TIPO_ORCAMENTO && s.proxima_acao === 'encaminhar_vendas' && !historico.some((m) => m.role === 'assistant')) {
+    cruz('orcamento_exige_pergunta', 'tipo_servico=orcamento: pergunte qual servico o lead precisa antes de encaminhar_vendas. Use proxima_acao=perguntar.')
   }
 
   // telefone preenchido tem de ser um unico numero dito pelo lead

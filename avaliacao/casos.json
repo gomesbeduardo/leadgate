@@ -1009,8 +1009,7 @@
     ],
     "esperado": {
       "tipo_servico": [
-        null,
-        "instalacao"
+        "orcamento"
       ],
       "segmento": [
         "comercial",
@@ -2305,7 +2304,7 @@
     ],
     "esperado": {
       "tipo_servico": [
-        "instalacao"
+        "orcamento"
       ],
       "segmento": [
         "comercial"
@@ -2332,9 +2331,10 @@
       8
     ],
     "resposta_contem_um": [
-      "estado",
-      "UF",
-      "qual Bom Jesus"
+      "instalação",
+      "manutenção",
+      "qual serviço",
+      "o que você precisa"
     ]
   },
   {
@@ -2377,6 +2377,286 @@
       "estado",
       "UF",
       "não atendemos"
+    ]
+  },
+  {
+    "id": "n37",
+    "conjunto": "ajuste",
+    "teste": "orçamento sem serviço pergunta o serviço",
+    "tipo": "orcamento",
+    "mensagens": [
+      "Quero orçamento pra minha loja em Santa Maria"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "orcamento"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Santa Maria"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "uf": [
+        "RS"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_contem_um": [
+      "instalação",
+      "manutenção",
+      "qual serviço",
+      "o que você precisa"
+    ],
+    "resposta_nao_contem": [
+      "orçamento",
+      "preço",
+      "valor",
+      "telefone"
+    ]
+  },
+  {
+    "id": "n38",
+    "conjunto": "ajuste",
+    "teste": "orçamento com telefone e sem serviço depois da pergunta vai a vendas",
+    "tipo": "orcamento",
+    "mensagens": [
+      "Não sei ainda, me liga. 55 99999-0003"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "Quero orçamento pra minha loja em Santa Maria"
+      },
+      {
+        "role": "assistant",
+        "content": "Qual serviço você precisa: instalação, manutenção, PMOC ou projeto?"
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "orcamento"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Santa Maria"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "telefone": [
+        "55999990003"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "uf": [
+        "RS"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "instalação ou manutenção",
+      "qual serviço"
+    ]
+  },
+  {
+    "id": "n39",
+    "conjunto": "ajuste",
+    "teste": "orçamento vira instalação depois da pergunta e vai a vendas",
+    "tipo": "orcamento",
+    "mensagens": [
+      "É instalação. 55 99999-0004"
+    ],
+    "historico_inicial": [
+      {
+        "role": "user",
+        "content": "Quero orçamento pra minha loja em Santa Maria"
+      },
+      {
+        "role": "assistant",
+        "content": "Qual serviço você precisa: instalação, manutenção, PMOC ou projeto?"
+      }
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Santa Maria"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "telefone": [
+        "55999990004"
+      ],
+      "qualificado": [
+        true
+      ],
+      "proxima_acao": [
+        "encaminhar_vendas"
+      ],
+      "uf": [
+        "RS"
+      ]
+    },
+    "itens_na": [
+      8
+    ]
+  },
+  {
+    "id": "n40",
+    "conjunto": "ajuste",
+    "teste": "orçamento com serviço dito não repete a pergunta do serviço",
+    "tipo": "orcamento",
+    "mensagens": [
+      "Orçamento de instalação de ar pra minha empresa em Lages"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Lages"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "uf": [
+        "SC"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_nao_contem": [
+      "qual serviço",
+      "instalação ou manutenção"
+    ]
+  },
+  {
+    "id": "n41",
+    "conjunto": "ajuste",
+    "teste": "orçamento com telefone na primeira mensagem pergunta o serviço antes de vendas",
+    "tipo": "orcamento",
+    "mensagens": [
+      "Quero orçamento pra minha loja em Santa Maria, 55 99999-0005"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "orcamento"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Santa Maria"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "telefone": [
+        "55999990005"
+      ],
+      "qualificado": [
+        true,
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_contem_um": [
+      "instalação",
+      "manutenção",
+      "qual serviço",
+      "o que você precisa"
+    ]
+  },
+  {
+    "id": "n42",
+    "conjunto": "ajuste",
+    "teste": "cidade homonima fora da lista com serviço dito pergunta o estado",
+    "tipo": "cidade",
+    "mensagens": [
+      "Instalação de ar na minha loja em Bom Jesus"
+    ],
+    "esperado": {
+      "tipo_servico": [
+        "instalacao"
+      ],
+      "segmento": [
+        "comercial"
+      ],
+      "cidade": [
+        "Bom Jesus"
+      ],
+      "urgencia": [
+        null,
+        "media",
+        "baixa"
+      ],
+      "qualificado": [
+        false
+      ],
+      "proxima_acao": [
+        "perguntar"
+      ],
+      "uf": [
+        null
+      ]
+    },
+    "itens_na": [
+      8
+    ],
+    "resposta_contem_um": [
+      "estado",
+      "UF",
+      "qual Bom Jesus"
     ]
   },
   {

@@ -95,3 +95,15 @@ describe('stub da API: cenarios', () => {
     expect(r.corpo.content[0].text).toBe('isto nao e json')
   })
 })
+
+describe('spec 006-6: stub com tipo orcamento', () => {
+  it('T38: o cenario orcamento devolve uma saida com tipo_servico orcamento aceita pelo contrato', async () => {
+    const { validarContrato } = await import('../src/validacao/contrato')
+    const base = await stub('orcamento', 18810)
+    const r = await chamar(base, { model: 'x', messages: [{ role: 'user', content: 'Quero orçamento pra minha loja em Santa Maria' }] })
+    const texto = r.corpo.content[0].text
+    expect(JSON.parse(texto).tipo_servico).toBe('orcamento')
+    const v = validarContrato(texto, { historico: [{ role: 'user', content: 'Quero orçamento pra minha loja em Santa Maria' }], cfg })
+    expect(v.ok || v.violacoes.every((x) => x.tipo !== 'schema')).toBe(true)
+  })
+})

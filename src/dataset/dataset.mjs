@@ -116,7 +116,7 @@ export function revisaoMarkdown(/** @type {any[]} */ amostra, /** @type {Record<
 }
 
 const enums = (/** @type {any} */ cfg) => ({
-  tipo_servico: [...cfg.servicos, 'fora_escopo'],
+  tipo_servico: [...cfg.servicos, 'orcamento', 'fora_escopo'],
   segmento: cfg.segmentos,
   urgencia: ['alta', 'media', 'baixa'],
   proxima_acao: ['perguntar', 'encaminhar_vendas', 'responder_e_encerrar', 'encaminhar_humano', 'ignorar'],

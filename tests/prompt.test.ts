@@ -149,7 +149,7 @@ function trocas(): { blocos: number; itens: Troca[] } {
   const itens: Troca[] = []
   const re = /^Lead: (.*)\nacao: ([a-z_]+).*\nresposta: "(.*)"$/gm
   for (const m of sec.matchAll(re)) itens.push({ lead: m[1] ?? '', acao: m[2] ?? '', resposta: m[3] ?? '' })
-  return { blocos: (sec.match(/^Troca [A-I]\b/gm) ?? []).length, itens }
+  return { blocos: (sec.match(/^Troca [A-J]\b/gm) ?? []).length, itens }
 }
 
 describe('T20: prompt 1.5.0', () => {
@@ -184,7 +184,7 @@ describe('T20: prompt 1.5.0', () => {
 
   it('traz as 9 trocas, cada resposta até 400 caracteres e um único "?" nas de perguntar', () => {
     const { blocos, itens } = trocas()
-    expect(blocos).toBe(9)
+    expect(blocos).toBe(10)
     expect(itens.length).toBeGreaterThanOrEqual(26)
     for (const t of itens) {
       expect(t.resposta.length).toBeLessThanOrEqual(400)
@@ -276,5 +276,48 @@ describe('T32: prompt 1.5.0, area por UF', () => {
     expect(modelo).toContain('"uf": "sigla de duas letras | null"')
     expect(modelo).toContain('{{regiao.ufs_atendidas}}')
     expect(modelo).toContain('Infelizmente não atendemos em Manaus')
+  })
+})
+
+describe('T38: prompt 1.5.0, tipo_servico orcamento', () => {
+  const frases = [
+    '"tipo_servico": "{{servicos}} | orcamento | fora_escopo | null"',
+    '`orcamento` quando o lead pede orçamento, preço ou cotação de ar sem dizer o serviço',
+    'Orçamento sem serviço dito conta como atendido',
+    'pergunte o serviço uma vez, em turno próprio',
+    'siga a coleta e qualifique com `orcamento`',
+    'Serviço dito vence',
+    'o serviço é perguntado antes do estado e do contato',
+    'nunca `instalacao` por dedução',
+    '`fora_escopo` vence `orcamento`',
+  ]
+  it('prompt e README trazem o contrato e a regra', () => {
+    for (const t of frases) {
+      expect(modelo).toContain(t)
+      expect(readme).toContain(t)
+    }
+  })
+  it('a linha de serviços atendidos não lista orcamento', () => {
+    for (const texto of [modelo, readme]) {
+      const linha = texto.split('\n').find((l) => l.startsWith('- Serviços atendidos:')) ?? ''
+      expect(linha).toContain('{{servicos}}')
+      expect(linha).not.toContain('orcamento')
+    }
+  })
+  it('a troca de n11 mostra tipo_servico orcamento', () => {
+    const i = modelo.indexOf('queria orçamento de ar pra minha loja" (turno unido)')
+    expect(i).toBeGreaterThan(-1)
+    expect(modelo.slice(i, i + 300)).toContain('tipo_servico: orcamento')
+  })
+  it('as respostas da Troca J não repetem telefone nem confirmam o serviço', () => {
+    const i = modelo.indexOf('Troca J')
+    expect(i).toBeGreaterThan(-1)
+    const bloco = modelo.slice(i, modelo.indexOf('\n## Travas', i))
+    const respostas = [...bloco.matchAll(/^resposta: "(.*)"$/gm)].map((m) => m[1] ?? '')
+    expect(respostas.length).toBe(3)
+    for (const r of respostas) {
+      expect(r).not.toContain('99999')
+      expect(r).not.toMatch(/^(Claro|Entendi)/)
+    }
   })
 })

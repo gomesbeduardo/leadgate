@@ -265,6 +265,7 @@ describe('cada regra cruzada tem um teste com o seu slug', () => {
   const casos: [string, Record<string, unknown>, Mensagem[]?][] = [
     ['confianca_fora_intervalo', { confianca: 1.5 }],
     ['qualificado_exige_servico', { tipo_servico: null }],
+    ['orcamento_exige_pergunta', { tipo_servico: 'orcamento', cidade: 'Santa Maria', proxima_acao: 'encaminhar_vendas', resposta: 'Vou passar para o time de vendas.' }, [{ role: 'user', content: 'Quero orçamento pra minha loja em Santa Maria, 48 99999-0001' }]],
     ['qualificado_exige_segmento_aceito', { segmento: 'residencial' }],
     ['qualificado_exige_cidade', { cidade: 'Joinville' }],
     ['qualificado_exige_telefone', { telefone: null }],
@@ -778,5 +779,42 @@ describe('spec 006-5: area de atendimento por UF', () => {
   it('uf em minusculas ou com espaco conta; uf vazia e dentro nao recusam', () => {
     expect(regras(validar({ ...recusa, uf: ' pr ', proxima_acao: 'perguntar', resposta: 'Qual?' }, hManaus))).toContain('fora_uf_exige_encerrar')
     expect(regras(validar({ ...NADA6(), tipo_servico: 'instalacao', segmento: 'comercial', cidade: 'Joinville', uf: 'SC', dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'perguntar', resposta: 'Qual o telefone?' }, [u('Joinville')]))).toEqual([])
+  })
+})
+
+describe('spec 006-6: tipo orcamento', () => {
+  const n37: Mensagem = { role: 'user', content: 'Quero orçamento pra minha loja em Santa Maria' }
+  const n38: Mensagem[] = [
+    n37,
+    { role: 'assistant', content: 'Qual serviço você precisa: instalação, manutenção, PMOC ou projeto?' },
+    { role: 'user', content: 'Não sei ainda, me liga. 55 99999-0003' },
+  ]
+  const saida38 = {
+    tipo_servico: 'orcamento',
+    segmento: 'comercial',
+    cidade: 'Santa Maria',
+    uf: 'RS',
+    telefone: '55999990003',
+    qualificado: true,
+    proxima_acao: 'encaminhar_vendas',
+    resposta: 'Vou passar para o time de vendas.',
+  }
+  const histSoN37: Mensagem[] = [{ role: 'user', content: 'Quero orçamento pra minha loja em Santa Maria, 55 99999-0003' }]
+
+  it('T34: orcamento conta como servico atendido; sem tipo_servico segue violando', () => {
+    expect(regras(validar(saida38, n38))).toEqual([])
+    expect(regras(validar({ ...saida38, tipo_servico: null }, n38))).toContain('qualificado_exige_servico')
+  })
+
+  it('T35: orcamento encaminhado sem pergunta previa viola; com turno assistant ou outro servico nao', () => {
+    expect(regras(validar(saida38, histSoN37))).toContain('orcamento_exige_pergunta')
+    expect(regras(validar(saida38, n38))).not.toContain('orcamento_exige_pergunta')
+    expect(regras(validar({ ...saida38, tipo_servico: 'instalacao' }, histSoN37))).not.toContain('orcamento_exige_pergunta')
+  })
+
+  it('T37: o Zod aceita orcamento e fora_escopo e rejeita valor fora do enum', () => {
+    expect(regras(validar({ ...saida38, tipo_servico: 'cotacao' }, n38))).toContain('schema_tipo_servico')
+    expect(regras(validar({ ...saida38, tipo_servico: 'fora_escopo', qualificado: false, proxima_acao: 'responder_e_encerrar', resposta: 'Nao atendemos.' }, n38))).not.toContain('schema_tipo_servico')
+    expect(regras(validar(saida38, n38))).not.toContain('schema_tipo_servico')
   })
 })

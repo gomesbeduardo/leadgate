@@ -170,10 +170,13 @@ describe('schemaSaida', () => {
     expect([...s.required].sort()).toEqual(Object.keys(s.properties).sort())
   })
   it('enums vem da config e nulaveis usam anyOf', () => {
-    expect(s.properties.tipo_servico.anyOf[0].enum).toEqual([...cfg.servicos, 'fora_escopo'])
+    expect(s.properties.tipo_servico.anyOf[0].enum).toEqual([...cfg.servicos, 'orcamento', 'fora_escopo'])
     expect(s.properties.segmento.anyOf[0].enum).toEqual(cfg.segmentos)
     expect(s.properties.cidade.anyOf).toEqual([{ type: 'string' }, { type: 'null' }])
     expect(s.properties.confianca).toEqual({ type: 'number' })
+  })
+  it('T37: tipo_servico lista orcamento ao lado de fora_escopo', () => {
+    expect(s.properties.tipo_servico.anyOf[0].enum).toEqual([...cfg.servicos, 'orcamento', 'fora_escopo'])
   })
   it('sem restricoes que a API rejeita', () => {
     const txt = JSON.stringify(s)

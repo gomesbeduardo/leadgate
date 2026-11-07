@@ -34,6 +34,10 @@ function decidir(corpo) {
   switch (cenario) {
     case '503_depois_ok':
       return n === 1 ? { status: 503, corpo: { error: { type: 'overloaded_error' } } } : { status: 200, corpo: ok }
+    case 'orcamento': {
+      const o = { ...saidaValida, tipo_servico: 'orcamento', segmento: 'comercial', cidade: 'Santa Maria', uf: 'RS', dados_faltantes: ['telefone'], resposta: 'Qual serviço você precisa: instalação, manutenção, PMOC ou projeto?' }
+      return { status: 200, corpo: { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(o) }] } }
+    }
     case 'sempre_503':
       return { status: 503, corpo: { error: { type: 'overloaded_error' } } }
     case '429_retry_after':
