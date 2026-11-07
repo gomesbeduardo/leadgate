@@ -228,6 +228,30 @@ export function analisarContrato(
     }
   }
 
+  // Fidelidade ao lead: cidade da lista (sem sufixo) escrita pelo lead com outro estado ("Santa Maria-DF") exige essa UF na saida.
+  if (cidade !== null) {
+    const nc = normalizar(cidade)
+    const daLista = cfg.regiao.cidades.find((c) => normalizar(c) === nc)
+    const ufLista = daLista !== undefined ? cfg.regiao.ufs[daLista]?.toUpperCase() : undefined
+    if (ufLista !== undefined) {
+      const nomes = Object.entries(NOMES_UF).map(([uf, n]) => [normalizar(n), uf] as const).sort((x, y) => y[0].length - x[0].length)
+      const alt = [...nomes.map(([n]) => n), '[a-z]{2}'].join('|')
+      const re = new RegExp(`${nc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-/,]\\s*(${alt})(?![a-z])`, 'g')
+      const escritas = new Set<string>()
+      for (const m of historico) {
+        if (m.role !== 'user') continue
+        for (const x of normalizar(m.content).matchAll(re)) {
+          const uf = nomes.find(([n]) => n === x[1])?.[1] ?? x[1]!.toUpperCase()
+          if (uf in NOMES_UF && uf !== ufLista) escritas.add(uf)
+        }
+      }
+      const ignorada = [...escritas].find((uf) => uf !== ufDita)
+      if (ignorada !== undefined) {
+        cruz('uf_do_lead_ignorada', `O lead escreveu o estado ${ignorada} junto da cidade (${cidade}-${ignorada}). Preencha uf com ${ignorada} e siga a regra do estado: fora da area atendida, qualificado=false e responder_e_encerrar.`)
+      }
+    }
+  }
+
   if (cidadeFora && s.qualificado && !cidadeParecida(cidade, cfg)) {
     cruz('cidade_fora_exige_nao_qualificado', 'Cidade fora da regiao atendida exige qualificado=false.')
   }

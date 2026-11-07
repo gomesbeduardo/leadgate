@@ -283,6 +283,7 @@ describe('cada regra cruzada tem um teste com o seu slug', () => {
     ['cidade_fora_exige_nao_qualificado', { cidade: 'Joinville', ...humano }],
     ['duvida_com_telefone_exige_humano', { dados_faltantes: ['segmento'], qualificado: false }, historicoComPerguntas(cfg.conversa.teto_perguntas)],
     ['duvida_sem_telefone_exige_encerrar', { telefone: null, qualificado: false }, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1)],
+    ['uf_do_lead_ignorada', { cidade: 'Santa Maria', uf: null }, [{ role: 'user', content: 'Manutenção na minha loja em Santa Maria-DF, 48 99999-0001' }]],
     ['duvida_sem_telefone_exige_contato', { telefone: null, ...fechar, resposta: 'Nao atendemos.' }, historicoComPerguntas(cfg.conversa.teto_perguntas).slice(0, -1)],
   ]
   it.each(casos)('%s', (slug, over, h) => {
@@ -743,6 +744,23 @@ describe('spec 006-5: area de atendimento por UF', () => {
     expect(regras(validar(o, [u('Manutenção na minha loja em Santa Maria, Distrito Federal')]))).not.toContain('uf_contradiz_lista')
     expect(cidadeParecida('Santa Maria-DF', cfg)).toBe(false)
     expect(regras(validar({ ...o, cidade: 'Santa Maria-DF', qualificado: true }, [u('Santa Maria-DF')]))).toContain('cidade_fora_exige_nao_qualificado')
+  })
+
+  it('T30b: lead escreveu outro estado junto da cidade da lista e a saida o ignora: uf_do_lead_ignorada', () => {
+    const msg = 'Manutenção na minha loja em Santa Maria-DF, 48 99999-0001'
+    const base = { ...NADA6(), tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Santa Maria', uf: null, dados_faltantes: ['telefone'], qualificado: true, proxima_acao: 'perguntar', resposta: 'Santa Maria é no RS ou no DF?' }
+    expect(regras(validar(base, [u(msg)]))).toContain('uf_do_lead_ignorada')
+    expect(regras(validar({ ...base, uf: 'RS' }, [u(msg)]))).toContain('uf_do_lead_ignorada')
+    expect(regras(validar(base, [u('Manutenção na minha loja em Santa Maria, Distrito Federal')]))).toContain('uf_do_lead_ignorada')
+    expect(regras(validar(base, [u('Manutenção na minha loja em Santa Maria/df')]))).toContain('uf_do_lead_ignorada')
+    for (const t of ['Santa Maria-RS', 'Santa Maria, RS', 'Santa Maria, Rio Grande do Sul']) {
+      for (const uf of [null, 'RS']) {
+        expect(regras(validar({ ...base, uf }, [u(`Manutenção na minha loja em ${t}`)])), `${t} ${uf}`).not.toContain('uf_do_lead_ignorada')
+      }
+    }
+    expect(regras(validar(base, [u('Manutenção na minha loja em Santa Maria')]))).not.toContain('uf_do_lead_ignorada')
+    const g01 = { ...NADA6(), tipo_servico: 'manutencao', segmento: 'comercial', cidade: 'Santa Maria-DF', uf: 'DF', dados_faltantes: ['telefone'], qualificado: false, proxima_acao: 'responder_e_encerrar', resposta: 'Infelizmente não atendemos em Santa Maria-DF: atuamos em regiões do RS e de SC.' }
+    expect(regras(validar(g01, [u(msg)]))).not.toContain('uf_do_lead_ignorada')
   })
 
   it('T31: cidadeParecida com e sem sufixo', () => {

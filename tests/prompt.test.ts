@@ -153,6 +153,18 @@ function trocas(): { blocos: number; itens: Troca[] } {
 }
 
 describe('T20: prompt 1.5.0', () => {
+  it('T20b: vagos conta pelo histórico, oferta usa "pessoa" e UF escrita pelo lead vale', () => {
+    const frases = [
+      'Antes de decidir, conte no histórico os turnos seguidos do lead vagos, desde o último útil',
+      'não muda a contagem de `vagos`',
+      'A oferta precisa conter a palavra "pessoa", com frase sua',
+      'Se o lead escreveu o estado junto da cidade ("Santa Maria-DF")',
+    ]
+    for (const t of frases) {
+      expect(modelo).toContain(t)
+      expect(readme).toContain(t)
+    }
+  })
   it('correções da primeira medição, no prompt e no README', () => {
     for (const t of ['uma pessoa do time, se preferir', 'com 4 ou mais, o lead já foi a vendas']) {
       expect(modelo).toContain(t)
