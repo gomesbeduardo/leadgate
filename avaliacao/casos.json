@@ -2737,8 +2737,7 @@
     ],
     "esperado": {
       "tipo_servico": [
-        null,
-        "instalacao"
+        "orcamento"
       ],
       "segmento": [
         null
