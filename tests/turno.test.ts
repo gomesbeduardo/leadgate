@@ -52,7 +52,7 @@ function rodar(historico: Mensagem[], respostas: unknown[], c: Config = cfg) {
   return { resultado: passo.resultado as Resultado, requisicoes, chamadas: i, esperas }
 }
 
-const semReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: '' } }
+const comReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: 'claude-sonnet-5-5' } }
 const oi: Mensagem[] = [{ role: 'user', content: 'Oi, preciso de um orcamento' }]
 
 describe('iniciarTurno', () => {
@@ -179,7 +179,7 @@ describe('loop de regeneracao', () => {
   })
 
   it('T11: 3 saidas invalidas seguidas, sem telefone: falha tecnica', () => {
-    const { resultado, chamadas } = rodar(oi, [corpo('x'), corpo('y'), corpo('z')], semReserva)
+    const { resultado, chamadas } = rodar(oi, [corpo('x'), corpo('y'), corpo('z')], cfg)
     expect(chamadas).toBe(3)
     expect(resultado.tentativas).toBe(3)
     expect(resultado.resposta).toBeNull()
@@ -205,7 +205,7 @@ describe('loop de regeneracao', () => {
       dados_faltantes: [], qualificado: false, confianca: 0.9, proxima_acao: 'responder_e_encerrar',
       resposta: 'Obrigado pelo contato.',
     })
-    const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], semReserva)
+    const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], cfg)
     expect(resultado.proxima_acao).toBe('encaminhar_humano')
     expect(resultado.erro).toBe(true)
     expect(resultado.resposta).toBeNull()
@@ -279,36 +279,60 @@ describe('motor de falhas', () => {
 
   it('teto de gasto: sem repeticao, vai direto a reserva', () => {
     const gasto = { status: 429, corpo: { error: { details: { error_code: 'enforced_spend_limit_reached' } } } }
-    const { resultado, requisicoes, esperas } = rodar(oi, [gasto, valida])
+    const { resultado, requisicoes, esperas } = rodar(oi, [gasto, valida], comReserva)
     expect(requisicoes).toHaveLength(2)
     expect(requisicoes[0].model).toBe(cfg.ia.modelo)
-    expect(requisicoes[1].model).toBe('claude-haiku-5-5')
+    expect(requisicoes[1].model).toBe('claude-sonnet-5-5')
     expect(esperas).toEqual([0])
     expect(resultado.camada).toBe(2)
   })
 
   it('erro de cliente nao repete e vai a reserva', () => {
-    const { resultado, requisicoes } = rodar(oi, [{ status: 401 }, valida])
+    const { resultado, requisicoes } = rodar(oi, [{ status: 401 }, valida], comReserva)
     expect(requisicoes).toHaveLength(2)
     expect(resultado.modelo_respondeu).toBe('reserva')
     expect(resultado.registros[0]?.tipo).toBe('cliente')
   })
 
   it('T11: 3 repeticoes 503 e a reserva responde (camada 2), mesmo historico e prompt', () => {
-    const { resultado, requisicoes } = rodar(oi, [r5xx, r5xx, r5xx, valida])
+    const { resultado, requisicoes } = rodar(oi, [r5xx, r5xx, r5xx, valida], comReserva)
     expect(resultado.origem).toBe('modelo')
     expect(resultado.camada).toBe(2)
     expect(resultado.modelo_respondeu).toBe('reserva')
     expect(resultado.registros.map((r) => [r.tipo, r.modelo, r.camada])).toEqual([
       ['5xx', 'primario', 1], ['5xx', 'primario', 1], ['5xx', 'primario', 1],
     ])
-    expect(requisicoes[3].model).toBe('claude-haiku-5-5')
+    expect(requisicoes[3].model).toBe('claude-sonnet-5-5')
     expect(requisicoes[3].system).toBe(requisicoes[0].system)
     expect(requisicoes[3].messages).toEqual(requisicoes[0].messages)
   })
 
+  it('T2: config real, 503 em toda chamada: 3 requisicoes, todas no Haiku, silencio e humano', () => {
+    const { resultado, requisicoes } = rodar(oi, Array(6).fill(r5xx))
+    expect(requisicoes).toHaveLength(3)
+    expect(requisicoes.map((r) => r.model)).toEqual(Array(3).fill('claude-haiku-5-5'))
+    expect(resultado.registros.map((r) => [r.tipo, r.modelo])).toEqual(Array(3).fill(['5xx', 'primario']))
+    expect(resultado.resposta).toBeNull()
+    expect(resultado.estado_conversa).toBe('aguardando_humano')
+    expect(resultado.proxima_acao).toBe('encaminhar_humano')
+  })
+
+  it('T3: config real, texto que nao e JSON em toda chamada: 3 registros schema e so o modelo primario', () => {
+    const { resultado, requisicoes } = rodar(oi, Array(6).fill({ status: 200, corpo: corpo('desculpe, nao consigo') }))
+    expect(requisicoes.every((r) => r.model === 'claude-haiku-5-5')).toBe(true)
+    expect(resultado.registros.map((r) => r.tipo)).toEqual(['schema', 'schema', 'schema'])
+    expect(resultado.origem).toBe('falha')
+  })
+
+  it('T4: com reserva preenchida, 503 x3 no primario e a reserva responde', () => {
+    const { resultado, requisicoes } = rodar(oi, [r5xx, r5xx, r5xx, valida], comReserva)
+    expect(requisicoes.map((r) => r.model)).toEqual([...Array(3).fill('claude-haiku-5-5'), 'claude-sonnet-5-5'])
+    expect(resultado.origem).toBe('modelo')
+    expect(resultado.modelo_respondeu).toBe('reserva')
+  })
+
   it('T12: primario e reserva esgotados dao silencio, sem telefone', () => {
-    const { resultado, chamadas } = rodar(oi, Array(6).fill(r5xx))
+    const { resultado, chamadas } = rodar(oi, Array(6).fill(r5xx), comReserva)
     expect(chamadas).toBe(6)
     expect(resultado).toMatchObject({
       resposta: null, estado_conversa: 'aguardando_humano', proxima_acao: 'encaminhar_humano',
@@ -320,14 +344,14 @@ describe('motor de falhas', () => {
 
   it('T12: com telefone tambem e silencio', () => {
     const h: Mensagem[] = [{ role: 'user', content: 'ligue 48 99999-0001' }]
-    const { resultado } = rodar(h, Array(6).fill({ erro: 'ECONNRESET' }))
+    const { resultado } = rodar(h, Array(6).fill({ erro: 'ECONNRESET' }), comReserva)
     expect(resultado.resposta).toBeNull()
     expect(resultado.proxima_acao).toBe('encaminhar_humano')
     expect(resultado.tipo).toBe('rede')
   })
 
   it('rede esgotada sem reserva: 3 chamadas e silencio', () => {
-    const { resultado, chamadas } = rodar(oi, Array(3).fill({ erro: 'ETIMEDOUT' }), semReserva)
+    const { resultado, chamadas } = rodar(oi, Array(3).fill({ erro: 'ETIMEDOUT' }), cfg)
     expect(chamadas).toBe(3)
     expect(resultado.tipo).toBe('timeout')
     expect(resultado.resposta).toBeNull()
@@ -348,7 +372,7 @@ describe('motor de falhas', () => {
   })
 
   it('T15: schema x3 com reserva desligada da silencio e 3 registros schema', () => {
-    const { resultado } = rodar(oi, Array(3).fill({ status: 200, corpo: corpo('desculpe, nao consigo') }), semReserva)
+    const { resultado } = rodar(oi, Array(3).fill({ status: 200, corpo: corpo('desculpe, nao consigo') }), cfg)
     expect(resultado.registros.map((r) => r.tipo)).toEqual(['schema', 'schema', 'schema'])
     expect(resultado.origem).toBe('falha')
     expect(resultado.tipo).toBe('schema')
@@ -357,9 +381,9 @@ describe('motor de falhas', () => {
 
   it('conteudo esgotado no primario vai a reserva com a ultima correcao e 2 regeneracoes', () => {
     const ruim = { status: 200, corpo: corpo('nao json') }
-    const { resultado, requisicoes } = rodar(oi, [ruim, ruim, ruim, ruim, ruim])
+    const { resultado, requisicoes } = rodar(oi, [ruim, ruim, ruim, ruim, ruim], comReserva)
     expect(requisicoes).toHaveLength(5)
-    expect(requisicoes[3].model).toBe('claude-haiku-5-5')
+    expect(requisicoes[3].model).toBe('claude-sonnet-5-5')
     expect(requisicoes[3].messages.at(-1).role).toBe('system')
     expect(resultado.origem).toBe('falha')
     expect(resultado.registros.map((r) => r.modelo)).toEqual(['primario', 'primario', 'primario', 'reserva', 'reserva'])
@@ -367,7 +391,7 @@ describe('motor de falhas', () => {
 
   it('reserva responde a um conteudo ruim do primario', () => {
     const ruim = { status: 200, corpo: corpo('nao json') }
-    const { resultado } = rodar(oi, [ruim, ruim, ruim, valida])
+    const { resultado } = rodar(oi, [ruim, ruim, ruim, valida], comReserva)
     expect(resultado.modelo_respondeu).toBe('reserva')
     expect(resultado.camada).toBe(2)
   })
@@ -375,7 +399,7 @@ describe('motor de falhas', () => {
   it('registros nao carregam texto de mensagem nem telefone', () => {
     const h: Mensagem[] = [{ role: 'user', content: 'meu zap 48 99999-0001, Silva' }]
     const ruim = { status: 200, corpo: corpo('resposta com 48 99999-0001') }
-    const { resultado } = rodar(h, [ruim, ruim, ruim, r5xx, r5xx, r5xx])
+    const { resultado } = rodar(h, [ruim, ruim, ruim, r5xx, r5xx, r5xx], comReserva)
     const txt = JSON.stringify(resultado.registros)
     expect(txt).not.toMatch(/99999|Silva|zap|resposta com/)
     for (const r of resultado.registros) {
@@ -387,7 +411,7 @@ describe('motor de falhas', () => {
     const p = iniciarTurno({ historico: oi }, modelo, cfg)
     if (p.fim) throw new Error('x')
     expect((montarRequisicao(p.estado, cfg) as any).model).toBe(cfg.ia.modelo)
-    expect((montarRequisicao({ ...p.estado, modelo_atual: 'reserva' }, cfg) as any).model).toBe('claude-haiku-5-5')
+    expect((montarRequisicao({ ...p.estado, modelo_atual: 'reserva' }, comReserva) as any).model).toBe('claude-sonnet-5-5')
   })
 
   it('T24: user,user e unido por quebra de linha e o bot responde ao conjunto', () => {

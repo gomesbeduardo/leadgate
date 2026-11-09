@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 05/11/2026.
+Atualizado em 06/11/2026.
 
 - Spec 001 (filtro de leads) integrada: `docs/specs/001-filtro-leads.md` é a fonte de regra, contrato e testes de aceite. Plano da prioridade 1: `docs/plano-001-p1.md`.
 - Spec 002 (dataset e fallbacks): `docs/specs/002-dataset-e-fallbacks.md`. Implementada, com motor de falhas (repetir, modelo menor, silêncio com humano assumindo), aviso ao vendedor e contagem de falhas por tipo.
@@ -17,3 +17,4 @@ Atualizado em 05/11/2026.
 - Comparação de versões com promptfoo (#15): `npm run comparar:prompt`, em pacote isolado em `scripts/promptfoo/`. O teste com o executável real roda em `npm run test:promptfoo`, fora do CI.
 - O projeto segue o pipeline padrão descrito em `CLAUDE.md`.
 - Em `staging`, o único check obrigatório é `portoes`.
+- Spec 007 (modelo Haiku, 06/11/2026): `claude-haiku-5-5` é o modelo principal e a reserva está desligada por configuração (`ia.modelo_reserva` vazio). A medição do Haiku nos 14 casos de ajuste espera crédito da API.

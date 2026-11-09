@@ -8,12 +8,14 @@ import { criarServidor, criarServidorInterno } from '../src/servico/app'
 import { FalhasStore } from '../src/servico/falhas'
 
 const cfg = carregarConfig(JSON.parse(readFileSync('config/empresa.json', 'utf8')))
+// A config real desliga a reserva (spec 007); estes testes exercitam a camada 2 com uma reserva de fixture.
+const cfgReserva = { ...cfg, ia: { ...cfg.ia, modelo_reserva: 'claude-sonnet-5-5' } }
 const prompt = readFileSync('prompts/agente.md', 'utf8')
 let server: Server
 let base = ''
 
 beforeAll(async () => {
-  server = criarServidorInterno(cfg, prompt)
+  server = criarServidorInterno(cfgReserva, prompt)
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 })
@@ -85,7 +87,7 @@ describe('servico HTTP (porta interna)', () => {
       modelos.push(atual.requisicao.model)
     }
     expect(esperas).toEqual([1000, 3000, 0, 1000, 3000])
-    expect(modelos.slice(-1)).toEqual([cfg.ia.modelo_reserva])
+    expect(modelos.slice(-1)).toEqual([cfgReserva.ia.modelo_reserva])
     expect(atual.fim).toBe(true)
     expect(atual.resultado).toMatchObject({ resposta: null, estado_conversa: 'aguardando_humano', origem: 'falha', tipo: '5xx', camada: 3 })
     expect(atual.resultado.registros).toHaveLength(6)
@@ -97,7 +99,7 @@ describe('servico HTTP (porta interna)', () => {
       atual = await (await post('/validar', { estado: atual.estado, resposta: resp(200) })).json()
       expect(atual.fim).toBe(false)
     }
-    expect(atual.requisicao.model).toBe(cfg.ia.modelo_reserva)
+    expect(atual.requisicao.model).toBe(cfgReserva.ia.modelo_reserva)
   })
 
   it('erro do n8n como texto e corpo cru da API sao aceitos', async () => {

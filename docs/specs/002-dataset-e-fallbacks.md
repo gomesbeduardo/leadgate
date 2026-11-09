@@ -2,6 +2,7 @@
 
 **Status:** decisões P1–P4 tomadas pelo responsável em 03/11; implementação autorizada, texto final segue para a leitura dele no PR
 **Emendas:** R17, C9, C13, T16 e T22 aprovadas pelo responsável em 04/11/2026.
+**Emenda da spec 007 (06/11/2026):** `ia.modelo` passou a `claude-haiku-5-5` e `ia.modelo_reserva` ficou vazio, então a camada 2 está desligada por configuração; o código e os testes dela seguem valendo (T11 e T12 rodam com uma reserva de fixture).
 **Pedido:** "Faça uma rodada para gerar um dataset que pode ser usado para 'treinar' o modelo que vai ficar responsável pelas respostas. E precisamos de alguns fallbacks nele caso algo falhe ou até contar falha de conexão ou falhas comuns. No pior dos casos apenas não responde e espera o humano atuar sempre, mas com um aviso notificando o vendedor que o 'bot caiu'"
 **Decisões ligadas:** spec 001 (R8 respostas dinâmicas, R9 prompt, R10 travas e regeneração, R12 avaliação). Esta spec altera R8, R9, R10 e R12; o que muda está em R20.
 **Numeração:** regras começam em R13 para não colidir com a spec 001. C, T, S e P são desta spec.
@@ -108,7 +109,7 @@ Tipos e como se detecta:
 
 ## Configuração (chaves novas)
 
-`ia.modelo_reserva` (string, vazio desliga), `ia.tentativas_http` (3), `ia.espera_ms` ([1000, 3000]), `ia.timeout_ms` (25000: seis tentativas mais as esperas de 1 s e 3 s somam cerca de 158 s e cabem em `ia.timeout_turno_ms`, 180000; o prazo do turno encerra em silêncio, com o tipo da última falha, quando não sobra um `timeout_ms` para outra tentativa), `ia.tentativas_reserva` (2), `dataset.volume` (80), `dataset.max_chamadas` (150), `dataset.amostra_revisao` (15), `alerta.turnos_para_queda` (2), `alerta.intervalo_min` (30), `textos.alerta_queda`, `textos.alerta_recuperado`. Sai: `textos.falha_tecnica`. Valor de `ia.modelo_reserva`: `claude-haiku-5-5` (P4). Env: `ALERTA_CANAL`, `RESEND_API_KEY`, `RESEND_BASE_URL`, `ALERTA_EMAIL_DE`, `ALERTA_EMAIL_PARA` (todas opcionais), `IA_BASE_URL` (opcional, só para os stubs de teste; padrão é a API da Anthropic).
+`ia.modelo_reserva` (string, vazio desliga), `ia.tentativas_http` (3), `ia.espera_ms` ([1000, 3000]), `ia.timeout_ms` (25000: seis tentativas mais as esperas de 1 s e 3 s somam cerca de 158 s e cabem em `ia.timeout_turno_ms`, 180000; o prazo do turno encerra em silêncio, com o tipo da última falha, quando não sobra um `timeout_ms` para outra tentativa), `ia.tentativas_reserva` (2), `dataset.volume` (80), `dataset.max_chamadas` (150), `dataset.amostra_revisao` (15), `alerta.turnos_para_queda` (2), `alerta.intervalo_min` (30), `textos.alerta_queda`, `textos.alerta_recuperado`. Sai: `textos.falha_tecnica`. Valor de `ia.modelo_reserva`: `claude-haiku-5-5` (P4), substituído pela spec 007, que deixa o campo vazio. Env: `ALERTA_CANAL`, `RESEND_API_KEY`, `RESEND_BASE_URL`, `ALERTA_EMAIL_DE`, `ALERTA_EMAIL_PARA` (todas opcionais), `IA_BASE_URL` (opcional, só para os stubs de teste; padrão é a API da Anthropic).
 
 ## Formato do dataset (recomendação)
 
@@ -209,7 +210,7 @@ Conta de T12 (tipo de rede): primário 3 repetições + reserva 3 repetições =
 - P1 — Pior caso: adaptado ao WhatsApp. Serviço falhou, o lead fica sem resposta e um atendente assume (R16, camadas 3 e 4).
 - P2 — Canal do alerta: simulado, com pré-abertura para Resend (R18).
 - P3 — Exemplos no prompt: mantém 3 (R15).
-- P4 — Modelo reserva: menor e configurável, `claude-haiku-5-5`. Vale medir o acerto dele nos 14 de ajuste antes de citar número.
+- P4 — Modelo reserva: menor e configurável, `claude-haiku-5-5`. Substituída pela spec 007: o Haiku virou o modelo principal e a reserva ficou vazia. Vale medir o acerto dele nos 14 de ajuste antes de citar número.
 
 ## Fatos da pesquisa que mudam a implementação
 

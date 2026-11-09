@@ -58,7 +58,9 @@ services:
       - 8.8.8.8
     mem_limit: 768m
 
-  # Modelo simulado para o teste T11: ANTHROPIC_BASE_URL=http://stub:8787 docker compose --profile teste up
+  # Modelo simulado: ANTHROPIC_BASE_URL=http://stub:8787 docker compose --profile teste up
+  # Com a config real (ia.modelo_reserva vazio, spec 007), STUB_CENARIO=reserva_ok dá 3 × 503 e silêncio;
+  # a reserva só responde (teste T11 da spec 002) com ia.modelo_reserva = claude-sonnet-5-5.
   stub:
     image: node:24-alpine
     profiles: ["teste"]
