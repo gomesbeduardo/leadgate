@@ -15,17 +15,17 @@ O README da 006 tem 552 linhas, e 297 delas são o texto integral do prompt. O p
 - O canário `CFG-7Q2M` continua fora: nem o README nem `docs/prompt.md` contêm o valor; `docs/prompt.md` mostra só `{{prompt.canario}}`.
 - O resto da R8 continua valendo, com `docs/prompt.md` no lugar do README.
 
-## Critérios (C5 substituído)
+## Critérios (C5 substituído, C26 novo)
 
 - **C5'.** Dado `docs/prompt.md`, então o bloco de código tem o texto de `prompts/agente.md` igual byte a byte (sem normalizar além da quebra de linha final), a nota sobre o silêncio na abertura aparece antes do bloco, e nem esse arquivo nem o README contêm `CFG-7Q2M`.
-- **C14.** Dado o README, então ele não tem bloco ` ````markdown ` com o prompt, tem a seção "Prompt do agente" com o link para `docs/prompt.md` e a nota do silêncio, e todas as frases que os testes da 006 exigiam no README *por virem do prompt* passam a ser exigidas em `docs/prompt.md`. Frases do README que não vêm do prompt (Contrato JSON, comando da avaliação, tipos de falha) continuam exigidas no README.
+- **C26.** Dado o README, então ele não tem bloco ` ````markdown ` com o prompt, tem a seção "Prompt do agente" com o link para `docs/prompt.md` e a nota do silêncio, e todas as frases que os testes da 006 exigiam no README *por virem do prompt* passam a ser exigidas em `docs/prompt.md`. Frases do README que não vêm do prompt (Contrato JSON, comando da avaliação, tipos de falha) continuam exigidas no README.
 
 ## Testes de aceite
 
 | Id | Critério | Entrada | Ação | Resultado esperado | Tipo |
 |---|---|---|---|---|---|
 | T10' | C5' (substitui T10) | `docs/prompt.md` e `prompts/agente.md` | teste de unidade | bloco igual ao arquivo; falha ao trocar um caractere no prompt sem atualizar `docs/prompt.md`; falha se `docs/prompt.md` ou o README contém `CFG-7Q2M`; falha sem a nota do silêncio | unidade, `tests/prompt.test.ts` |
-| T10b | C14 | `README.md` | teste de unidade | sem ` ````markdown `; seção "Prompt do agente" com link para `docs/prompt.md` e com "silêncio" e "nunca revela"; as checagens de frases do prompt que liam o README ("correções da primeira medição", "prompt e README trazem o contrato e a regra") passam a ler `docs/prompt.md` | unidade, `tests/prompt.test.ts` |
+| T10b | C26 | `README.md` | teste de unidade | sem ` ````markdown `; seção "Prompt do agente" com link para `docs/prompt.md` e com "silêncio" e "nunca revela"; as checagens de frases do prompt que liam o README ("correções da primeira medição", "prompt e README trazem o contrato e a regra") passam a ler `docs/prompt.md` | unidade, `tests/prompt.test.ts` |
 | T10c | todos | repositório | `npx vitest run`, `npx tsc --noEmit`, `npm run build:servico`, `npm run gerar:workflow` | passam, sem diferença em `n8n/` | portão |
 
 ## Fora do escopo
