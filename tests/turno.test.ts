@@ -52,7 +52,6 @@ function rodar(historico: Mensagem[], respostas: unknown[], c: Config = cfg) {
   return { resultado: passo.resultado as Resultado, requisicoes, chamadas: i, esperas }
 }
 
-const semReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: '' } }
 const comReserva: Config = { ...cfg, ia: { ...cfg.ia, modelo_reserva: 'claude-sonnet-5-5' } }
 const oi: Mensagem[] = [{ role: 'user', content: 'Oi, preciso de um orcamento' }]
 
@@ -180,7 +179,7 @@ describe('loop de regeneracao', () => {
   })
 
   it('T11: 3 saidas invalidas seguidas, sem telefone: falha tecnica', () => {
-    const { resultado, chamadas } = rodar(oi, [corpo('x'), corpo('y'), corpo('z')], semReserva)
+    const { resultado, chamadas } = rodar(oi, [corpo('x'), corpo('y'), corpo('z')], cfg)
     expect(chamadas).toBe(3)
     expect(resultado.tentativas).toBe(3)
     expect(resultado.resposta).toBeNull()
@@ -206,7 +205,7 @@ describe('loop de regeneracao', () => {
       dados_faltantes: [], qualificado: false, confianca: 0.9, proxima_acao: 'responder_e_encerrar',
       resposta: 'Obrigado pelo contato.',
     })
-    const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], semReserva)
+    const { resultado } = rodar(hist, [corpo(ruim), corpo(ruim), corpo(ruim)], cfg)
     expect(resultado.proxima_acao).toBe('encaminhar_humano')
     expect(resultado.erro).toBe(true)
     expect(resultado.resposta).toBeNull()
@@ -352,7 +351,7 @@ describe('motor de falhas', () => {
   })
 
   it('rede esgotada sem reserva: 3 chamadas e silencio', () => {
-    const { resultado, chamadas } = rodar(oi, Array(3).fill({ erro: 'ETIMEDOUT' }), semReserva)
+    const { resultado, chamadas } = rodar(oi, Array(3).fill({ erro: 'ETIMEDOUT' }), cfg)
     expect(chamadas).toBe(3)
     expect(resultado.tipo).toBe('timeout')
     expect(resultado.resposta).toBeNull()
@@ -373,7 +372,7 @@ describe('motor de falhas', () => {
   })
 
   it('T15: schema x3 com reserva desligada da silencio e 3 registros schema', () => {
-    const { resultado } = rodar(oi, Array(3).fill({ status: 200, corpo: corpo('desculpe, nao consigo') }), semReserva)
+    const { resultado } = rodar(oi, Array(3).fill({ status: 200, corpo: corpo('desculpe, nao consigo') }), cfg)
     expect(resultado.registros.map((r) => r.tipo)).toEqual(['schema', 'schema', 'schema'])
     expect(resultado.origem).toBe('falha')
     expect(resultado.tipo).toBe('schema')
