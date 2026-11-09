@@ -52,11 +52,11 @@ flowchart LR
     valid -->|"reprovou, até 2 vezes"| regen["Regeneração com instrução de correção"]
     regen --> claude
     valid -->|aprovou| rota{"Rota (proxima_acao)"}
-    valid -->|"esgotou as tentativas"| humano["Modelo menor; se falhar, silêncio e humano assume"]
+    valid -->|"esgotou as tentativas"| silencio["Silêncio; humano assume"]
     rota --> perguntar["perguntar"]
     rota --> vendas["encaminhar_vendas (simulado)"]
     rota --> encerrar["responder_e_encerrar"]
-    rota --> humano
+    rota --> humano["encaminhar_humano"]
 ```
 
 O n8n só orquestra; a decisão de qualificar é do modelo, e quem confere é o código. As rotas `/preparar` e `/validar` ficam numa porta interna (3001) que o Compose não publica no host. A landing page é servida em `127.0.0.1:8080/` e o chat em `127.0.0.1:8080/conversa`.
@@ -188,7 +188,7 @@ As camadas, da mais interna para a mais externa:
 1. **Schema.** Saída com campos, tipos e valores fechados (Zod). Saída fora do contrato é reprovada.
 2. **Regras entre campos.** Qualificado exige serviço, segmento, cidade e telefone válidos; telefone é conferido (número colado sem DDD real, ou precedido de "CPF", não conta); cidade precisa ter sido citada pelo lead e o sufixo de UF precisa bater com a lista.
 3. **Checagem da resposta ao lead.** Nunca negar ser IA nem afirmar ser humano; nenhum preço inventado (valor em reais); nenhuma promessa (garantia, desconto, grátis) nem prazo; o canário do prompt não pode aparecer; nome de provedor de IA (Claude, GPT, Gemini e outros da lista) não pode aparecer; no máximo um `?`, até 400 caracteres, sem menu numerado, sem frase de robô.
-4. **Regeneração.** Reprovou, o fluxo chama o modelo de novo com uma instrução que aponta a regra violada, até 2 vezes (3 tentativas). Esgotou: o fluxo troca para o modelo menor e, se ele também falhar, segue o caminho descrito em "Quando algo falha".
+4. **Regeneração.** Reprovou, o fluxo chama o modelo de novo com uma instrução que aponta a regra violada, até 2 vezes (3 tentativas). Esgotou: o lead fica sem resposta automática e um humano assume (com um modelo de reserva configurado, ele entra antes), como descrito em "Quando algo falha".
 5. **Rotas internas em porta separada.** `/preparar` e `/validar` ficam na porta 3001, não publicada no host.
 6. **Limites de uso.** Corpo de até 16 KB, 20 requisições por minuto por cliente e 4 chamadas simultâneas (configuráveis em `.env.example`). Histórico limitado a 8 mil caracteres. A porta 5678 é publicada em localhost, então um processo local pode postar direto no webhook do n8n e pular os limites da rota pública.
 
