@@ -1,6 +1,6 @@
 # 006-7 — Falas e modo de interação: emenda do prompt publicado (sai do README, vai para `docs/prompt.md`)
 
-**Status:** proposta, aguardando o responsável.
+**Status:** aprovada pelo responsável em 09/11/2026.
 **Partes:** 7ª da 006. Emenda a [006-1](006-1-regras.md) R8 e C5 e o T10 da [006-2](006-2-prompt-e-avaliacao.md). Onde esta parte diz "substitui", o texto daqui vence. As notas "README repete" da 006-4, da 006-5 e da 006-6 passam a ler "`docs/prompt.md` repete".
 **Pedido** (responsável, 09/11/2026): "edita o readme para deixar o prompt de fora". Resposta do grilling: mover para `docs/prompt.md`, mantendo o prompt público e conferido por teste.
 
